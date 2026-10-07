@@ -38,57 +38,6 @@ $semester_lama = 'Semester ' . $semester;
 $_SESSION['konteks_siswa'] = ['jenjang' => $jenjang, 'kelas' => $kelas, 'prodi' => $prodi, 'semester' => $semester];
 
 // OCR gambar daftar mahasiswa: hasil selalu ditinjau dan dikoreksi dosen sebelum disimpan.
-if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'ocr_siswa' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json; charset=utf-8');
-    $file = $_FILES['foto_daftar'] ?? null;
-    if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || ($file['size'] ?? 0) > 10 * 1024 * 1024) {
-        http_response_code(422);
-        echo json_encode(['status' => 'error', 'message' => 'Pilih foto maksimal 10 MB dan pastikan unggahan selesai.']);
-        exit;
-    }
-    $tmp = $file['tmp_name'] ?? '';
-    $imageInfo = $tmp && is_uploaded_file($tmp) ? @getimagesize($tmp) : false;
-    $mime = $tmp && function_exists('finfo_open') ? (new finfo(FILEINFO_MIME_TYPE))->file($tmp) : (string)($imageInfo['mime'] ?? '');
-    $allowedImages = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/bmp'];
-    if (!$imageInfo || !in_array($mime, $allowedImages, true) || $imageInfo[0] > 10000 || $imageInfo[1] > 10000) {
-        http_response_code(415);
-        echo json_encode(['status' => 'error', 'message' => 'Foto harus berupa JPG, PNG, WEBP, TIFF, atau BMP yang valid.']);
-        exit;
-    }
-    $ocrCandidates = ['/usr/bin/tesseract', '/usr/local/bin/tesseract', '/workspace/cloud-web-absensi/runtime/usr/bin/tesseract'];
-    $ocrBinary = '';
-    foreach ($ocrCandidates as $candidate) { if (is_executable($candidate)) { $ocrBinary = $candidate; break; } }
-    if (!$ocrBinary || !function_exists('proc_open')) {
-        http_response_code(503);
-        echo json_encode(['status' => 'error', 'message' => 'Mesin OCR belum tersedia di server ini. Gunakan foto yang jelas atau isi tabel secara manual.']);
-        exit;
-    }
-    $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-    $ocrEnvironment = getenv();
-    if (!is_array($ocrEnvironment)) $ocrEnvironment = [];
-    $ocrEnvironment['OMP_THREAD_LIMIT'] = '2';
-    $bundledTessdata = '/workspace/cloud-web-absensi/runtime/usr/share/tesseract-ocr/5/tessdata';
-    if (is_dir($bundledTessdata)) $ocrEnvironment['TESSDATA_PREFIX'] = $bundledTessdata;
-    $process = @proc_open([$ocrBinary, $tmp, 'stdout', '-l', 'eng', '--psm', '6', 'tsv'], $descriptors, $pipes, null, $ocrEnvironment);
-    if (!is_resource($process)) {
-        http_response_code(500);
-        echo json_encode(['status' => 'error', 'message' => 'OCR gagal dimulai.']);
-        exit;
-    }
-    fclose($pipes[0]);
-    $tsv = stream_get_contents($pipes[1]);
-    $errorText = stream_get_contents($pipes[2]);
-    fclose($pipes[1]); fclose($pipes[2]);
-    $exitCode = proc_close($process);
-    if ($exitCode !== 0 || !is_string($tsv) || strlen($tsv) > 2 * 1024 * 1024) {
-        http_response_code(422);
-        echo json_encode(['status' => 'error', 'message' => 'Teks pada foto belum terbaca jelas. Coba unggah foto yang lebih tajam dan lurus.', 'detail' => substr((string)$errorText, 0, 240)]);
-        exit;
-    }
-    echo json_encode(['status' => 'success', 'tsv' => $tsv], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
 if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json; charset=utf-8');
     $rows = json_decode((string)($_POST['rows'] ?? ''), true);
@@ -421,6 +370,7 @@ if ($stmt) {
             .modal-container { width: 95%; max-width: 100%; padding: 20px; margin: 10px; }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" defer></script>
 </head>
 <body>
     <div class="toast-container" id="toastContainer"></div>
@@ -685,15 +635,25 @@ if ($stmt) {
             const picker=document.getElementById('fotoDaftarMahasiswa'), file=picker.files && picker.files[0];
             if (!file) { showToast('Pilih foto daftar mahasiswa terlebih dahulu.', 'error'); return; }
             if (file.size > 10*1024*1024) { showToast('Ukuran foto maksimal 10 MB.', 'error'); return; }
-            const button=document.getElementById('btnOcrFoto'); button.disabled=true; document.getElementById('ocrStatus').textContent='Membaca foto, tunggu sebentar…';
+            const button=document.getElementById('btnOcrFoto'), status=document.getElementById('ocrStatus'); button.disabled=true; status.textContent='Memuat OCR di browser…';
+            let worker=null;
             try {
-                const form=new FormData(); form.append('foto_daftar',file); form.append('aksi','ocr_siswa');
-                const response=await fetch('data_siswa.php?aksi=ocr_siswa&jenjang=S1&kelas=<?php echo rawurlencode($kelas); ?>&prodi=<?php echo rawurlencode($prodi); ?>&semester=<?php echo rawurlencode($semester); ?>&theme=<?php echo rawurlencode($current_theme); ?>',{method:'POST',body:form});
-                const result=await response.json();
-                if (!response.ok || result.status!=='success') throw new Error(result.message || 'Foto belum dapat dibaca.');
-                tampilkanHasilOcr(parseOcrDaftarTsv(result.tsv || ''));
-            } catch (error) { document.getElementById('ocrStatus').textContent=error.message; showToast(error.message,'error'); }
-            finally { button.disabled=false; }
+                if (!window.Tesseract) throw new Error('Pustaka OCR tidak termuat. Periksa koneksi internet lalu muat ulang halaman.');
+                worker=await Tesseract.createWorker('eng', 1, {
+                    workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+                    corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+                    langPath:'https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@main',
+                    gzip:false,
+                    logger:message=>{ if (message.status==='recognizing text') status.textContent='Membaca foto… '+Math.round((message.progress||0)*100)+'%'; }
+                });
+                await worker.setParameters({tessedit_pageseg_mode:'6', preserve_interword_spaces:'1'});
+                status.textContent='Membaca NIM, nama, dan jenis kelamin…';
+                const result=await worker.recognize(file, {}, {tsv:true});
+                const rows=parseOcrDaftarTsv(result.data.tsv || '');
+                if (!rows.length) throw new Error('Tulisan belum terbaca sebagai baris mahasiswa. Gunakan foto yang terang, lurus, dan tampilkan kolom NIM, nama, serta L/P.');
+                tampilkanHasilOcr(rows);
+            } catch (error) { status.textContent=error.message; showToast(error.message,'error'); }
+            finally { if (worker) await worker.terminate(); button.disabled=false; }
         }
 
         async function simpanHasilOcr() {

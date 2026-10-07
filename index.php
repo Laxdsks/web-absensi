@@ -274,7 +274,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         
         body {
             background: var(--bg-gradient); background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite; color: var(--text-main);
+            color: var(--text-main);
             min-height: 100vh; display: flex; justify-content: center; align-items: center;
             overflow-x: hidden; position: relative;
         }

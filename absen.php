@@ -509,6 +509,9 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             <a href="data_siswa.php?jenjang=S1&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&theme=<?php echo urlencode($theme); ?>" class="btn btn-dark" title="Kembali Ke Halaman Data Siswa Utama">
                 <i class="fa-solid fa-arrow-left"></i>
             </a>
+            <a href="ujian.php?jenjang=S1&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&theme=<?php echo urlencode($theme); ?>" class="btn btn-warning" title="Buka Lembar Ujian untuk konteks kelas ini">
+                <i class="fa-solid fa-file-invoice"></i> Lembar Ujian
+            </a>
             <button onclick="mulaiTurInteraktif()" class="btn btn-primary" id="tourBtnGuide" title="Buka Panduan & Tur Interaktif"><i class="fa-solid fa-circle-question"></i> Panduan</button>
             <button onclick="bukaRekapNilai()" class="btn btn-success" id="tourBtnRekap" title="Buka Kalkulasi Otomatis Rekapitulasi Nilai Akhir"><i class="fa-solid fa-calculator"></i> Rekap Nilai</button>
             <button onclick="tambahSiswa()" class="btn btn-success" id="tourBtnTambah" title="Sisipkan satu baris siswa/mahasiswa baru di bagian paling bawah"><i class="fa-solid fa-user-plus"></i> Sisip Baris</button>
