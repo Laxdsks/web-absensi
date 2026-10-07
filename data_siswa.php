@@ -37,6 +37,95 @@ $kelas_lama = 'Kelas ' . $kelas;
 $semester_lama = 'Semester ' . $semester;
 $_SESSION['konteks_siswa'] = ['jenjang' => $jenjang, 'kelas' => $kelas, 'prodi' => $prodi, 'semester' => $semester];
 
+// OCR gambar daftar mahasiswa: hasil selalu ditinjau dan dikoreksi dosen sebelum disimpan.
+if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'ocr_siswa' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json; charset=utf-8');
+    $file = $_FILES['foto_daftar'] ?? null;
+    if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || ($file['size'] ?? 0) > 10 * 1024 * 1024) {
+        http_response_code(422);
+        echo json_encode(['status' => 'error', 'message' => 'Pilih foto maksimal 10 MB dan pastikan unggahan selesai.']);
+        exit;
+    }
+    $tmp = $file['tmp_name'] ?? '';
+    $imageInfo = $tmp && is_uploaded_file($tmp) ? @getimagesize($tmp) : false;
+    $mime = $tmp && function_exists('finfo_open') ? (new finfo(FILEINFO_MIME_TYPE))->file($tmp) : (string)($imageInfo['mime'] ?? '');
+    $allowedImages = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/bmp'];
+    if (!$imageInfo || !in_array($mime, $allowedImages, true) || $imageInfo[0] > 10000 || $imageInfo[1] > 10000) {
+        http_response_code(415);
+        echo json_encode(['status' => 'error', 'message' => 'Foto harus berupa JPG, PNG, WEBP, TIFF, atau BMP yang valid.']);
+        exit;
+    }
+    $ocrCandidates = ['/usr/bin/tesseract', '/usr/local/bin/tesseract', '/workspace/cloud-web-absensi/runtime/usr/bin/tesseract'];
+    $ocrBinary = '';
+    foreach ($ocrCandidates as $candidate) { if (is_executable($candidate)) { $ocrBinary = $candidate; break; } }
+    if (!$ocrBinary || !function_exists('proc_open')) {
+        http_response_code(503);
+        echo json_encode(['status' => 'error', 'message' => 'Mesin OCR belum tersedia di server ini. Gunakan foto yang jelas atau isi tabel secara manual.']);
+        exit;
+    }
+    $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+    $ocrEnvironment = getenv();
+    if (!is_array($ocrEnvironment)) $ocrEnvironment = [];
+    $ocrEnvironment['OMP_THREAD_LIMIT'] = '2';
+    $bundledTessdata = '/workspace/cloud-web-absensi/runtime/usr/share/tesseract-ocr/5/tessdata';
+    if (is_dir($bundledTessdata)) $ocrEnvironment['TESSDATA_PREFIX'] = $bundledTessdata;
+    $process = @proc_open([$ocrBinary, $tmp, 'stdout', '-l', 'eng', '--psm', '6', 'tsv'], $descriptors, $pipes, null, $ocrEnvironment);
+    if (!is_resource($process)) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'OCR gagal dimulai.']);
+        exit;
+    }
+    fclose($pipes[0]);
+    $tsv = stream_get_contents($pipes[1]);
+    $errorText = stream_get_contents($pipes[2]);
+    fclose($pipes[1]); fclose($pipes[2]);
+    $exitCode = proc_close($process);
+    if ($exitCode !== 0 || !is_string($tsv) || strlen($tsv) > 2 * 1024 * 1024) {
+        http_response_code(422);
+        echo json_encode(['status' => 'error', 'message' => 'Teks pada foto belum terbaca jelas. Coba unggah foto yang lebih tajam dan lurus.', 'detail' => substr((string)$errorText, 0, 240)]);
+        exit;
+    }
+    echo json_encode(['status' => 'success', 'tsv' => $tsv], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json; charset=utf-8');
+    $rows = json_decode((string)($_POST['rows'] ?? ''), true);
+    if (!is_array($rows) || count($rows) > 200 || !isset($koneksi) || !($koneksi instanceof mysqli)) {
+        http_response_code(422);
+        echo json_encode(['status' => 'error', 'message' => 'Daftar mahasiswa tidak valid atau koneksi database tidak tersedia.']);
+        exit;
+    }
+    $inserted = 0; $skipped = 0;
+    mysqli_begin_transaction($koneksi);
+    $duplicate = mysqli_prepare($koneksi, "SELECT id FROM siswa WHERE nim=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) LIMIT 1");
+    $insert = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nik, nama, jk) VALUES ('S1', ?, ?, ?, ?, '', ?, ?)");
+    if (!$duplicate || !$insert) {
+        mysqli_rollback($koneksi);
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Penyimpanan daftar mahasiswa gagal disiapkan.']);
+        exit;
+    }
+    foreach ($rows as $row) {
+        if (!is_array($row)) { $skipped++; continue; }
+        $nim = trim(substr((string)($row['nim'] ?? ''), 0, 50));
+        $nama = trim(substr((string)($row['nama'] ?? ''), 0, 255));
+        $jk = strtoupper(trim((string)($row['jk'] ?? 'L')));
+        if ($nim === '' || $nama === '' || !in_array($jk, ['L', 'P'], true)) { $skipped++; continue; }
+        mysqli_stmt_bind_param($duplicate, 'ssssss', $nim, $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
+        mysqli_stmt_execute($duplicate);
+        $found = mysqli_stmt_get_result($duplicate);
+        if ($found && mysqli_fetch_assoc($found)) { $skipped++; continue; }
+        mysqli_stmt_bind_param($insert, 'ssssss', $kelas, $prodi, $semester, $nim, $nama, $jk);
+        if (mysqli_stmt_execute($insert)) $inserted++; else $skipped++;
+    }
+    mysqli_stmt_close($duplicate); mysqli_stmt_close($insert);
+    mysqli_commit($koneksi);
+    echo json_encode(['status' => 'success', 'inserted' => $inserted, 'skipped' => $skipped], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // Kontekstual Istilah Jenjang Perguruan Tinggi (100% Mahasiswa / NIM)
 $uppercase_jenjang = strtoupper($jenjang);
 $is_kuliah = ($uppercase_jenjang === 'S1' || $uppercase_jenjang === 'D3' || $uppercase_jenjang === 'D4' || $uppercase_jenjang === 'KULIAH' || $jenjang === 'S1');
@@ -364,6 +453,24 @@ if ($stmt) {
                 </div>
             </div>
 
+            <section class="content-card" id="photoImportCard" style="margin:0 0 18px;padding:16px;">
+                <h3 style="margin:0 0 8px;font-size:15px;"><i class="fa-solid fa-camera" style="color:var(--primary);"></i> Impor daftar mahasiswa dari foto</h3>
+                <p style="margin:0 0 12px;color:var(--text-muted);font-size:12px;line-height:1.5;">Unggah foto tabel yang jelas dan lurus. OCR akan membaca NIM, nama, dan L/P; periksa serta koreksi hasil sebelum menyimpan. Baris dengan NIM yang sudah ada di konteks ini dilewati.</p>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <input type="file" id="fotoDaftarMahasiswa" accept="image/jpeg,image/png,image/webp,image/tiff,image/bmp" style="max-width:100%;min-height:40px;">
+                    <button class="btn-custom btn-primary" type="button" id="btnOcrFoto" onclick="bacaFotoDaftarMahasiswa()" style="min-height:42px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Baca Foto</button>
+                    <span id="ocrStatus" aria-live="polite" style="font-size:12px;color:var(--text-muted);"></span>
+                </div>
+                <div id="ocrReviewPanel" hidden style="margin-top:14px;">
+                    <div class="table-responsive">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead><tr><th style="text-align:left;">NIM</th><th style="text-align:left;">Nama Mahasiswa</th><th>Jenis Kelamin</th><th>Keyakinan OCR</th><th>Aksi</th></tr></thead>
+                            <tbody id="ocrReviewRows"></tbody>
+                        </table>
+                    </div>
+                    <button class="btn-custom btn-success" type="button" id="btnSimpanOcr" onclick="simpanHasilOcr()" style="margin-top:10px;min-height:42px;"><i class="fa-solid fa-user-check"></i> Simpan baris yang sudah diperiksa</button>
+                </div>
+            </section>
             <div class="table-responsive">
                 <table id="tabelSiswa">
                     <thead>
@@ -524,15 +631,86 @@ if ($stmt) {
             }
         }
 
-        // Perkuatan Logika Filter Regex OCR Ekstraksi Foto / Dokumen Fisik
-        function processOcrTextExtraction(rawText) {
-            // Abaikan kata sampah dokumen institusi secara otomatis
-            const blacklist = /STKIP YAPIS DOMPU|PRODI|YAYASAN|TAHUN AKADEMIK|JURUSAN|SEMESTER|KELAS|PENDIDIKAN/gi;
-            const cleanText = rawText.replace(blacklist, '');
-            // Ekstraksi pola angka digital NIM & Nama Bersih
-            const nimMatch = cleanText.match(/\b[A-Z0-9]{8,15}\b/g);
-            return nimMatch ? nimMatch : [];
+        function parseOcrDaftarTsv(tsv) {
+            const lines = tsv.trim().split(/\r?\n/);
+            if (lines.length < 2) return [];
+            const groups = new Map();
+            for (const line of lines.slice(1)) {
+                const cols = line.split('\t');
+                if (cols.length < 12 || cols[0] !== '5') continue;
+                const text = (cols[11] || '').trim();
+                if (!text) continue;
+                const key = [cols[1], cols[2], cols[3], cols[4]].join(':');
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push({text, x: Number(cols[6]) || 0, conf: Number(cols[10]) || 0});
+            }
+            const rows = [];
+            const seen = new Set();
+            for (const words of groups.values()) {
+                words.sort((a,b) => a.x-b.x);
+                const candidates = words.map(word => ({word, token: word.text.toUpperCase().replace(/[^A-Z0-9]/g,'')}));
+                const nimEntry = candidates.find(item => /^(?:[A-Z]\d{7,14}|\d{8,15})$/.test(item.token));
+                if (!nimEntry) continue;
+                const genderEntry = candidates.find(item => /^(?:L|P|LAKI|LAKILAKI|PEREMPUAN|WANITA|PRIA)$/.test(item.token));
+                let jk = 'L';
+                if (genderEntry && /^(?:P|PEREMPUAN|WANITA)$/.test(genderEntry.token)) jk = 'P';
+                const ignored = /^(?:NO|NOMOR|NIM|NAMA|MAHASISWA|JENISKELAMIN|JK|L|P|LAKI|LAKILAKI|PEREMPUAN|WANITA|PRIA|S1|KELAS|SEMESTER|PRODI)$/;
+                const nameParts = candidates.filter(item => item !== nimEntry && item !== genderEntry && !ignored.test(item.token) && !/^\d+$/.test(item.token)).map(item => item.word.text);
+                const nama = nameParts.join(' ').replace(/\s+/g,' ').trim();
+                const nim = nimEntry.token;
+                if (!nama || seen.has(nim)) continue;
+                seen.add(nim);
+                const confidence = Math.max(0, Math.min(100, Math.round(words.reduce((sum, word) => sum + Math.max(0, word.conf), 0) / words.length)));
+                rows.push({nim, nama, jk, confidence});
+            }
+            return rows;
         }
+
+        function tampilkanHasilOcr(rows) {
+            const tbody = document.getElementById('ocrReviewRows');
+            tbody.replaceChildren();
+            rows.forEach((row, index) => {
+                const tr = document.createElement('tr'); tr.dataset.confidence = row.confidence;
+                const addInput = (value, label) => { const td=document.createElement('td'); const input=document.createElement('input'); input.type='text'; input.value=value; input.setAttribute('aria-label',label); input.style.cssText='width:100%;min-width:110px;padding:9px;border:1px solid var(--card-border);border-radius:8px;background:var(--input-bg);color:var(--text-main);'; td.appendChild(input); tr.appendChild(td); return input; };
+                addInput(row.nim, 'NIM baris ' + (index+1)); addInput(row.nama, 'Nama baris ' + (index+1));
+                const genderCell=document.createElement('td'); const gender=document.createElement('select'); gender.setAttribute('aria-label','Jenis kelamin baris '+(index+1)); gender.innerHTML='<option value="L">Laki-laki (L)</option><option value="P">Perempuan (P)</option>'; gender.value=row.jk; gender.style.cssText='min-height:40px;padding:7px;border-radius:8px;background:var(--input-bg);color:var(--text-main);'; genderCell.appendChild(gender); tr.appendChild(genderCell);
+                const confidenceCell=document.createElement('td'); confidenceCell.textContent=row.confidence+'%'; confidenceCell.style.textAlign='center'; tr.appendChild(confidenceCell);
+                const actionCell=document.createElement('td'); const remove=document.createElement('button'); remove.type='button'; remove.className='btn-custom btn-danger'; remove.textContent='Hapus'; remove.onclick=()=>tr.remove(); actionCell.appendChild(remove); tr.appendChild(actionCell); tbody.appendChild(tr);
+            });
+            document.getElementById('ocrReviewPanel').hidden = rows.length === 0;
+            document.getElementById('ocrStatus').textContent = rows.length ? rows.length + ' baris terbaca. Periksa setiap sel sebelum disimpan.' : 'Belum ada baris lengkap dengan NIM dan nama. Coba foto lebih tajam atau input manual.';
+        }
+
+        async function bacaFotoDaftarMahasiswa() {
+            const picker=document.getElementById('fotoDaftarMahasiswa'), file=picker.files && picker.files[0];
+            if (!file) { showToast('Pilih foto daftar mahasiswa terlebih dahulu.', 'error'); return; }
+            if (file.size > 10*1024*1024) { showToast('Ukuran foto maksimal 10 MB.', 'error'); return; }
+            const button=document.getElementById('btnOcrFoto'); button.disabled=true; document.getElementById('ocrStatus').textContent='Membaca foto, tunggu sebentar…';
+            try {
+                const form=new FormData(); form.append('foto_daftar',file); form.append('aksi','ocr_siswa');
+                const response=await fetch('data_siswa.php?aksi=ocr_siswa&jenjang=S1&kelas=<?php echo rawurlencode($kelas); ?>&prodi=<?php echo rawurlencode($prodi); ?>&semester=<?php echo rawurlencode($semester); ?>&theme=<?php echo rawurlencode($current_theme); ?>',{method:'POST',body:form});
+                const result=await response.json();
+                if (!response.ok || result.status!=='success') throw new Error(result.message || 'Foto belum dapat dibaca.');
+                tampilkanHasilOcr(parseOcrDaftarTsv(result.tsv || ''));
+            } catch (error) { document.getElementById('ocrStatus').textContent=error.message; showToast(error.message,'error'); }
+            finally { button.disabled=false; }
+        }
+
+        async function simpanHasilOcr() {
+            const rows=Array.from(document.querySelectorAll('#ocrReviewRows tr')).map(tr=>({nim:tr.cells[0].querySelector('input').value.trim(),nama:tr.cells[1].querySelector('input').value.trim(),jk:tr.cells[2].querySelector('select').value})).filter(row=>row.nim && row.nama);
+            if (!rows.length) { showToast('Tidak ada data lengkap untuk disimpan.', 'error'); return; }
+            const button=document.getElementById('btnSimpanOcr'); button.disabled=true;
+            try {
+                const form=new FormData(); form.append('aksi','import_siswa'); form.append('rows',JSON.stringify(rows));
+                const response=await fetch('data_siswa.php?aksi=import_siswa&jenjang=S1&kelas=<?php echo rawurlencode($kelas); ?>&prodi=<?php echo rawurlencode($prodi); ?>&semester=<?php echo rawurlencode($semester); ?>&theme=<?php echo rawurlencode($current_theme); ?>',{method:'POST',body:form});
+                const result=await response.json();
+                if (!response.ok || result.status!=='success') throw new Error(result.message || 'Data foto gagal disimpan.');
+                showToast(result.inserted+' mahasiswa ditambahkan; '+result.skipped+' baris dilewati. Daftar akan dimuat ulang.','success');
+                setTimeout(()=>location.reload(),900);
+            } catch (error) { showToast(error.message,'error'); }
+            finally { button.disabled=false; }
+        }
+
     </script>
 </body>
 </html>

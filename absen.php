@@ -260,16 +260,26 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         .summary-title { font-weight: 700; text-align: center; border-bottom: 1px solid #000 !important; margin-bottom: 3px; padding-bottom: 2px; font-size: calc(var(--global-font-size) + 0.5px); }
         .summary-row { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: var(--global-font-size); }
         
-        .signature-section { display: flex; justify-content: space-between; margin-top: 10px; font-size: var(--global-font-size); position: relative; }
+        .signature-section { display: flex; justify-content: space-between; margin-top: 18px; font-size: var(--global-font-size); position: relative; }
         .signature-box { width: 210px; text-align: left; font-size: var(--global-font-size); padding: 2px; }
-        .signature-space { height: 38px; }
+        .signature-space { height: var(--signature-space-height, 72px); }
         
-        .rekap-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 99999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .rekap-modal-overlay.show { opacity: 1; pointer-events: auto; }
-        .rekap-modal-content { background: #0f172a; border: 1px solid rgba(255,255,255,0.2); width: 98%; max-width: 1450px; border-radius: 12px; padding: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.8); display: flex; flex-direction: column; max-height: 95vh; }
+        .rekap-modal-overlay { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; background: #0b1120; z-index: 99999; display: flex; justify-content: stretch; align-items: stretch; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.2s ease; }
+        .rekap-modal-overlay.show { opacity: 1; visibility: visible; pointer-events: auto; }
+        .rekap-modal-content { background: #0f172a; border: 0; width: 100%; max-width: none; height: 100%; border-radius: 0; padding: clamp(10px, 2vw, 24px); box-shadow: none; display: flex; flex-direction: column; max-height: none; overflow: hidden; }
         .rekap-modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
         .rekap-modal-header h3 { font-size: 15px; color: #f8fafc; font-weight: 700; }
-        .rekap-modal-body { flex: 1; overflow-y: auto; }
+        .rekap-modal-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+        .rekap-modal-header button { min-height: 40px; }
+        .rekap-table-wrap { width: 100%; overflow: auto; }
+        #tabelRekapNilai { min-width: 1500px; table-layout: fixed; }
+        #tabelRekapNilai th { line-height: 1.25; white-space: normal; }
+        #tabelRekapNilai td { padding: 5px 4px !important; }
+        #tabelRekapNilai .activity-input { width: 100%; max-width: 88px; min-height: 38px; padding: 4px; text-align: center; }
+        #tabelRekapNilai .name-value { text-align: left; }
+        .rekap-header-blue { background: #c7dcf5 !important; }
+        .rekap-header-yellow { background: #fff200 !important; }
+        .rekap-activity-help { margin: 0 0 8px; color: #38bdf8; font-size: 12px; line-height: 1.5; }
         
         #tabelRekapNilai {
             --rekap-font-size: 12px;
@@ -412,6 +422,15 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             
             body { background: white; padding: 0; color: black; font-size: var(--global-font-size); overflow: auto !important; }
             .top-toolbar, .toolbar-toggle-btn, .floating-tools, .inspector-panel, .inspector-toggle-btn, .rekap-modal-overlay, .tour-spotlight-backdrop, .tour-speech-bubble, .custom-modal-overlay { display: none !important; }
+            body.modal-open #rekapModalOverlay.show { display: flex !important; position: static; width: 100%; height: auto; min-height: 0; background: #fff !important; color: #000 !important; opacity: 1; visibility: visible; }
+            body.modal-open .rekap-modal-content { display: block; width: 100%; height: auto; max-height: none; overflow: visible; padding: 0; background: #fff !important; color: #000 !important; }
+            body.modal-open .rekap-modal-header button { display: none !important; }
+            body.modal-open .rekap-modal-header { display: block; color: #000 !important; }
+            body.modal-open .rekap-modal-body, body.modal-open .rekap-table-wrap { overflow: visible !important; }
+            body.modal-open .rekap-export-content, body.modal-open .composition-summary, body.modal-open .weight-settings { background: #fff !important; color: #000 !important; }
+            body.modal-open .rekap-activity-help, body.modal-open .composition-summary strong { color: #000 !important; }
+            body.modal-open #tabelRekapNilai { min-width: 0; table-layout: fixed; font-size: 7pt !important; }
+            body.modal-open #tabelRekapNilai th, body.modal-open #tabelRekapNilai td { padding: 2px !important; font-size: 7pt !important; }
             .workspace-container, .kontainer-kertas { transform: none !important; margin: 0; padding: 0; overflow: visible !important; }
             .paper-sheet { box-shadow: none !important; border-radius: 0 !important; width: 100% !important; min-height: auto !important; height: auto !important; max-height: none !important; overflow: visible !important; padding: var(--global-padding-sheet) !important; font-size: var(--global-font-size) !important; }
             .page-break-line, .btn-hapus-logo { display: none !important; }
@@ -465,6 +484,10 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     <button onclick="ubahPosisiAktif('y', -3)" class="btn btn-dark" style="padding: 2px 5px;" title="Geser posisi elemen ke atas">-</button>
                     <button onclick="ubahPosisiAktif('y', 3)" class="btn btn-dark" style="padding: 2px 5px;" title="Geser posisi elemen ke bawah">+</button>
                 </div>
+            </div>
+            <div class="inspector-row" style="margin-top: 2px;">
+                <label for="signatureSpaceRange" style="font-size:9px;">Jarak tanda tangan: <span id="signatureSpaceValue">72 px</span></label>
+                <input type="range" id="signatureSpaceRange" min="0" max="160" step="4" value="72" oninput="aturJarakTandaTangan(this.value)" style="width:100%;accent-color:#38bdf8;">
             </div>
             <div class="inspector-row" style="margin-top: 2px;">
                 <span>Ukuran Logo:</span>
@@ -763,44 +786,47 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 </div>
             </div>
             <div class="rekap-modal-body" id="rekapModalBodyContent">
-                <div style="background: #1e293b; padding: 15px; border-radius: 8px; color: #f8fafc;">
+                <div class="rekap-export-content" style="background: #1e293b; padding: 15px; border-radius: 8px; color: #f8fafc;">
                     <div style="margin-bottom: 10px; font-size: 12px; font-weight: 600; color: #38bdf8;">
                         Titik (.) = hadir; A = alpa/tidak hadir; S = sakit; I = izin. S dan I bukan hadir, tetapi tidak menambah hitungan alpa. Nilai E otomatis hanya jika A minimal 4 kali.
                     </div>
                     <div class="composition-summary">
                         <strong>Penilaian dilakukan dengan komposisi:</strong><br>
-                        Kehadiran: <span id="komposisiAbsensi">35%</span> · Makalah, diskusi, dan keaktifan dalam ruangan: <span id="komposisiAktivitas">35%</span> · Ujian tengah semester: <span id="komposisiUTS">15%</span> · Ujian akhir semester: <span id="komposisiUAS">15%</span> · Total: <span id="komposisiTotal">100%</span>.
+                        Kehadiran: <span id="komposisiAbsensi">35%</span> · Poin keaktifan: <span id="komposisiAktivitas">35%</span> · Ujian tengah semester: <span id="komposisiUTS">15%</span> · Ujian akhir semester: <span id="komposisiUAS">15%</span> · Total: <span id="komposisiTotal">100%</span>.
                     </div>
                     <div class="weight-settings">
                         <label>Bobot Kehadiran (%)<input id="bobotAbsensi" type="number" min="0" max="100" step="1" value="35" oninput="perbaruiBobotNilai()"></label>
-                        <label>Bobot Makalah/Diskusi/Keaktifan (%)<input id="bobotAktivitas" type="number" min="0" max="100" step="1" value="35" oninput="perbaruiBobotNilai()"></label>
+                        <label>Bobot Keaktifan (%)<input id="bobotAktivitas" type="number" min="0" max="100" step="1" value="35" oninput="perbaruiBobotNilai()"></label>
                         <label>Bobot UTS (%)<input id="bobotUTS" type="number" min="0" max="100" step="1" value="15" oninput="perbaruiBobotNilai()"></label>
                         <label>Bobot UAS (%)<input id="bobotUAS" type="number" min="0" max="100" step="1" value="15" oninput="perbaruiBobotNilai()"></label>
                         <span class="weight-total" id="totalBobotText">Total bobot: 100%</span>
                         <span style="font-size:10px; color:#cbd5e1;">Nilai awal komponen adalah 0. Bobot dihitung proporsional dari jumlah bobot yang diisi.</span>
                     </div>
-                    <div class="table-responsive">
+                    <p class="rekap-activity-help">Poin aktivitas: bertanya = 2 poin setiap kali; aktif/menambah jawaban/usul/saran = 3 poin setiap kontribusi; diskusi individu dapat diatur dosen sampai 25 poin. Nilai aktivitas dihitung dari jumlah poin tersebut (maksimal 100).</p>
+                    <div class="table-responsive rekap-table-wrap">
                         <table class="attendance-table" id="tabelRekapNilai" style="width: 100%; background: white; color: black; border-collapse: collapse;">
+                            <colgroup><col style="width:4%"><col style="width:16%"><col style="width:11%"><col style="width:5%"><col style="width:5%"><col style="width:5%"><col style="width:6%"><col style="width:13%"><col style="width:8%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:5%"><col style="width:4%"></colgroup>
                             <thead>
-                                <tr style="background: #e2e8f0; color: #0f172a;">
-                                    <th rowspan="2">NO</th>
-                                    <th rowspan="2">NIM</th>
-                                    <th rowspan="2">NAMA MAHASISWA</th>
-                                    <th colspan="5">DAFTAR KEHADIRAN</th>
-                                    <th rowspan="2">PERSENTASE KEHADIRAN</th>
-                                    <th rowspan="2">MAKALAH, DISKUSI &amp; KEAKTIFAN (0–100)</th>
-                                    <th rowspan="2">UTS (0–100)</th>
-                                    <th rowspan="2">UAS (0–100)</th>
-                                    <th rowspan="2">SKOR AKHIR</th>
-                                    <th rowspan="2">NILAI HURUF</th>
-                                    <th rowspan="2">ANGKA MUTU</th>
+                                <tr style="color: #0f172a;">
+                                    <th class="rekap-header-blue" rowspan="2">NO</th>
+                                    <th class="rekap-header-blue" rowspan="2">NAMA</th>
+                                    <th class="rekap-header-blue" rowspan="2">NIM</th>
+                                    <th class="rekap-header-blue" colspan="3">DAFTAR KEHADIRAN</th>
+                                    <th class="rekap-header-yellow" colspan="3">KEAKTIFAN</th>
+                                    <th class="rekap-header-yellow" rowspan="2">UTS</th>
+                                    <th class="rekap-header-blue" rowspan="2">UAS</th>
+                                    <th class="rekap-header-blue" colspan="3">NILAI</th>
                                 </tr>
-                                <tr style="background: #e2e8f0; color: #0f172a;">
-                                    <th>ABSENSI</th>
-                                    <th>ABSEN (A)</th>
-                                    <th>SAKIT (S)</th>
-                                    <th>IZIN (I)</th>
-                                    <th>TOTAL TERISI</th>
+                                <tr style="color: #0f172a;">
+                                    <th class="rekap-header-yellow">ABSENSI</th>
+                                    <th class="rekap-header-yellow">ABSEN (A)</th>
+                                    <th class="rekap-header-yellow">TOTAL</th>
+                                    <th class="rekap-header-yellow">BERTANYA<br>(2 POIN)</th>
+                                    <th class="rekap-header-yellow">AKTIF / MENAMBAH JAWABAN / USUL / SARAN<br>(3 POIN)</th>
+                                    <th class="rekap-header-yellow">DISKUSI INDIVIDU<br>(MAKS. 25)</th>
+                                    <th class="rekap-header-blue">SKOR</th>
+                                    <th class="rekap-header-blue">NILAI HURUF</th>
+                                    <th class="rekap-header-blue">MUTU</th>
                                 </tr>
                             </thead>
                             <tbody id="tbodyRekapNilai">
@@ -841,6 +867,19 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         let historyStack = [];
         let redoStack = [];
         let draftNilaiPerNim = Object.create(null);
+        const absenLayoutSettingsKey = <?php echo json_encode('absen-layout-settings-S1-' . md5($prodi . '|' . $semester . '|' . $kelas)); ?>;
+        function aturJarakTandaTangan(value) {
+            const px = Math.max(0, Math.min(160, Number(value) || 0));
+            document.getElementById('paperSheet').style.setProperty('--signature-space-height', px + 'px');
+            document.getElementById('signatureSpaceValue').textContent = px + ' px';
+            try { localStorage.setItem(absenLayoutSettingsKey, JSON.stringify({signatureSpace: px})); } catch (error) {}
+        }
+        try {
+            const layoutSettings = JSON.parse(localStorage.getItem(absenLayoutSettingsKey) || '{}');
+            const signatureSpace = Number.isFinite(Number(layoutSettings.signatureSpace)) ? Math.max(0, Math.min(160, Number(layoutSettings.signatureSpace))) : 72;
+            const signatureControl = document.getElementById('signatureSpaceRange');
+            if (signatureControl) { signatureControl.value = String(signatureSpace); aturJarakTandaTangan(signatureSpace); }
+        } catch (error) {}
 
         function simpanStateUndo() {
             const paperHtml = document.getElementById('paperSheet').innerHTML;
@@ -1016,6 +1055,28 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             }
         }
 
+        const absenPositionStorageKey = <?php echo json_encode('absen-layout-S1-' . md5($prodi . '|' . $semester . '|' . $kelas)); ?>;
+
+        function simpanPosisiLembarAbsen() {
+            const posisi = {};
+            document.querySelectorAll('.selectable-element[id]').forEach(el => {
+                if (el.style.transform) posisi[el.id] = el.style.transform;
+            });
+            try { localStorage.setItem(absenPositionStorageKey, JSON.stringify(posisi)); } catch (error) {}
+        }
+
+        function pulihkanPosisiLembarAbsen() {
+            try {
+                const posisi = JSON.parse(localStorage.getItem(absenPositionStorageKey) || '{}');
+                Object.entries(posisi).forEach(([id, transform]) => {
+                    const el = document.getElementById(id);
+                    if (el && el.matches('.selectable-element')) el.style.transform = transform;
+                });
+            } catch (error) {}
+        }
+
+        pulihkanPosisiLembarAbsen();
+
         document.addEventListener('click', function(e) {
             if(!e.target.closest('.selectable-element') && !e.target.closest('.inspector-panel')) {
                 document.querySelectorAll('.selectable-element').forEach(el => el.classList.remove('selected'));
@@ -1031,33 +1092,53 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 return;
             }
             simpanStateUndo();
-            let currentTransform = selectedElement.style.transform;
-            let x = 0, y = 0;
-            if(currentTransform.includes('translate')) {
-                const match = currentTransform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
-                if(match) {
-                    x = parseFloat(match[1]);
-                    y = parseFloat(match[2]);
-                }
-            }
-            if(axis === 'x') x += delta;
-            if(axis === 'y') y += delta;
-            selectedElement.style.transform = `translate(${x}px, ${y}px)`;
+            const posisi = el => {
+                const match = (el.style.transform || '').match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
+                return match ? [parseFloat(match[1]), parseFloat(match[2])] : [0, 0];
+            };
+            const satuBaris = axis === 'y' ? [selectedElement, ...Array.from(selectedElement.parentElement.children).filter(el => {
+                if (el === selectedElement) return false;
+                const a = selectedElement.getBoundingClientRect();
+                const b = el.getBoundingClientRect();
+                const overlapVertikal = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+                return b.width > 0 && b.height > 0 && overlapVertikal >= Math.min(a.height, b.height) * 0.45;
+            })] : [selectedElement];
+            satuBaris.forEach(el => {
+                let [x, y] = posisi(el);
+                if (axis === 'x') x += delta;
+                if (axis === 'y') y += delta;
+                el.style.transform = `translate(${x}px, ${y}px)`;
+            });
+            simpanPosisiLembarAbsen();
         }
+
+        document.addEventListener('keydown', function(event) {
+            if (!selectedElement || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+            if (event.target.closest && event.target.closest('input, textarea, select, button, a')) return;
+            event.preventDefault();
+            const step = event.shiftKey ? 5 : 1;
+            if (event.key === 'ArrowUp') ubahPosisiAktif('y', -step);
+            if (event.key === 'ArrowDown') ubahPosisiAktif('y', step);
+            if (event.key === 'ArrowLeft') ubahPosisiAktif('x', -step);
+            if (event.key === 'ArrowRight') ubahPosisiAktif('x', step);
+        });
 
         function resetPosisiAktif() {
             if(selectedElement) {
                 simpanStateUndo();
                 selectedElement.style.transform = 'translate(0px, 0px)';
+                simpanPosisiLembarAbsen();
                 showCustomModal('Reset', 'Posisi elemen terpilih dikembalikan ke asal.');
             }
         }
 
         function resetPosisiSemua() {
             simpanStateUndo();
+            aturJarakTandaTangan(72);
             document.querySelectorAll('.selectable-element').forEach(el => {
                 el.style.transform = 'translate(0px, 0px)';
             });
+            simpanPosisiLembarAbsen();
             logoSizeVal = 45;
             document.getElementById('paperSheet').style.setProperty('--logo-size', '45px');
             showCustomModal('Reset Semua', 'Seluruh posisi tata letak dikembalikan ke pengaturan pabrik.');
@@ -1223,58 +1304,60 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 const inputs = r.querySelectorAll('input');
                 const nim = inputs[0] ? inputs[0].value.trim() : '';
                 const nama = inputs[2] ? inputs[2].value.trim() : '';
-                if(!nama) return;
-
-                let hadirCount = 0;
-                let sakitCount = 0;
-                let izinCount = 0;
-                let alpaCount = 0;
-                let totalDiisi = 0;
+                if (!nama) return;
+                let hadirCount = 0, alpaCount = 0, totalDiisi = 0;
                 r.querySelectorAll('.attendance-cell').forEach(cell => {
                     const val = cell.value.trim().toUpperCase();
-                    if(!['.', 'A', 'S', 'I'].includes(val)) return;
+                    if (!['.', 'A', 'S', 'I'].includes(val)) return;
                     totalDiisi++;
-                    if(val === '.') hadirCount++;
-                    else if(val === 'A') alpaCount++;
-                    else if(val === 'S') sakitCount++;
-                    else if(val === 'I') izinCount++;
+                    if (val === '.') hadirCount++;
+                    else if (val === 'A') alpaCount++;
                 });
                 const persentase = totalPertemuan > 0 ? Math.round((hadirCount / totalPertemuan) * 100) : 0;
                 const tr = document.createElement('tr');
-                const addCell = (text, style = '') => {
+                tr.dataset.persenHadir = String(persentase);
+                const addCell = (text, className = '', style = '') => {
                     const cell = document.createElement('td');
                     cell.textContent = text;
-                    if(style) cell.style.cssText = style;
+                    if (className) cell.className = className;
+                    if (style) cell.style.cssText = style;
                     tr.appendChild(cell);
                     return cell;
                 };
-                addCell(no, 'text-align:center;');
-                addCell(nim, 'text-align:center;');
-                addCell(nama, 'text-align:left;padding-left:4px;');
-                addCell(hadirCount, 'text-align:center;');
-                addCell(alpaCount, 'text-align:center;color:#dc2626;font-weight:bold;');
-                addCell(sakitCount, 'text-align:center;color:#d97706;font-weight:bold;');
-                addCell(izinCount, 'text-align:center;color:#0284c7;font-weight:bold;');
-                addCell(totalDiisi, 'text-align:center;');
-                addCell(persentase + '%', 'text-align:center;font-weight:bold;color:' + (persentase === 0 ? '#64748b' : '#059669') + ';');
-                const nilaiTersimpan = draftNilaiPerNim[nim] || [0, 0, 0];
-                ['Makalah/Diskusi/Keaktifan', 'UTS', 'UAS'].forEach((label, scoreIndex) => {
+                addCell(no, 'number-value', 'text-align:center;');
+                addCell(nama, 'name-value', 'text-align:left;padding-left:6px;');
+                addCell(nim, 'nim-value', 'text-align:center;');
+                addCell(hadirCount, 'present-count', 'text-align:center;');
+                addCell(alpaCount, 'alpa-count', 'text-align:center;color:#dc2626;font-weight:bold;');
+                addCell(totalDiisi, 'filled-count', 'text-align:center;');
+                const oldValues = draftNilaiPerNim[nim] || [0, 0, 0, 0, 0];
+                const scores = oldValues.length >= 5 ? oldValues : [0, 0, Math.min(25, Number(oldValues[0]) || 0), oldValues[1] || 0, oldValues[2] || 0];
+                const inputDefs = [
+                    ['Bertanya (jumlah)', 0, 999, 1],
+                    ['Aktif atau menambah jawaban, usul, saran (jumlah)', 0, 999, 1],
+                    ['Diskusi individu (maksimal 25 poin)', 0, 25, 1],
+                    ['UTS (0 sampai 100)', 0, 100, 1],
+                    ['UAS (0 sampai 100)', 0, 100, 1]
+                ];
+                inputDefs.forEach(([label, min, max, step], scoreIndex) => {
                     const cell = document.createElement('td');
                     const input = document.createElement('input');
-                    input.type = 'number'; input.min = '0'; input.max = '100'; input.step = '1'; input.value = String(nilaiTersimpan[scoreIndex] ?? 0);
-                    input.setAttribute('aria-label', label + ' (0 sampai 100)');
-                    input.style.cssText = 'width:60px;min-height:32px;text-align:center;';
+                    input.type = 'number'; input.min = String(min); input.max = String(max); input.step = String(step);
+                    input.value = String(scores[scoreIndex] ?? 0); input.className = 'activity-input score-input';
+                    input.setAttribute('aria-label', label); input.title = label;
                     input.addEventListener('input', () => {
-                        draftNilaiPerNim[nim] = Array.from(tr.querySelectorAll('input[type="number"]')).map(scoreInput => scoreInput.value || '0');
+                        if (scoreIndex === 2 && Number(input.value) > 25) input.value = '25';
+                        if (Number(input.value) < 0) input.value = '0';
+                        draftNilaiPerNim[nim] = Array.from(tr.querySelectorAll('.score-input')).map(scoreInput => scoreInput.value || '0');
                         hitungSkorBaris(input);
                     });
                     cell.appendChild(input); tr.appendChild(cell);
                 });
-                addCell('0.00', 'text-align:center;font-weight:bold;').className = 'skor-akhir';
-                addCell('E', 'text-align:center;font-weight:bold;').className = 'nilai-huruf';
-                addCell('0', 'text-align:center;').className = 'angka-mutu';
+                addCell('0.00', 'skor-akhir', 'text-align:center;font-weight:bold;');
+                addCell('E', 'nilai-huruf', 'text-align:center;font-weight:bold;');
+                addCell('0', 'angka-mutu', 'text-align:center;');
                 tbodyRekap.appendChild(tr);
-                hitungSkorBaris(tr.querySelector('input[type="number"]'));
+                hitungSkorBaris(tr.querySelector('.score-input'));
             });
             perbaruiBobotNilai();
             document.getElementById('rekapModalOverlay').classList.add('show');
@@ -1300,11 +1383,14 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 
         function hitungSkorBaris(element) {
             const row = element.closest('tr');
-            const inputs = row.querySelectorAll('input[type="number"]');
-            const aktivitas = Math.max(0, Math.min(100, Number(inputs[0].value) || 0));
-            const uts = Math.max(0, Math.min(100, Number(inputs[1].value) || 0));
-            const uas = Math.max(0, Math.min(100, Number(inputs[2].value) || 0));
-            const persentaseHadir = Math.max(0, Math.min(100, parseFloat(row.cells[8].textContent) || 0));
+            const inputs = row.querySelectorAll('.score-input');
+            const bertanya = Math.max(0, Number(inputs[0].value) || 0);
+            const aktif = Math.max(0, Number(inputs[1].value) || 0);
+            const diskusi = Math.max(0, Math.min(25, Number(inputs[2].value) || 0));
+            const aktivitas = Math.min(100, bertanya * 2 + aktif * 3 + diskusi);
+            const uts = Math.max(0, Math.min(100, Number(inputs[3].value) || 0));
+            const uas = Math.max(0, Math.min(100, Number(inputs[4].value) || 0));
+            const persentaseHadir = Math.max(0, Math.min(100, Number(row.dataset.persenHadir) || 0));
             const bobotAbsensi = Math.max(0, Number(document.getElementById('bobotAbsensi').value) || 0);
             const bobotAktivitas = Math.max(0, Number(document.getElementById('bobotAktivitas').value) || 0);
             const bobotUTS = Math.max(0, Number(document.getElementById('bobotUTS').value) || 0);
@@ -1313,7 +1399,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             let skorAkhir = totalBobot > 0
                 ? ((persentaseHadir * bobotAbsensi) + (aktivitas * bobotAktivitas) + (uts * bobotUTS) + (uas * bobotUAS)) / totalBobot
                 : 0;
-            const alpaVal = parseInt(row.cells[4].textContent, 10) || 0;
+            const alpaVal = parseInt(row.querySelector('.alpa-count').textContent, 10) || 0;
             let nilaiHuruf, angkaMutu;
             if(alpaVal >= 4) {
                 skorAkhir = 0;
@@ -1343,8 +1429,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const rows = document.querySelectorAll('#tbodyRekapNilai tr');
             let dataNilaiKirim = [];
             rows.forEach(r => {
-                const nim = r.cells[1].innerText;
-                const nama = r.cells[2].innerText;
+                const nim = r.querySelector('.nim-value').innerText;
+                const nama = r.querySelector('.name-value').innerText;
                 const skorAkhir = r.querySelector('.skor-akhir').innerText;
                 const nilaiHuruf = r.querySelector('.nilai-huruf').innerText;
                 const angkaMutu = r.querySelector('.angka-mutu').innerText;
@@ -1355,7 +1441,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     skor_akhir: skorAkhir,
                     nilai_huruf: nilaiHuruf,
                     angka_mutu: angkaMutu,
-                    alpa: parseInt(r.cells[4].innerText, 10) || 0
+                    alpa: parseInt(r.querySelector('.alpa-count').innerText, 10) || 0
                 });
             });
 
@@ -1398,7 +1484,9 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         }
 
         function tutupCustomModal() {
+            const nilaiBerhasilDisimpan = document.getElementById('customModalTitle').innerText === 'Nilai Berhasil Disimpan';
             document.getElementById('customModalOverlay').classList.remove('show');
+            if (nilaiBerhasilDisimpan) tutupRekapNilai();
         }
 
         function bukaModalHapusPermanen() {
@@ -1504,14 +1592,19 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         }
 
         function buatDokumenWord(element, title) {
-            const css = Array.from(document.querySelectorAll('style')).map(style => style.textContent).join('\n');
-            const bodyContent = cloneUntukEkspor(element).outerHTML;
-            return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>${css}\nbody{background:#fff!important;color:#000!important;padding:12px!important}.paper-sheet{box-shadow:none!important;margin:0 auto!important}.attendance-table{width:100%;border-collapse:collapse;table-layout:auto}.attendance-table th,.attendance-table td{border:1px solid #000!important;padding:3px!important;color:#000!important}tr{page-break-inside:avoid}</style></head><body>${bodyContent}</body></html>`;
+            const clone = cloneUntukEkspor(element);
+            const exportTable = clone.matches('table') ? clone : clone.querySelector('table');
+            if (exportTable) { exportTable.style.width = '100%'; exportTable.style.minWidth = '0'; exportTable.style.tableLayout = 'fixed'; }
+            const bodyContent = clone.outerHTML;
+            return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0}h1{font-size:16pt;margin:0 0 10px}p{margin:5px 0 10px}table{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 12px}th,td{border:1px solid #111;padding:5px 4px;text-align:center;vertical-align:middle;white-space:normal;overflow-wrap:break-word;font-size:9pt;color:#111}th{font-weight:bold;background:#dbeafe}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}colgroup col:nth-child(1){width:4%}colgroup col:nth-child(2){width:16%}colgroup col:nth-child(3){width:11%}</style></head><body><h1>${title}</h1>${bodyContent}</body></html>`;
         }
 
         function buatTabelExcel(element, title) {
             const table = cloneUntukEkspor(element);
-            return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,sans-serif}table{border-collapse:collapse;table-layout:auto}th,td{border:1px solid #000;padding:4px;text-align:center;vertical-align:middle}th{font-weight:bold;background:#dbeafe}td span{white-space:pre-wrap}</style></head><body>${table.outerHTML}</body></html>`;
+            table.setAttribute('width', '1600');
+            table.style.width = '1600px'; table.style.tableLayout = 'fixed'; table.style.borderCollapse = 'collapse';
+            table.querySelectorAll('colgroup col').forEach(col => { col.setAttribute('width', String(Math.round(parseFloat(col.style.width || '0') * 16)) + 'px'); });
+            return `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:normal;word-wrap:break-word;font-size:9pt;mso-number-format:"\@"}th{font-weight:bold;background:#dbeafe}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
         }
 
         function unduhFileTeks(content, mimeType, filename) {
@@ -1541,7 +1634,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         }
 
         function exportWordRekap() {
-            const content = buatDokumenWord(document.getElementById('rekapModalBodyContent'), 'Rekap Nilai');
+            const content = buatDokumenWord(document.getElementById('tabelRekapNilai'), 'Rekap Nilai S1 — <?php echo htmlspecialchars($kelas_lama . ' / ' . $semester_lama, ENT_QUOTES); ?>');
             unduhFileTeks(content, 'application/msword;charset=utf-8', 'Rekap_Nilai_S1_<?php echo htmlspecialchars($kelas); ?>_Semester_<?php echo htmlspecialchars($semester); ?>.doc');
         }
 

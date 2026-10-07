@@ -467,9 +467,23 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             <div class="form-group">
                 <label>Ganti Wallpaper Background</label>
                 <input type="file" id="uploadBgFile" accept="image/*" onchange="handleBgUpload(event)" class="form-control" style="font-size: 11px;">
-                <div style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="margin-top: 10px;">
+                    <label for="bgFitMode" style="font-size:11px;font-weight:700;display:block;margin-bottom:5px;">Ukuran wallpaper</label>
+                    <select id="bgFitMode" class="form-control" onchange="updateBgWallpaperSizing()">
+                        <option value="cover">Otomatis memenuhi layar</option>
+                        <option value="contain">Tampilkan seluruh foto</option>
+                        <option value="auto">Ukuran asli (hindari pembesaran)</option>
+                        <option value="manual">Ukuran manual</option>
+                    </select>
+                    <div id="bgManualScaleWrap" style="display:none;margin-top:8px;">
+                        <label for="bgScaleRange" style="font-size:11px;display:flex;justify-content:space-between;">Skala <span id="bgScaleValue">100%</span></label>
+                        <input type="range" id="bgScaleRange" min="25" max="200" step="5" value="100" oninput="updateBgWallpaperSizing()" style="width:100%;min-height:32px;">
+                    </div>
+                    <small style="display:block;margin-top:6px;font-size:10px;color:var(--text-muted);line-height:1.45;">Foto disimpan pada resolusi aslinya tanpa dikompres. Pilih Ukuran asli agar gambar tidak diperbesar, atau atur skala manual.</small>
+                </div>
+                <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;gap:8px;">
                     <span style="font-size: 10px; color: var(--text-muted);">Format: JPG, PNG, WEBP</span>
-                    <button type="button" onclick="removeBgWallpaper()" style="background: none; border: none; color: #ef4444; font-size: 11px; font-weight: bold; cursor: pointer;"><i class="fa-solid fa-trash-can"></i> Hapus Wallpaper</button>
+                    <button type="button" onclick="removeBgWallpaper()" style="background: none; border: none; color: #ef4444; font-size: 11px; font-weight: bold; cursor: pointer;min-height:38px;"><i class="fa-solid fa-trash-can"></i> Hapus Wallpaper</button>
                 </div>
             </div>
             <button type="button" class="btn-submit" onclick="saveProfileChanges()">Simpan Perubahan Pengaturan <i class="fa-solid fa-floppy-disk"></i></button>
@@ -699,33 +713,69 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         }
         
         // --- MANIPULASI WALLPAPER BACKGROUND DARI LOCALSTORAGE ---
+        function applyBgWallpaperSizing() {
+            const mode = localStorage.getItem('custom_bg_wallpaper_mode') || 'cover';
+            const scale = Math.max(25, Math.min(200, parseInt(localStorage.getItem('custom_bg_wallpaper_scale') || '100', 10) || 100));
+            const selector = document.getElementById('bgFitMode');
+            const slider = document.getElementById('bgScaleRange');
+            const manualWrap = document.getElementById('bgManualScaleWrap');
+            if (selector) selector.value = ['cover','contain','auto','manual'].includes(mode) ? mode : 'cover';
+            if (slider) slider.value = String(scale);
+            if (manualWrap) manualWrap.style.display = mode === 'manual' ? 'block' : 'none';
+            const label = document.getElementById('bgScaleValue');
+            if (label) label.textContent = scale + '%';
+            if (mode === 'contain') document.body.style.backgroundSize = 'contain';
+            else if (mode === 'auto') document.body.style.backgroundSize = 'auto';
+            else if (mode === 'manual') document.body.style.backgroundSize = scale + '% auto';
+            else document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+        }
+
+        function updateBgWallpaperSizing() {
+            const selector = document.getElementById('bgFitMode');
+            const slider = document.getElementById('bgScaleRange');
+            if (!selector || !slider) return;
+            const mode = selector.value;
+            const scale = Math.max(25, Math.min(200, parseInt(slider.value, 10) || 100));
+            try {
+                localStorage.setItem('custom_bg_wallpaper_mode', mode);
+                localStorage.setItem('custom_bg_wallpaper_scale', String(scale));
+            } catch (error) { showToast('Pengaturan ukuran wallpaper tidak dapat disimpan di browser.', 'error'); }
+            applyBgWallpaperSizing();
+        }
+
         function applySavedBgWallpaper() {
             const savedBg = localStorage.getItem('custom_bg_wallpaper');
-            if (savedBg) {
-                document.body.style.backgroundImage = `url('${savedBg}')`;
-                document.body.style.backgroundSize = 'cover';
-                document.body.style.backgroundPosition = 'center';
-                document.body.style.backgroundAttachment = 'fixed';
-            }
+            if (savedBg) document.body.style.backgroundImage = `url("${savedBg}")`;
+            applyBgWallpaperSizing();
         }
-        
+
         function handleBgUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const bgDataUrl = e.target.result;
-                    localStorage.setItem('custom_bg_wallpaper', bgDataUrl);
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) { showToast('Pilih berkas gambar yang valid.', 'error'); return; }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    // File disimpan sebagai data URL aslinya; tidak diubah ukuran atau dikompres.
+                    localStorage.setItem('custom_bg_wallpaper', e.target.result);
                     applySavedBgWallpaper();
-                    showToast('Wallpaper background berhasil diterapkan!', 'success');
-                };
-                reader.readAsDataURL(file);
-            }
+                    showToast('Wallpaper diterapkan pada resolusi asli. Atur mode ukuran jika gambar tampak terlalu besar.', 'success');
+                } catch (error) {
+                    showToast('Berkas terlalu besar untuk ruang penyimpanan browser. Pilih gambar lebih kecil.', 'error');
+                }
+            };
+            reader.readAsDataURL(file);
         }
-        
+
         function removeBgWallpaper() {
             localStorage.removeItem('custom_bg_wallpaper');
+            localStorage.removeItem('custom_bg_wallpaper_mode');
+            localStorage.removeItem('custom_bg_wallpaper_scale');
             document.body.style.backgroundImage = '';
+            applyBgWallpaperSizing();
             showToast('Wallpaper background dikembalikan ke bawaan tema', 'success');
         }
         
