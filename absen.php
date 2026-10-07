@@ -445,6 +445,27 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             .selectable-element { outline: none !important; border: none !important; }
             [contenteditable="true"] { border-bottom: none !important; background: transparent !important; }
         }
+        /* Sorot area sebenarnya tanpa mengubah posisi atau ukuran dokumen. */
+        .tour-spotlight-backdrop { position:fixed; inset:0; width:100vw; height:100vh; z-index:100001; background:rgba(0,0,0,.76); backdrop-filter:none; display:none; }
+        .tour-spotlight-backdrop.show { display:block; opacity:1; }
+        .tour-highlighted-target { box-shadow:none !important; transform:none; filter:none; transition:none; }
+        .tour-focus-frame { position:fixed; z-index:100002; border:3px solid #38bdf8; border-radius:6px; pointer-events:auto; display:none; }
+        .tour-speech-bubble { position:fixed; z-index:100003; box-sizing:border-box; width:min(410px,calc(100vw - 24px)); max-height:calc(100vh - 24px); overflow:auto; padding:16px; border:2px solid #38bdf8; border-radius:12px; background:var(--ui-panel,var(--panel,#0f172a)); color:var(--ui-text,var(--text,#f8fafc)); box-shadow:0 16px 40px #0008; display:none; animation:none; }
+        .tour-speech-header,.tour-speech-footer { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+        .tour-speech-header { margin-bottom:12px; }
+        .tour-step-indicator { font-size:12px; font-weight:700; }
+        .tour-speech-title { margin:0 0 8px; font-size:16px; font-weight:700; color:var(--ui-accent,#38bdf8); }
+        .tour-speech-desc { font-size:14px; line-height:1.65; color:inherit; }
+        .tour-speech-footer { margin-top:14px; }
+        .tour-speech-bubble button { min-height:42px; padding:8px 12px; border:1px solid #64748b; border-radius:6px; background:#2563eb; color:white; font:600 13px Arial,sans-serif; cursor:pointer; }
+        .tour-feature-preview { margin:12px 0; padding:12px; border:1px solid #64748b; border-radius:8px; background:#fff; color:#111; font:14px Arial,sans-serif; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+        .tour-feature-preview img { display:block; max-width:100%; max-height:96px; width:auto; height:auto; object-fit:contain; }
+        .tour-feature-preview .logo-slot,.tour-feature-preview .logo-box { width:80px; height:80px; transform:none; }
+        .tour-feature-preview .logo-slot img,.tour-feature-preview .logo-box img { width:100%; height:100%; }
+        .tour-feature-preview input,.tour-feature-preview button,.tour-feature-preview a { pointer-events:none; }
+        .tour-feature-preview code { display:inline-block; min-width:24px; padding:5px; border:1px solid #475569; border-radius:4px; background:#f1f5f9; color:#111; font-size:15px; text-align:center; }
+        .tour-example-caption { width:100%; font-size:12px; font-weight:700; color:#334155; }
+        @media print { .tour-spotlight-backdrop,.tour-focus-frame,.tour-speech-bubble { display:none !important; } }
    </style>
 </head>
 <body>
@@ -754,26 +775,21 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         </div>
     </div>
 
+    <div class="tour-focus-frame" id="tourFocusFrame" aria-hidden="true"></div>
     <div class="tour-spotlight-backdrop" id="tourBackdrop" onclick="tutupTurInteraktif()"></div>
-    <div class="tour-speech-bubble" id="tourBubble">
+    <section class="tour-speech-bubble" id="tourBubble" role="dialog" aria-modal="true" aria-labelledby="tourTitle" aria-describedby="tourDesc" tabindex="-1">
         <div class="tour-speech-header">
-            <span class="tour-step-indicator" id="tourStepBadge">Langkah 1 / 7</span>
-            <button onclick="tutupTurInteraktif()" class="btn btn-dark" style="padding: 2px 6px; font-size: 10px;"><i class="fa-solid fa-xmark"></i> Keluar</button>
+            <span class="tour-step-indicator" id="tourStepBadge"></span>
+            <button type="button" onclick="tutupTurInteraktif()">× Keluar</button>
         </div>
-        <div class="tour-speech-content-wrapper">
-            <div class="tour-bubble-icon" id="tourBubbleIcon">
-                <i class="fa-solid fa-calculator"></i>
-            </div>
-            <div class="tour-bubble-text-area">
-                <div class="tour-speech-title" id="tourTitle">Judul Panduan</div>
-                <div class="tour-speech-desc" id="tourDesc">Penjelasan detail fungsi fitur ini akan muncul di sini dengan fokus sorotan.</div>
-            </div>
-        </div>
+        <h2 class="tour-speech-title" id="tourTitle"></h2>
+        <div class="tour-feature-preview" id="tourFeaturePreview" aria-label="Contoh tampilan fitur"></div>
+        <div class="tour-speech-desc" id="tourDesc"></div>
         <div class="tour-speech-footer">
-            <button onclick="langkahTurSebelumnya()" class="btn btn-dark" id="tourPrevBtn" style="font-size: 10px;"><i class="fa-solid fa-arrow-left"></i> Sebelumnya</button>
-            <button onclick="langkahTurBerikutnya()" class="btn btn-primary" id="tourNextBtn" style="font-size: 10px;">Selanjutnya <i class="fa-solid fa-arrow-right"></i></button>
+            <button type="button" onclick="langkahTurSebelumnya()" id="tourPrevBtn">← Sebelumnya</button>
+            <button type="button" onclick="langkahTurBerikutnya()" id="tourNextBtn">Selanjutnya →</button>
         </div>
-    </div>
+    </section>
     
     <!-- MODAL REKAP NILAI: Tombol baru "Simpan & Kirim Nilai ke Lembar Ujian", hapus kop surat di dalam modal -->
     <div class="rekap-modal-overlay" id="rekapModalOverlay">
@@ -1116,6 +1132,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         }
 
         document.addEventListener('keydown', function(event) {
+            if (typeof tourActive !== 'undefined' && tourActive) return;
             if (!selectedElement || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
             if (event.target.closest && event.target.closest('input, textarea, select, button, a')) return;
             event.preventDefault();
@@ -1500,81 +1517,104 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             document.getElementById('modalHapusPermanen').classList.remove('show');
         }
 
-        // Tour Interaktif Guide
-        let tourStep = 1;
-        const totalTourSteps = 5;
+        const tourSteps=[
+            {target:'#tourLogoBox',title:'1. Pasang logo dari perangkat',desc:'Klik kotak logo kiri atau kanan, lalu pilih gambar JPG atau PNG. Gambar ditampilkan utuh. Tombol Hapus di bawah logo mengosongkan logo tersebut; ukuran logo dapat diatur pada panel Inspektor.'},
+            {target:'#sheetHeader',title:'2. Edit kop dan informasi kuliah',example:'<code>Klik teks</code> → <code>Ketik perubahan</code>',desc:'Klik teks pada kertas untuk mengedit kop, semester, mata kuliah, dan nama dosen. Untuk mengedit dari panel, klik blok sampai garis biru muncul, lalu isi kolom teks di Inspektor. Data mahasiswa resmi ditambah atau diedit melalui halaman Data Mahasiswa.'},
+            {target:'#tableWrapper',title:'3. Isi 16 pertemuan',example:'<code>.</code> Hadir · <code>A</code> Alpa · <code>S</code> Sakit · <code>I</code> Izin<br><code>Enter</code> Sel berikutnya · <code>Delete</code> Hapus isian',desc:'Masukkan titik, A, S, atau I pada sel pertemuan. S dan I tidak menambah hadir maupun alpa. Hanya A yang dihitung alpa; minimal 4 A membuat nilai akhir E. Tombol Sisip/Hapus Kolom mengubah jumlah pertemuan pada lembar ini.'},
+            {target:'#inspectorPanel',title:'4. Geser elemen yang terseleksi',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Gunakan tombol X/Y di panel atau anak panah keyboard. Atas/bawah menggeser elemen di sampingnya pada baris yang sama; kiri/kanan hanya menggeser elemen terpilih. Saat mengisi kolom input, panah tetap digunakan untuk mengedit isian. Reset Posisi Ini mengembalikan elemen terpilih.'},
+            {target:'#signatureSpaceRange',title:'5. Atur ruang tanda tangan',example:'Nama dosen<br><br><br><u>Ruang tanda tangan</u>',desc:'Geser pengaturan Jarak tanda tangan di Inspektor untuk menambah atau mengurangi ruang kosong sebelum nama pada kedua tanda tangan. Pengaturan ini berbeda dari posisi blok: gunakan panah jika ingin memindahkan seluruh blok tanda tangan.'},
+            {target:'#tourBtnRekap',title:'6. Buka rekap dan atur penilaian',desc:'Klik Rekap Nilai untuk membuka tabel penuh. Bobot awal: kehadiran 35%, aktivitas 35%, UTS 15%, UAS 15%; semua bobot bisa diedit. Bertanya dihitung 2 poin per kejadian, aktif/menjawab 3 poin, diskusi individu diisi dosen maksimal 25 poin. UTS/UAS diisi 0–100. Nilai awal setiap komponen 0.'},
+            {target:'a[href^="ujian.php"]',title:'7. Kirim nilai ke Lembar Ujian',example:'<code>Rekap Nilai</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Lembar Ujian</code>',desc:'Di dalam rekap, klik Simpan & Kirim Nilai ke Lembar Ujian dan tunggu pemberitahuan berhasil. Setelah itu buka Lembar Ujian langsung, atau kembali melalui Data Mahasiswa. Gunakan sesi browser, prodi, semester, dan kelas yang sama. Nilai tersimpan pada session PHP; edit teks dan logo ujian tersimpan di browser perangkat.'},
+            {target:'#paperSize',title:'8. Periksa kertas, lalu cetak atau ekspor',example:'<code>A4 / F4 / Letter</code> · <code>Potret / Lanskap</code><br><code>Cetak</code> · <code>Word</code> · <code>Excel</code>',desc:'Pilih ukuran kertas, orientasi, margin, dan ukuran font sebelum mencetak. Cetak membuka pratinjau browser; periksa seluruh tabel dan tanda tangan. Word/Excel di toolbar mengekspor lembar absen. Untuk mengekspor rekap nilai, gunakan tombol Word/Excel di dalam Rekap Nilai.'},
+            {target:'#tourBtnTambah',title:'9. Bedakan baris lembar dan data tersimpan',desc:'Sisip Baris dan Hapus Baris hanya mengatur baris pada lembar yang sedang dikerjakan. Gunakan Data Mahasiswa untuk menyimpan mahasiswa ke database. Hapus Permanen membuka pilihan penghapusan data tersimpan: periksa mahasiswa dan konteks kelas sebelum mengonfirmasi karena data yang dihapus tidak dapat dipulihkan dari tombol Undo.'}
+        ];
+
+        let tourStep=0, tourActive=false, tourTarget=null, tourReturnFocus=null, tourHiddenPanels=[], tourPanelStates=[];
         function mulaiTurInteraktif() {
-            tourStep = 1;
+            tourReturnFocus=document.activeElement; tourStep=0; tourActive=true;
+            tourPanelStates=[...document.querySelectorAll('.top-toolbar,.inspector-panel')].map(el=>({el,flags:['hidden-toolbar','minimized','hidden-panel'].filter(flag=>el.classList.contains(flag))}));
             document.getElementById('tourBackdrop').classList.add('show');
-            document.getElementById('tourBubble').style.display = 'block';
-            tampilkanLangkahTour();
+            document.getElementById('tourBubble').style.display='block';
+            tampilkanLangkahTour(); document.getElementById('tourNextBtn').focus({preventScroll:true});
         }
-
         function tutupTurInteraktif() {
+            tourHiddenPanels.forEach(({el,visibility})=>el.style.visibility=visibility);tourHiddenPanels=[];
+            tourPanelStates.forEach(({el,flags})=>['hidden-toolbar','minimized','hidden-panel'].forEach(flag=>el.classList.toggle(flag,flags.includes(flag))));
+            tourActive=false; tourTarget=null;
             document.getElementById('tourBackdrop').classList.remove('show');
-            document.getElementById('tourBubble').style.display = 'none';
-            document.querySelectorAll('.tour-highlighted-target').forEach(el => el.classList.remove('tour-highlighted-target'));
+            document.getElementById('tourBackdrop').style.clipPath='';
+            document.getElementById('tourFocusFrame').style.display='none';
+            document.getElementById('tourBubble').style.display='none';
+            if(tourReturnFocus&&tourReturnFocus.isConnected)tourReturnFocus.focus({preventScroll:true});
         }
-
+        function posisikanPanduan() {
+            if(!tourActive)return;
+            const bubble=document.getElementById('tourBubble'),frame=document.getElementById('tourFocusFrame'),backdrop=document.getElementById('tourBackdrop');
+            const vw=window.innerWidth,vh=window.innerHeight;
+            if(tourTarget){
+                const rect=tourTarget.getBoundingClientRect(),left=Math.max(4,rect.left-5),top=Math.max(4,rect.top-5),right=Math.min(vw-4,rect.right+5),bottom=Math.min(vh-4,rect.bottom+5);
+                if(right>left&&bottom>top){
+                    frame.style.cssText=`display:block;left:${left}px;top:${top}px;width:${right-left}px;height:${bottom-top}px;`;
+                    backdrop.style.clipPath=`polygon(evenodd,0 0,100% 0,100% 100%,0 100%,0 0,${left}px ${top}px,${left}px ${bottom}px,${right}px ${bottom}px,${right}px ${top}px,${left}px ${top}px)`;
+                    const bw=bubble.offsetWidth,bh=bubble.offsetHeight;
+                    let x=left,y=bottom+12;
+                    if(y+bh>vh-12){if(top-bh-12>=12)y=top-bh-12;else if(right+bw+12<vw){x=right+12;y=top;}else if(left-bw-12>=12){x=left-bw-12;y=top;}else y=vh-bh-12;}
+                    bubble.style.left=Math.max(12,Math.min(x,vw-bw-12))+'px';bubble.style.top=Math.max(12,Math.min(y,vh-bh-12))+'px';return;
+                }
+            }
+            frame.style.display='none';backdrop.style.clipPath='';bubble.style.left='12px';bubble.style.top='12px';
+        }
         function tampilkanLangkahTour() {
-            document.querySelectorAll('.tour-highlighted-target').forEach(el => el.classList.remove('tour-highlighted-target'));
-            document.getElementById('tourStepBadge').innerText = `Langkah ${tourStep} / ${totalTourSteps}`;
-            
-            let targetEl = null;
-            let title = '';
-            let desc = '';
-            
-            if(tourStep === 1) {
-                targetEl = document.getElementById('tourLogoBox');
-                title = 'Kop Surat & Logo Resmi STKIP';
-                desc = 'Klik wadah logo ini untuk mengunggah lambang resmi institusi STKIP Yapis Dompu secara instan.';
-            } else if(tourStep === 2) {
-                targetEl = document.getElementById('tourBtnRekap');
-                title = 'Kalkulator & Rekap Nilai';
-                desc = 'Fitur otomatis untuk merekap kehadiran (titik, S, I, A), persentase kehadiran, dan proteksi nilai E jika Alpa >= 4.';
-            } else if(tourStep === 3) {
-                targetEl = document.getElementById('tourBtnHapusPermanen');
-                title = 'Hapus Permanen & Massal';
-                desc = 'Dilengkapi opsi penghapusan data satuan maupun tombol merah mass delete sekaligus untuk membersihkan kelas.';
-            } else if(tourStep === 4) {
-                targetEl = document.getElementById('inspectorPanel');
-                title = 'Panel Inspektor & Tata Letak';
-                desc = 'Atur koordinat X/Y elemen dokumen dengan presisi tinggi agar hasil cetak lembar kertas 100% rapi.';
-            } else if(tourStep === 5) {
-                targetEl = document.getElementById('tourBtnPrint');
-                title = 'Cetak & Ekspor Dokumen';
-                desc = 'Unduh hasil kerja ke format Word, Excel, atau langsung cetak dokumen fisik sesuai standar.';
+            tourHiddenPanels.forEach(({el,visibility})=>el.style.visibility=visibility);tourHiddenPanels=[];
+            const step=tourSteps[tourStep];tourTarget=document.querySelector(step.target);
+            if(innerWidth<=768){
+                document.querySelectorAll('.top-toolbar,.toolbar,.inspector-panel,.inspector-toggle-btn,.inspector-toggle,.toolbar-toggle-btn').forEach(el=>{
+                    if(el!==tourTarget&&!el.contains(tourTarget)){tourHiddenPanels.push({el,visibility:el.style.visibility});el.style.visibility='hidden';}
+                });
             }
-            
-            if(targetEl) {
-                targetEl.classList.add('tour-highlighted-target');
-                const rect = targetEl.getBoundingClientRect();
-                const bubble = document.getElementById('tourBubble');
-                bubble.style.top = Math.min(window.innerHeight - 300, Math.max(20, rect.bottom + 10)) + 'px';
-                bubble.style.left = Math.min(window.innerWidth - 400, Math.max(20, rect.left)) + 'px';
+            if(tourTarget){
+                const toolbar=tourTarget.closest('.top-toolbar');if(toolbar)toolbar.classList.remove('hidden-toolbar');
+                if(tourTarget.id==='inspectorPanel'){tourTarget.classList.remove('minimized','hidden-panel');}
+                tourTarget.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
             }
-            
-            document.getElementById('tourTitle').innerText = title;
-            document.getElementById('tourDesc').innerText = desc;
-            document.getElementById('tourPrevBtn').style.display = tourStep === 1 ? 'none' : 'inline-flex';
-            document.getElementById('tourNextBtn').innerText = tourStep === totalTourSteps ? 'Selesai' : 'Selanjutnya';
+            document.getElementById('tourStepBadge').textContent=`Langkah ${tourStep+1} / ${tourSteps.length}`;
+            document.getElementById('tourTitle').textContent=step.title;
+            document.getElementById('tourDesc').textContent=step.desc;
+            const preview=document.getElementById('tourFeaturePreview');preview.replaceChildren();
+            const caption=document.createElement('span');caption.className='tour-example-caption';caption.textContent='Contoh tampilan — penjelasan, bukan tombol aktif';preview.appendChild(caption);
+            if(step.example){const example=document.createElement('div');example.innerHTML=step.example;preview.appendChild(example);}
+            else if(tourTarget){
+                const clone=tourTarget.cloneNode(true);
+                [clone,...clone.querySelectorAll('*')].forEach(el=>{
+                    [...el.attributes].forEach(attr=>{if(attr.name==='id'||attr.name.startsWith('on')||['href','for','contenteditable'].includes(attr.name))el.removeAttribute(attr.name);});
+                    el.removeAttribute('style');el.setAttribute('tabindex','-1');
+                });
+                clone.querySelectorAll('input,.logo-remove,.btn-hapus-logo').forEach(el=>el.remove());
+                if(clone.matches('.logo-box,.logo-slot')){
+                    const img=clone.querySelector('img');
+                    if(!img||!img.getAttribute('src')||img.hidden){clone.replaceChildren();clone.textContent='▣ Pilih logo';}
+                }
+                preview.appendChild(clone);
+            }
+            document.getElementById('tourPrevBtn').disabled=tourStep===0;
+            document.getElementById('tourNextBtn').textContent=tourStep===tourSteps.length-1?'✓ Selesai':'Selanjutnya →';
+            requestAnimationFrame(posisikanPanduan);
         }
-
-        function langkahTurBerikutnya() {
-            if(tourStep < totalTourSteps) {
-                tourStep++;
-                tampilkanLangkahTour();
-            } else {
-                tutupTurInteraktif();
+        function langkahTurBerikutnya() { if(tourStep<tourSteps.length-1){tourStep++;tampilkanLangkahTour();}else tutupTurInteraktif(); }
+        function langkahTurSebelumnya() { if(tourStep>0){tourStep--;tampilkanLangkahTour();} }
+        window.addEventListener('resize',posisikanPanduan);
+        window.addEventListener('scroll',posisikanPanduan,true);
+        document.addEventListener('keydown',event=>{
+            if(!tourActive)return;
+            if(event.key==='Escape'){event.preventDefault();tutupTurInteraktif();}
+            else if(event.key==='ArrowRight'){event.preventDefault();langkahTurBerikutnya();}
+            else if(event.key==='ArrowLeft'){event.preventDefault();langkahTurSebelumnya();}
+            else if(event.key==='Tab'){
+                const controls=[...document.querySelectorAll('#tourBubble button')].filter(el=>!el.disabled&&!el.closest('.tour-feature-preview'));
+                const at=controls.indexOf(document.activeElement),next=(at+(event.shiftKey?-1:1)+controls.length)%controls.length;
+                event.preventDefault();controls[next].focus();
             }
-        }
-
-        function langkahTurSebelumnya() {
-            if(tourStep > 1) {
-                tourStep--;
-                tampilkanLangkahTour();
-            }
-        }
+        });
 
         function cetakDokumen() {
             window.print();

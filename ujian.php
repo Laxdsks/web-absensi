@@ -139,10 +139,11 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .workspace { width:100%; overflow:auto; padding:12px 4px 32px; -webkit-overflow-scrolling:touch; }
         .paper { width:210mm; min-height:297mm; margin:0 auto; padding:13mm 12mm 14mm; background:#fff; color:#111; box-shadow:0 18px 50px #0007; transform-origin:top center; font-family:'Times New Roman',serif; }
         .sheet-header { display:grid; grid-template-columns:72px 1fr 72px; gap:8px; align-items:center; padding-bottom:7px; border-bottom:4px double #111; }
-        .logo-slot { width:64px; height:64px; justify-self:center; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px dashed #94a3b8; color:#94a3b8; background:#f8fafc; cursor:pointer; }
-        .logo-slot img { width:100%; height:100%; object-fit:contain; }
+        .logo-slot { width:64px; height:64px; justify-self:center; position:relative; display:flex; align-items:center; justify-content:center; overflow:visible; border:1px dashed #94a3b8; color:#94a3b8; background:#fff; cursor:pointer; }
+        .logo-slot img { display:block; width:100%; height:100%; padding:2px; object-fit:contain; flex-shrink:0; }
+        .logo-slot [hidden] { display:none !important; }
         .logo-slot input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
-        .logo-remove { position:absolute; right:0; bottom:0; border:0; background:#fee2e2; color:#991b1b; font:10px Arial,sans-serif; padding:2px 4px; cursor:pointer; }
+        .logo-remove { position:absolute; right:0; bottom:calc(100% + 4px); border:1px solid #fecaca; border-radius:4px; background:#fee2e2; color:#991b1b; font:10px Arial,sans-serif; padding:4px; min-height:24px; cursor:pointer; white-space:nowrap; }
         .institution { text-align:center; line-height:1.14; }
         .institution .line { display:block; font-weight:700; text-transform:uppercase; }
         .institution .line-one { font-size:12px; }
@@ -155,8 +156,8 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .meta-row { display:grid; grid-template-columns:112px 9px 1fr; align-items:baseline; min-height:12px; }
         .meta-label { font-weight:700; text-transform:uppercase; }
         .meta-value { min-height:13px; }
-        [contenteditable="true"] { outline:none; border-bottom:1px dashed transparent; cursor:text; }
-        [contenteditable="true"]:hover,[contenteditable="true"]:focus { border-bottom-color:#2563eb; background:#dbeafe44; }
+        [contenteditable="true"] { outline:none; cursor:text; }
+        [contenteditable="true"]:hover,[contenteditable="true"]:focus { box-shadow:inset 0 -1px #2563eb; background:#dbeafe44; }
         .table-wrap { width:100%; }
         table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:9px; }
         th,td { border:1px solid #111; padding:3px 4px; vertical-align:middle; overflow-wrap:anywhere; }
@@ -202,9 +203,33 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             .table-wrap,.grading-wrap,.grading-scale { overflow:visible !important; break-inside:auto; page-break-inside:auto; }
             .grading-scale table { break-inside:avoid; page-break-inside:avoid; }
             .saved-note { display:block !important; position:static !important; margin-top:6px; }
-            [contenteditable="true"] { border:0 !important; background:transparent !important; }
+            [contenteditable="true"] { box-shadow:none !important; background:transparent !important; }
+            th,td { border:1px solid #111 !important; }
+            .logo-slot.has-logo { border:0; background:transparent; }
             .logo-slot:not(.has-logo) { visibility:hidden; border:0; background:transparent; }
         }
+
+        /* Sorot area sebenarnya tanpa mengubah posisi atau ukuran dokumen. */
+        .tour-spotlight-backdrop { position:fixed; inset:0; width:100vw; height:100vh; z-index:100001; background:rgba(0,0,0,.76); backdrop-filter:none; display:none; }
+        .tour-spotlight-backdrop.show { display:block; opacity:1; }
+        .tour-highlighted-target { box-shadow:none !important; transform:none; filter:none; transition:none; }
+        .tour-focus-frame { position:fixed; z-index:100002; border:3px solid #38bdf8; border-radius:6px; pointer-events:auto; display:none; }
+        .tour-speech-bubble { position:fixed; z-index:100003; box-sizing:border-box; width:min(410px,calc(100vw - 24px)); max-height:calc(100vh - 24px); overflow:auto; padding:16px; border:2px solid #38bdf8; border-radius:12px; background:var(--ui-panel,var(--panel,#0f172a)); color:var(--ui-text,var(--text,#f8fafc)); box-shadow:0 16px 40px #0008; display:none; animation:none; }
+        .tour-speech-header,.tour-speech-footer { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+        .tour-speech-header { margin-bottom:12px; }
+        .tour-step-indicator { font-size:12px; font-weight:700; }
+        .tour-speech-title { margin:0 0 8px; font-size:16px; font-weight:700; color:var(--ui-accent,#38bdf8); }
+        .tour-speech-desc { font-size:14px; line-height:1.65; color:inherit; }
+        .tour-speech-footer { margin-top:14px; }
+        .tour-speech-bubble button { min-height:42px; padding:8px 12px; border:1px solid #64748b; border-radius:6px; background:#2563eb; color:white; font:600 13px Arial,sans-serif; cursor:pointer; }
+        .tour-feature-preview { margin:12px 0; padding:12px; border:1px solid #64748b; border-radius:8px; background:#fff; color:#111; font:14px Arial,sans-serif; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+        .tour-feature-preview img { display:block; max-width:100%; max-height:96px; width:auto; height:auto; object-fit:contain; }
+        .tour-feature-preview .logo-slot,.tour-feature-preview .logo-box { width:80px; height:80px; transform:none; }
+        .tour-feature-preview .logo-slot img,.tour-feature-preview .logo-box img { width:100%; height:100%; }
+        .tour-feature-preview input,.tour-feature-preview button,.tour-feature-preview a { pointer-events:none; }
+        .tour-feature-preview code { display:inline-block; min-width:24px; padding:5px; border:1px solid #475569; border-radius:4px; background:#f1f5f9; color:#111; font-size:15px; text-align:center; }
+        .tour-example-caption { width:100%; font-size:12px; font-weight:700; color:#334155; }
+        @media print { .tour-spotlight-backdrop,.tour-focus-frame,.tour-speech-bubble { display:none !important; } }
     </style>
 </head>
 <body>
@@ -214,6 +239,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             <a href="absen.php?jenjang=S1&kelas=<?php echo rawurlencode($kelas); ?>&prodi=<?php echo rawurlencode($prodi); ?>&semester=<?php echo rawurlencode($semester); ?>&theme=<?php echo rawurlencode($theme); ?>" title="Buka lembar absen"><i class="fa-solid fa-clipboard-user"></i> Lembar Absen</a>
         </div>
         <div class="toolbar-group">
+            <button type="button" onclick="mulaiTurInteraktif()" title="Panduan langkah penggunaan">? Panduan</button>
             <button type="button" onclick="ubahZoom(-0.1)" title="Perkecil lembar"><i class="fa-solid fa-magnifying-glass-minus"></i> Zoom −</button>
             <span class="zoom-label" id="zoomLabel">100%</span>
             <button type="button" onclick="ubahZoom(0.1)" title="Perbesar lembar"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom +</button>
@@ -243,7 +269,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 <label class="logo-slot selectable-element" id="logoLeftSlot" data-type="Logo kiri" onclick="pilihElemen(event,this)" title="Pilih atau geser logo kiri">
                     <img alt="Logo kiri" src="<?php echo $logo_kiri_data; ?>"><i class="fa-solid fa-image" hidden></i>
                     <input type="file" accept="image/*" aria-label="Pilih logo kiri">
-                    <button type="button" class="logo-remove" hidden>Hapus</button>
+                    <button type="button" class="logo-remove" hidden>Pulihkan logo</button>
                 </label>
                 <div class="institution selectable-element" id="examInstitution" data-type="Kop institusi" onclick="pilihElemen(event,this)">
                     <span class="line line-one" contenteditable="true" data-edit-key="inst-1">STKIP YAPIS DOMPU</span>
@@ -255,7 +281,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 <label class="logo-slot selectable-element" id="logoRightSlot" data-type="Logo kanan" onclick="pilihElemen(event,this)" title="Pilih atau geser logo kanan">
                     <img alt="Logo kanan" src="<?php echo $logo_kanan_data; ?>"><i class="fa-solid fa-image" hidden></i>
                     <input type="file" accept="image/*" aria-label="Pilih logo kanan">
-                    <button type="button" class="logo-remove" hidden>Hapus</button>
+                    <button type="button" class="logo-remove" hidden>Pulihkan logo</button>
                 </label>
             </header>
 
@@ -322,7 +348,120 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         </section>
     </main>
 
+    <div class="tour-focus-frame" id="tourFocusFrame" aria-hidden="true"></div>
+    <div class="tour-spotlight-backdrop" id="tourBackdrop" onclick="tutupTurInteraktif()"></div>
+    <section class="tour-speech-bubble" id="tourBubble" role="dialog" aria-modal="true" aria-labelledby="tourTitle" aria-describedby="tourDesc" tabindex="-1">
+        <div class="tour-speech-header">
+            <span class="tour-step-indicator" id="tourStepBadge"></span>
+            <button type="button" onclick="tutupTurInteraktif()">× Keluar</button>
+        </div>
+        <h2 class="tour-speech-title" id="tourTitle"></h2>
+        <div class="tour-feature-preview" id="tourFeaturePreview" aria-label="Contoh tampilan fitur"></div>
+        <div class="tour-speech-desc" id="tourDesc"></div>
+        <div class="tour-speech-footer">
+            <button type="button" onclick="langkahTurSebelumnya()" id="tourPrevBtn">← Sebelumnya</button>
+            <button type="button" onclick="langkahTurBerikutnya()" id="tourNextBtn">Selanjutnya →</button>
+        </div>
+    </section>
+
     <script>
+        const tourSteps=[
+            {target:'#logoLeftSlot',title:'1. Ganti logo tanpa memotong gambar',desc:'Klik kotak logo kiri atau kanan, lalu pilih gambar dari perangkat. Seluruh gambar mengikuti kotak dengan proporsi tetap. Tombol Pulihkan logo muncul di atas logo yang diganti dan mengembalikan logo awal. Kontrol unggah dan tombol tidak ikut dicetak.'},
+            {target:'#examHeader',title:'2. Edit teks kop',example:'<code>Klik teks kop</code> → <code>Ketik perubahan</code>',desc:'Klik teks kop pada kertas untuk mengubah nama institusi, alamat, atau kontak. Bisa juga klik blok kop sampai garis biru muncul, lalu edit melalui kolom di Inspektor. Perubahan tersimpan di browser perangkat untuk prodi, semester, dan kelas ini.'},
+            {target:'#examMetaLeft',title:'3. Lengkapi informasi ujian',example:'<code>Semester</code> · <code>Mata kuliah</code> · <code>Dosen</code> · <code>Jam/waktu</code>',desc:'Isi bagian informasi ujian melalui teks pada kertas atau Inspektor. Daftar mahasiswa tetap berasal dari Data Mahasiswa sesuai prodi, semester, dan kelas pada tautan. Kolom jumlah hadir/tidak hadir dapat dilengkapi untuk pelaksanaan ujian.'},
+            {target:'#inspectorPanel',title:'4. Atur posisi dengan Inspektor',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Panah atas/bawah memindahkan elemen di sampingnya pada baris yang sama; kiri/kanan hanya memindahkan elemen terpilih. Di kolom input Inspektor, panah tetap mengedit isian. Gunakan Reset posisi terpilih untuk mengembalikan posisi blok tersebut.'},
+            {target:'#examTableBlock',title:'5. Nilai dan kolom KET',example:'<code>Rekap absen</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Ujian</code>',desc:'NIM dan nama berasal dari database. Skor, huruf, dan mutu berasal dari tombol Simpan & Kirim Nilai pada Rekap Nilai di Lembar Absen. Jika belum tampil, kirim kembali melalui sesi browser dan konteks kelas yang sama. Klik sel KET untuk menulis keterangan; garis sel tetap tercetak meskipun keterangannya kosong.'},
+            {target:'#examScaleBlock',title:'6. Edit pedoman predikat',example:'<code>80–100 → A → 4 → Sangat Baik</code>',desc:'Teks pada tabel pedoman dapat diedit langsung atau melalui Inspektor. Mengedit pedoman hanya mengubah tulisan di lembar ini; skor dan huruf mahasiswa tetap mengikuti perhitungan Rekap Nilai. Periksa kesesuaian pedoman dengan aturan penilaian sebelum mencetak.'},
+            {target:'button[onclick="window.print()"]',title:'7. Zoom dan cetak A4',example:'<code>Zoom − / +</code> = tampilan layar<br><code>Cetak</code> = dokumen A4',desc:'Zoom mengubah ukuran tampilan layar dan Reset mengembalikannya ke 100%. Cetak memakai kertas A4 potret dengan tabel dan logo utuh. Tabel panjang berlanjut ke halaman berikutnya dengan judul kolom berulang. Periksa seluruh halaman pada pratinjau; sesuaikan ukuran kertas printer ke A4.'}
+        ];
+
+        let tourStep=0, tourActive=false, tourTarget=null, tourReturnFocus=null, tourHiddenPanels=[], tourPanelStates=[];
+        function mulaiTurInteraktif() {
+            tourReturnFocus=document.activeElement; tourStep=0; tourActive=true;
+            tourPanelStates=[...document.querySelectorAll('.top-toolbar,.inspector-panel')].map(el=>({el,flags:['hidden-toolbar','minimized','hidden-panel'].filter(flag=>el.classList.contains(flag))}));
+            document.getElementById('tourBackdrop').classList.add('show');
+            document.getElementById('tourBubble').style.display='block';
+            tampilkanLangkahTour(); document.getElementById('tourNextBtn').focus({preventScroll:true});
+        }
+        function tutupTurInteraktif() {
+            tourHiddenPanels.forEach(({el,visibility})=>el.style.visibility=visibility);tourHiddenPanels=[];
+            tourPanelStates.forEach(({el,flags})=>['hidden-toolbar','minimized','hidden-panel'].forEach(flag=>el.classList.toggle(flag,flags.includes(flag))));
+            tourActive=false; tourTarget=null;
+            document.getElementById('tourBackdrop').classList.remove('show');
+            document.getElementById('tourBackdrop').style.clipPath='';
+            document.getElementById('tourFocusFrame').style.display='none';
+            document.getElementById('tourBubble').style.display='none';
+            if(tourReturnFocus&&tourReturnFocus.isConnected)tourReturnFocus.focus({preventScroll:true});
+        }
+        function posisikanPanduan() {
+            if(!tourActive)return;
+            const bubble=document.getElementById('tourBubble'),frame=document.getElementById('tourFocusFrame'),backdrop=document.getElementById('tourBackdrop');
+            const vw=window.innerWidth,vh=window.innerHeight;
+            if(tourTarget){
+                const rect=tourTarget.getBoundingClientRect(),left=Math.max(4,rect.left-5),top=Math.max(4,rect.top-5),right=Math.min(vw-4,rect.right+5),bottom=Math.min(vh-4,rect.bottom+5);
+                if(right>left&&bottom>top){
+                    frame.style.cssText=`display:block;left:${left}px;top:${top}px;width:${right-left}px;height:${bottom-top}px;`;
+                    backdrop.style.clipPath=`polygon(evenodd,0 0,100% 0,100% 100%,0 100%,0 0,${left}px ${top}px,${left}px ${bottom}px,${right}px ${bottom}px,${right}px ${top}px,${left}px ${top}px)`;
+                    const bw=bubble.offsetWidth,bh=bubble.offsetHeight;
+                    let x=left,y=bottom+12;
+                    if(y+bh>vh-12){if(top-bh-12>=12)y=top-bh-12;else if(right+bw+12<vw){x=right+12;y=top;}else if(left-bw-12>=12){x=left-bw-12;y=top;}else y=vh-bh-12;}
+                    bubble.style.left=Math.max(12,Math.min(x,vw-bw-12))+'px';bubble.style.top=Math.max(12,Math.min(y,vh-bh-12))+'px';return;
+                }
+            }
+            frame.style.display='none';backdrop.style.clipPath='';bubble.style.left='12px';bubble.style.top='12px';
+        }
+        function tampilkanLangkahTour() {
+            tourHiddenPanels.forEach(({el,visibility})=>el.style.visibility=visibility);tourHiddenPanels=[];
+            const step=tourSteps[tourStep];tourTarget=document.querySelector(step.target);
+            if(innerWidth<=768){
+                document.querySelectorAll('.top-toolbar,.toolbar,.inspector-panel,.inspector-toggle-btn,.inspector-toggle,.toolbar-toggle-btn').forEach(el=>{
+                    if(el!==tourTarget&&!el.contains(tourTarget)){tourHiddenPanels.push({el,visibility:el.style.visibility});el.style.visibility='hidden';}
+                });
+            }
+            if(tourTarget){
+                const toolbar=tourTarget.closest('.top-toolbar');if(toolbar)toolbar.classList.remove('hidden-toolbar');
+                if(tourTarget.id==='inspectorPanel'){tourTarget.classList.remove('minimized','hidden-panel');}
+                tourTarget.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+            }
+            document.getElementById('tourStepBadge').textContent=`Langkah ${tourStep+1} / ${tourSteps.length}`;
+            document.getElementById('tourTitle').textContent=step.title;
+            document.getElementById('tourDesc').textContent=step.desc;
+            const preview=document.getElementById('tourFeaturePreview');preview.replaceChildren();
+            const caption=document.createElement('span');caption.className='tour-example-caption';caption.textContent='Contoh tampilan — penjelasan, bukan tombol aktif';preview.appendChild(caption);
+            if(step.example){const example=document.createElement('div');example.innerHTML=step.example;preview.appendChild(example);}
+            else if(tourTarget){
+                const clone=tourTarget.cloneNode(true);
+                [clone,...clone.querySelectorAll('*')].forEach(el=>{
+                    [...el.attributes].forEach(attr=>{if(attr.name==='id'||attr.name.startsWith('on')||['href','for','contenteditable'].includes(attr.name))el.removeAttribute(attr.name);});
+                    el.removeAttribute('style');el.setAttribute('tabindex','-1');
+                });
+                clone.querySelectorAll('input,.logo-remove,.btn-hapus-logo').forEach(el=>el.remove());
+                if(clone.matches('.logo-box,.logo-slot')){
+                    const img=clone.querySelector('img');
+                    if(!img||!img.getAttribute('src')||img.hidden){clone.replaceChildren();clone.textContent='▣ Pilih logo';}
+                }
+                preview.appendChild(clone);
+            }
+            document.getElementById('tourPrevBtn').disabled=tourStep===0;
+            document.getElementById('tourNextBtn').textContent=tourStep===tourSteps.length-1?'✓ Selesai':'Selanjutnya →';
+            requestAnimationFrame(posisikanPanduan);
+        }
+        function langkahTurBerikutnya() { if(tourStep<tourSteps.length-1){tourStep++;tampilkanLangkahTour();}else tutupTurInteraktif(); }
+        function langkahTurSebelumnya() { if(tourStep>0){tourStep--;tampilkanLangkahTour();} }
+        window.addEventListener('resize',posisikanPanduan);
+        window.addEventListener('scroll',posisikanPanduan,true);
+        document.addEventListener('keydown',event=>{
+            if(!tourActive)return;
+            if(event.key==='Escape'){event.preventDefault();tutupTurInteraktif();}
+            else if(event.key==='ArrowRight'){event.preventDefault();langkahTurBerikutnya();}
+            else if(event.key==='ArrowLeft'){event.preventDefault();langkahTurSebelumnya();}
+            else if(event.key==='Tab'){
+                const controls=[...document.querySelectorAll('#tourBubble button')].filter(el=>!el.disabled&&!el.closest('.tour-feature-preview'));
+                const at=controls.indexOf(document.activeElement),next=(at+(event.shiftKey?-1:1)+controls.length)%controls.length;
+                event.preventDefault();controls[next].focus();
+            }
+        });
+
         const storageKey = <?php echo json_encode($local_key, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
         const paper = document.getElementById('paperSheet');
         let zoomLevel = 1;
@@ -435,6 +574,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         }
         function resetPosisiAktif() { if (selectedElement) { selectedElement.style.transform = 'translate(0px, 0px)'; simpanPosisi(); } }
         document.addEventListener('keydown', event => {
+            if (tourActive) return;
             if (!selectedElement || !['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key)) return;
             if (event.target.closest && event.target.closest('input,textarea,select,a')) return;
             event.preventDefault(); const step = event.shiftKey ? 5 : 1;
