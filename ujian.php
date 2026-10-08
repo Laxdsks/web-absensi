@@ -282,6 +282,18 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         </div>
         <div style="font-size:11px;color:var(--muted);">Pilih elemen lalu tekan/tahan panah keyboard. Shift + panah bergerak 5 px. Usap menu ke atas atau Inspektor ke kanan untuk menyembunyikan. Atas/bawah menggeser elemen satu baris bersama.</div>
         <button type="button" onclick="resetPosisiAktif()" style="width:100%;margin-top:8px;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--panel);color:var(--text);cursor:pointer;">Reset posisi terpilih</button>
+        <section class="paragraph-spacing-controls" aria-label="Pengaturan spasi paragraf" style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border);">
+            <strong style="display:block;font-size:12px;margin-bottom:6px;">Spasi paragraf elemen terpilih</strong>
+            <label for="examParagraphLineSpacing" style="display:block;font-size:11px;margin-bottom:4px;">Jarak antarbaris</label>
+            <select id="examParagraphLineSpacing" onchange="aturSpasiParagrafUjian()" aria-label="Jarak antarbaris" style="width:100%;min-height:38px;margin-bottom:7px;border:1px solid var(--border);border-radius:7px;padding:7px;background:var(--panel);color:var(--text);">
+                <option value="1">1,0</option><option value="1.15">1,15</option><option value="1.5">1,5</option><option value="2">2,0</option><option value="2.5">2,5</option><option value="3">3,0</option>
+            </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <label style="font-size:11px;">Sebelum (pt)<input id="examParagraphSpaceBefore" type="number" min="0" max="72" step="1" value="0" oninput="aturSpasiParagrafUjian()" aria-label="Jarak sebelum paragraf dalam poin" style="display:block;width:100%;margin-top:4px;border:1px solid var(--border);border-radius:7px;padding:7px;background:var(--panel);color:var(--text);"></label>
+                <label style="font-size:11px;">Sesudah (pt)<input id="examParagraphSpaceAfter" type="number" min="0" max="72" step="1" value="0" oninput="aturSpasiParagrafUjian()" aria-label="Jarak sesudah paragraf dalam poin" style="display:block;width:100%;margin-top:4px;border:1px solid var(--border);border-radius:7px;padding:7px;background:var(--panel);color:var(--text);"></label>
+            </div>
+            <button type="button" onclick="resetSpasiParagrafUjian()" style="width:100%;min-height:38px;margin-top:7px;border:1px solid var(--border);border-radius:8px;padding:7px;background:var(--panel);color:var(--text);cursor:pointer;">Reset spasi elemen</button>
+        </section>
         <div id="inspectorTextContainer" class="inspector-text" style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;"><div style="font-size:11px;color:var(--muted);">Klik blok pada lembar untuk mengedit teksnya di sini.</div></div>
     </aside>
     <button type="button" class="inspector-toggle" id="inspectorToggleBtn" onclick="toggleInspectorPanel()" aria-controls="inspectorPanel" aria-label="Tampilkan inspektor">‹ Inspektor</button>
@@ -596,6 +608,10 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 });
                 ['logoLeftSlot', 'logoRightSlot'].forEach(id => { if (saved.logos && saved.logos[id]) setLogo(id, saved.logos[id]); });
                 Object.entries(saved.positions || {}).forEach(([id, transform]) => { const el = document.getElementById(id); if (el && el.matches('.selectable-element')) el.style.transform = transform; });
+                Object.entries(saved.paragraphSpacing || {}).forEach(([id, setting]) => {
+                    const el = document.getElementById(id);
+                    if (el && el.matches('.selectable-element')) terapkanSpasiParagrafUjian(el, setting);
+                });
             } catch (error) { console.warn('Pengaturan lembar ujian lokal tidak dapat dibaca.', error); }
         }
         function saveEdits() {
@@ -605,6 +621,52 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 document.querySelectorAll('[data-edit-key]').forEach(el => { saved.text[el.dataset.editKey] = el.textContent; });
                 localStorage.setItem(storageKey, JSON.stringify(saved));
             } catch (error) { alert('Penyimpanan edit teks penuh. Hapus beberapa data situs dari pengaturan browser lalu coba lagi.'); }
+        }
+        function terapkanSpasiParagrafUjian(el, setting) {
+            if (!el || !setting) return;
+            el.style.lineHeight = String(setting.line || 1);
+            el.style.marginTop = `${Number(setting.before) || 0}pt`;
+            el.style.marginBottom = `${Number(setting.after) || 0}pt`;
+        }
+        function sinkronkanKontrolSpasiParagrafUjian() {
+            const controls = ['examParagraphLineSpacing','examParagraphSpaceBefore','examParagraphSpaceAfter'].map(id => document.getElementById(id));
+            controls.forEach(control => { if (control) control.disabled = !selectedElement; });
+            if (!selectedElement) return;
+            let saved = {};
+            try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch (error) {}
+            const setting = saved.paragraphSpacing?.[selectedElement.id] || {line:1,before:0,after:0};
+            document.getElementById('examParagraphLineSpacing').value = String(setting.line || 1);
+            document.getElementById('examParagraphSpaceBefore').value = String(Number(setting.before) || 0);
+            document.getElementById('examParagraphSpaceAfter').value = String(Number(setting.after) || 0);
+        }
+        function aturSpasiParagrafUjian() {
+            if (!selectedElement || !selectedElement.id) return;
+            const setting = {
+                line:Math.max(1,Math.min(3,Number(document.getElementById('examParagraphLineSpacing').value)||1)),
+                before:Math.max(0,Math.min(72,Number(document.getElementById('examParagraphSpaceBefore').value)||0)),
+                after:Math.max(0,Math.min(72,Number(document.getElementById('examParagraphSpaceAfter').value)||0))
+            };
+            terapkanSpasiParagrafUjian(selectedElement, setting);
+            try {
+                const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                saved.paragraphSpacing = saved.paragraphSpacing || {};
+                saved.paragraphSpacing[selectedElement.id] = setting;
+                localStorage.setItem(storageKey, JSON.stringify(saved));
+            } catch (error) { console.warn('Pengaturan spasi paragraf belum tersimpan.', error); }
+            perbaruiPenandaHalamanUjian();
+        }
+        function resetSpasiParagrafUjian() {
+            if (!selectedElement) return;
+            selectedElement.style.lineHeight = '';
+            selectedElement.style.marginTop = '';
+            selectedElement.style.marginBottom = '';
+            try {
+                const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                if (saved.paragraphSpacing) delete saved.paragraphSpacing[selectedElement.id];
+                localStorage.setItem(storageKey, JSON.stringify(saved));
+            } catch (error) {}
+            sinkronkanKontrolSpasiParagrafUjian();
+            perbaruiPenandaHalamanUjian();
         }
         function setLogo(slotId, src) {
             const slot = document.getElementById(slotId), img = slot.querySelector('img'), icon = slot.querySelector('i'), remove = slot.querySelector('.logo-remove');
@@ -647,6 +709,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             el.tabIndex = 0;
             if (!event.target.closest('input,textarea,select,[contenteditable="true"]')) el.focus({preventScroll:true});
             document.getElementById('activeElementLabel').textContent = el.dataset.type || 'Elemen';
+            sinkronkanKontrolSpasiParagrafUjian();
             const container = document.getElementById('inspectorTextContainer');
             container.replaceChildren();
             const editables = el.querySelectorAll('[contenteditable="true"]');
@@ -664,6 +727,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 selectedElement = null;
                 document.getElementById('activeElementLabel').textContent = 'Pilih elemen di lembar kerja...';
                 document.getElementById('inspectorTextContainer').innerHTML = '<div style="font-size:11px;color:var(--muted);">Klik blok pada lembar untuk mengedit teksnya di sini.</div>';
+                sinkronkanKontrolSpasiParagrafUjian();
             }
         });
         function simpanPosisi() {
@@ -696,6 +760,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         });
         document.addEventListener('input', event => { if (event.target.matches('[contenteditable="true"]')) saveEdits(); });
         readSavedEdits();
+        sinkronkanKontrolSpasiParagrafUjian();
         updateZoom();
     </script>
 </body>

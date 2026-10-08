@@ -537,6 +537,18 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     <button onclick="aturUkuranLogo(5)" class="btn btn-dark" style="padding: 2px 5px;" title="Perbesar dimensi ukuran logo">+</button>
                 </div>
             </div>
+            <section class="inspector-row paragraph-spacing-controls" aria-label="Pengaturan spasi paragraf" style="display:block;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);">
+                <strong style="display:block;font-size:10px;margin-bottom:5px;">Spasi paragraf elemen terpilih</strong>
+                <label for="paragraphLineSpacing" style="display:block;font-size:9px;margin-bottom:4px;">Jarak antarbaris</label>
+                <select id="paragraphLineSpacing" class="btn btn-dark" style="width:100%;margin-bottom:6px;" onchange="aturSpasiParagraf()" aria-label="Jarak antarbaris">
+                    <option value="1">1,0</option><option value="1.15">1,15</option><option value="1.5">1,5</option><option value="2">2,0</option><option value="2.5">2,5</option><option value="3">3,0</option>
+                </select>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <label style="font-size:9px;">Sebelum (pt)<input id="paragraphSpaceBefore" type="number" min="0" max="72" step="1" value="0" oninput="aturSpasiParagraf()" class="btn btn-dark" style="width:100%;margin-top:3px;" aria-label="Jarak sebelum paragraf dalam poin"></label>
+                    <label style="font-size:9px;">Sesudah (pt)<input id="paragraphSpaceAfter" type="number" min="0" max="72" step="1" value="0" oninput="aturSpasiParagraf()" class="btn btn-dark" style="width:100%;margin-top:3px;" aria-label="Jarak sesudah paragraf dalam poin"></label>
+                </div>
+                <button type="button" onclick="resetSpasiParagraf()" class="btn btn-dark" style="margin-top:6px;width:100%;justify-content:center;font-size:9px;">Reset spasi elemen</button>
+            </section>
             <button onclick="resetPosisiAktif()" class="btn btn-dark" style="margin-top: 4px; width: 100%; justify-content: center; font-size: 9px; border: 1px solid rgba(255,255,255,0.2);" title="Kembalikan koordinat posisi elemen aktif ini ke asal mula"><i class="fa-solid fa-rotate-left"></i> Reset Posisi Ini</button>
             <button onclick="resetPosisiSemua()" class="btn btn-warning" style="margin-top: 2px; width: 100%; justify-content: center; font-size: 9px;" title="Reset mutlak ke tata letak pabrik (Sapu Bersih)"><i class="fa-solid fa-rotate-left"></i> Reset Semua Posisi</button>
             <div id="inspectorTextContainer" style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 6px; display: flex; flex-direction: column; gap: 6px;">
@@ -896,18 +908,68 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         let redoStack = [];
         let draftNilaiPerNim = Object.create(null);
         const absenLayoutSettingsKey = <?php echo json_encode('absen-layout-settings-S1-' . md5($prodi . '|' . $semester . '|' . $kelas)); ?>;
+        let absenLayoutSettings = {};
+        try { absenLayoutSettings = JSON.parse(localStorage.getItem(absenLayoutSettingsKey) || '{}') || {}; } catch (error) { absenLayoutSettings = {}; }
+        function simpanPengaturanLayoutAbsen() {
+            try { localStorage.setItem(absenLayoutSettingsKey, JSON.stringify(absenLayoutSettings)); } catch (error) {}
+        }
         function aturJarakTandaTangan(value) {
             const px = Math.max(0, Math.min(160, Number(value) || 0));
             document.getElementById('paperSheet').style.setProperty('--signature-space-height', px + 'px');
             document.getElementById('signatureSpaceValue').textContent = px + ' px';
-            try { localStorage.setItem(absenLayoutSettingsKey, JSON.stringify({signatureSpace: px})); } catch (error) {}
+            absenLayoutSettings.signatureSpace = px;
+            simpanPengaturanLayoutAbsen();
         }
         try {
-            const layoutSettings = JSON.parse(localStorage.getItem(absenLayoutSettingsKey) || '{}');
-            const signatureSpace = Number.isFinite(Number(layoutSettings.signatureSpace)) ? Math.max(0, Math.min(160, Number(layoutSettings.signatureSpace))) : 72;
+            const signatureSpace = Number.isFinite(Number(absenLayoutSettings.signatureSpace)) ? Math.max(0, Math.min(160, Number(absenLayoutSettings.signatureSpace))) : 72;
             const signatureControl = document.getElementById('signatureSpaceRange');
             if (signatureControl) { signatureControl.value = String(signatureSpace); aturJarakTandaTangan(signatureSpace); }
         } catch (error) {}
+
+        function terapkanSpasiParagraf(el, setting) {
+            if (!el || !setting) return;
+            el.style.lineHeight = String(setting.line || 1);
+            el.style.marginTop = `${Number(setting.before) || 0}pt`;
+            el.style.marginBottom = `${Number(setting.after) || 0}pt`;
+        }
+        function sinkronkanKontrolSpasiParagraf() {
+            const controls = ['paragraphLineSpacing', 'paragraphSpaceBefore', 'paragraphSpaceAfter'].map(id => document.getElementById(id));
+            if (!selectedElement) { controls.forEach(control => { if (control) control.disabled = true; }); return; }
+            controls.forEach(control => { if (control) control.disabled = false; });
+            const setting = absenLayoutSettings.paragraphSpacing?.[selectedElement.id] || {line:1,before:0,after:0};
+            document.getElementById('paragraphLineSpacing').value = String(setting.line || 1);
+            document.getElementById('paragraphSpaceBefore').value = String(Number(setting.before) || 0);
+            document.getElementById('paragraphSpaceAfter').value = String(Number(setting.after) || 0);
+        }
+        function aturSpasiParagraf() {
+            if (!selectedElement || !selectedElement.id) return;
+            const line = Math.max(1, Math.min(3, Number(document.getElementById('paragraphLineSpacing').value) || 1));
+            const before = Math.max(0, Math.min(72, Number(document.getElementById('paragraphSpaceBefore').value) || 0));
+            const after = Math.max(0, Math.min(72, Number(document.getElementById('paragraphSpaceAfter').value) || 0));
+            const setting = {line,before,after};
+            absenLayoutSettings.paragraphSpacing = absenLayoutSettings.paragraphSpacing || {};
+            absenLayoutSettings.paragraphSpacing[selectedElement.id] = setting;
+            terapkanSpasiParagraf(selectedElement, setting);
+            simpanPengaturanLayoutAbsen();
+            perbaruiPenandaHalaman();
+        }
+        function resetSpasiParagraf() {
+            if (!selectedElement) return;
+            selectedElement.style.lineHeight = '';
+            selectedElement.style.marginTop = '';
+            selectedElement.style.marginBottom = '';
+            if (selectedElement.id && absenLayoutSettings.paragraphSpacing) delete absenLayoutSettings.paragraphSpacing[selectedElement.id];
+            simpanPengaturanLayoutAbsen();
+            sinkronkanKontrolSpasiParagraf();
+            perbaruiPenandaHalaman();
+        }
+        try {
+            Object.entries(absenLayoutSettings.paragraphSpacing || {}).forEach(([id, setting]) => {
+                const el = document.getElementById(id);
+                if (el?.matches('.selectable-element')) terapkanSpasiParagraf(el, setting);
+            });
+        } catch (error) {}
+        sinkronkanKontrolSpasiParagraf();
 
         function simpanStateUndo() {
             const paperHtml = document.getElementById('paperSheet').innerHTML;
@@ -1116,6 +1178,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             if (!event.target.closest('input,textarea,select,[contenteditable="true"]')) el.focus({preventScroll:true});
             const typeName = el.getAttribute('data-type') || 'Elemen';
             document.getElementById('activeElementLabel').innerText = typeName;
+            sinkronkanKontrolSpasiParagraf();
             
             const container = document.getElementById('inspectorTextContainer');
             container.innerHTML = `<div style="font-size:9px; color:#38bdf8; font-weight:600;">Edit Teks Cepat:</div>`;
@@ -1169,6 +1232,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 selectedElement = null;
                 document.getElementById('activeElementLabel').innerText = 'Pilih elemen di lembar kerja...';
                 document.getElementById('inspectorTextContainer').innerHTML = `<div style="font-size: 9px; color: #94a3b8;">Klik elemen pada kertas untuk mengedit teksnya di sini.</div>`;
+                sinkronkanKontrolSpasiParagraf();
             }
         });
 
@@ -1389,9 +1453,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const rows = document.querySelectorAll('#tbodySiswa tr');
             rows.forEach((r, idx) => {
                 const no = r.querySelector('.row-no') ? r.querySelector('.row-no').innerText : (idx + 1);
-                const inputs = r.querySelectorAll('input');
-                const nim = inputs[0] ? inputs[0].value.trim() : '';
-                const nama = inputs[2] ? inputs[2].value.trim() : '';
+                const nim = r.cells[1]?.querySelector('input')?.value.trim() || '';
+                const nama = r.cells[2]?.querySelector('input')?.value.trim() || '';
                 if (!nama) return;
                 let hadirCount = 0, alpaCount = 0, sakitCount = 0, izinCount = 0, totalDiisi = 0;
                 r.querySelectorAll('.attendance-cell').forEach(cell => {
@@ -1741,15 +1804,140 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             });
             clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
             clone.querySelectorAll('.selectable-element').forEach(el => el.classList.remove('selectable-element', 'selected'));
+            clone.querySelectorAll('i.fa-solid, i.fa-regular, i.fa-brands').forEach(el => el.remove());
             return clone;
         }
 
+        function escapeWordHtml(value) {
+            const node = document.createElement('span');
+            node.textContent = String(value ?? '');
+            return node.innerHTML;
+        }
+
+        function getWordPageSettings(forceOrientation = null) {
+            const size = document.getElementById('paperSize')?.value || 'a4';
+            const orientation = forceOrientation || document.getElementById('paperOrientation')?.value || 'portrait';
+            const margin = document.getElementById('marginTemplate')?.value || 'normal';
+            const dimensions = {
+                a4: {portrait:['8.27in','11.69in'], landscape:['11.69in','8.27in']},
+                folio: {portrait:['8.5in','13in'], landscape:['13in','8.5in']},
+                letter: {portrait:['8.5in','11in'], landscape:['11in','8.5in']}
+            };
+            const [width,height] = (dimensions[size] || dimensions.a4)[orientation] || dimensions.a4.portrait;
+            const marginSize = margin === 'wide' ? '25mm' : margin === 'narrow' ? '6mm' : '8mm';
+            return {width,height,orientation,marginSize};
+        }
+
+        function styleSpasiWord(element) {
+            if (!element) return '';
+            return [
+                element.style.lineHeight ? `line-height:${element.style.lineHeight}` : '',
+                element.style.marginTop ? `margin-top:${element.style.marginTop}` : '',
+                element.style.marginBottom ? `margin-bottom:${element.style.marginBottom}` : ''
+            ].filter(Boolean).join(';');
+        }
+
+        function buatDokumenWordAbsen(element, title) {
+            const page = getWordPageSettings();
+            const header = element.querySelector('.sheet-header');
+            const headerText = element.querySelector('.header-text');
+            const headerLines = Array.from(headerText?.children || []).map((line, index) => {
+                const fontSize = index < 3 ? (index === 1 ? '10pt' : '11pt') : '7pt';
+                const style = `${index < 3 ? 'font-weight:bold;' : 'font-style:italic;'}font-size:${fontSize}`;
+                return `<span style="${style}">${escapeWordHtml(line.textContent.trim())}</span>`;
+            }).join('<br>');
+            const logoMarkup = (imgId) => {
+                const img = element.querySelector(`#${imgId}`);
+                if (!img || img.style.display === 'none' || !img.getAttribute('src')) return '';
+                const max = 76;
+                const ratio = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1;
+                const width = ratio >= 1 ? max : Math.max(24, Math.round(max * ratio));
+                const height = ratio >= 1 ? Math.max(24, Math.round(max / ratio)) : max;
+                return `<img src="${escapeWordHtml(img.getAttribute('src'))}" width="${width}" height="${height}" alt="Logo institusi" style="display:block;width:${width}px;height:${height}px;border:0;object-fit:contain">`;
+            };
+            const logoLeft = logoMarkup('logoKiriPreview');
+            const logoRight = logoMarkup('logoKananPreview');
+            const headerStyle = styleSpasiWord(header);
+            const headerTable = `<table class="doc-header" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border:0;border-collapse:collapse;table-layout:fixed;${headerStyle}"><tr><td width="14%" align="center" valign="middle" style="width:14%;border:0;text-align:center;vertical-align:middle;line-height:12pt">${logoLeft}</td><td width="72%" align="center" valign="middle" style="width:72%;border:0;text-align:center;vertical-align:middle;line-height:12pt"><p style="margin:0;mso-margin-top-alt:0pt;mso-margin-bottom-alt:0pt;padding:0;line-height:12pt;mso-line-height-rule:exactly">${headerLines}</p></td><td width="14%" align="center" valign="middle" style="width:14%;border:0;text-align:center;vertical-align:middle;line-height:12pt">${logoRight}</td></tr></table>`;
+            const metaCell = (id) => {
+                const column = element.querySelector(`#${id}`);
+                const rows = Array.from(column?.querySelectorAll('.meta-row') || []).map(row => {
+                    const label = row.querySelector('.meta-label')?.textContent.trim() || '';
+                    const value = row.querySelector('.meta-val')?.textContent.trim() || '';
+                    return `<span style="display:inline-block;width:84pt">${escapeWordHtml(label)}</span>&nbsp;<span style="display:inline-block;width:8pt;text-align:center">:</span>&nbsp;<span>${escapeWordHtml(value)}</span>`;
+                }).join('<br>');
+                const style = styleSpasiWord(column);
+                return `<td width="50%" valign="top" style="width:50%;border:0;padding:0 5px 3px 0;vertical-align:top;font-size:8pt;line-height:10pt"><p style="margin:0;mso-margin-top-alt:0pt;mso-margin-bottom-alt:0pt;padding:0;line-height:10pt;mso-line-height-rule:exactly;${style}">${rows}</p></td>`;
+            };
+            const metaTable = `<table class="doc-meta" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border:0;border-collapse:collapse;table-layout:fixed;margin:5px 0 7px"><tr>${metaCell('metaLeftBox')}${metaCell('metaRightBox')}</tr></table>`;
+            const tableWrapper = element.querySelector('#tableWrapper');
+            const table = cloneUntukEkspor(tableWrapper || element.querySelector('#tabelAbsen')).querySelector?.('#tabelAbsen') || cloneUntukEkspor(element.querySelector('#tabelAbsen'));
+            table.removeAttribute('id');
+            table.setAttribute('width','100%');
+            table.setAttribute('cellspacing','0');
+            table.setAttribute('cellpadding','0');
+            table.style.cssText = 'width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt;margin:0;';
+            const meetingCount = Math.max(1, table.querySelectorAll('thead .meeting-number').length || 16);
+            const colgroup = document.createElement('colgroup');
+            const colWidths = [3,12,22,4];
+            colWidths.forEach(width => { const col = document.createElement('col'); col.style.width = `${width}%`; colgroup.appendChild(col); });
+            for (let i=0;i<meetingCount;i++) { const col = document.createElement('col'); col.style.width = `${53 / meetingCount}%`; colgroup.appendChild(col); }
+            const ketCol = document.createElement('col'); ketCol.style.width = '6%'; colgroup.appendChild(ketCol);
+            table.insertBefore(colgroup, table.firstChild);
+            table.querySelectorAll('th,td').forEach(cell => {
+                cell.style.border = '1px solid #111';
+                cell.style.padding = '2px 2px';
+                cell.style.textAlign = 'center';
+                cell.style.verticalAlign = 'middle';
+                cell.style.whiteSpace = 'normal';
+                cell.style.overflowWrap = 'break-word';
+                cell.style.fontSize = '7.5pt';
+                cell.style.lineHeight = '9pt';
+                cell.style.color = '#111';
+                if (cell.tagName === 'TH') { cell.style.backgroundColor = '#e2e8f0'; cell.style.fontWeight = 'bold'; }
+                cell.style.setProperty('mso-line-height-rule','exactly');
+                const paragraph = document.createElement('p');
+                paragraph.style.cssText = 'margin:0;mso-margin-top-alt:0pt;mso-margin-bottom-alt:0pt;padding:0;line-height:9pt;mso-line-height-rule:exactly;';
+                while (cell.firstChild) paragraph.appendChild(cell.firstChild);
+                cell.appendChild(paragraph);
+            });
+            table.querySelectorAll('td span').forEach(span => { span.style.whiteSpace = 'pre-wrap'; });
+            const tableStyle = styleSpasiWord(tableWrapper);
+            if (tableStyle) table.style.cssText += tableStyle + ';';
+            const signatureMarkup = Array.from(element.querySelectorAll('.signature-box')).map(box => {
+                const pieces = Array.from(box.children).map(child => {
+                    if (child.classList.contains('signature-space')) {
+                        const height = Math.max(0, parseFloat(getComputedStyle(child).height) || 72);
+                        return `<div style="height:${height}px;line-height:${height}px">&nbsp;</div>`;
+                    }
+                    const safeChild = child.cloneNode(true);
+                    safeChild.querySelectorAll('script,style,button,input,iframe,object,embed').forEach(node => node.remove());
+                    safeChild.querySelectorAll('[contenteditable]').forEach(node => node.removeAttribute('contenteditable'));
+                    safeChild.removeAttribute('contenteditable');
+                    return `<div style="text-align:left;line-height:9pt;mso-line-height-rule:exactly;margin:0;mso-margin-top-alt:0pt;mso-margin-bottom-alt:0pt">${safeChild.innerHTML}</div>`;
+                }).join('');
+                const spacing = styleSpasiWord(box);
+                return `<td width="50%" valign="top" style="width:50%;border:0;padding:6px 4px 0;vertical-align:top;text-align:left;font-size:8pt;${spacing}">${pieces}</td>`;
+            }).join('');
+            const signatures = `<table class="doc-signatures" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border:0;border-collapse:collapse;table-layout:fixed;margin-top:6px;page-break-inside:avoid;break-inside:avoid"><tr style="page-break-inside:avoid;break-inside:avoid">${signatureMarkup}</tr></table>`;
+            const titleMarkup = `<p style="font-family:Arial,sans-serif;font-size:11pt;font-weight:bold;text-align:center;margin:7px 0 5px">${escapeWordHtml(title)}</p>`;
+            return buatDokumenWordShell(page, title, `${headerTable}<div style="border-top:3px double #111;margin:4px 0 5px"></div>${titleMarkup}${metaTable}${table.outerHTML}${signatures}`);
+        }
+
+        function buatDokumenWordShell(page, title, bodyContent) {
+            const orientation = page.orientation === 'landscape' ? 'landscape' : 'portrait';
+            return `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapeWordHtml(title)}</title><style>@page{size:${page.width} ${page.height};margin:${page.marginSize}}@page WordSection1{size:${page.width} ${page.height};margin:${page.marginSize};mso-page-orientation:${orientation};mso-header-margin:8mm;mso-footer-margin:8mm}div.WordSection1{page:WordSection1}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;font-size:8pt}p{mso-line-height-rule:exactly}table{width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt}th,td{border:1px solid #111;padding:4px 3px;text-align:center;vertical-align:middle;white-space:normal;overflow-wrap:break-word;font-size:8pt;color:#111}th{font-weight:bold;background:#e2e8f0}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}</style></head><body><div class="WordSection1">${bodyContent}</div></body></html>`;
+        }
+
         function buatDokumenWord(element, title) {
+            if (element?.id === 'paperSheet') return buatDokumenWordAbsen(element, title);
             const clone = cloneUntukEkspor(element);
             const exportTable = clone.matches('table') ? clone : clone.querySelector('table');
             if (exportTable) { exportTable.style.width = '100%'; exportTable.style.minWidth = '0'; exportTable.style.tableLayout = 'fixed'; }
             const bodyContent = clone.outerHTML;
-            return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0}h1{font-size:16pt;margin:0 0 10px}p{margin:5px 0 10px}table{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 12px}th,td{border:1px solid #111;padding:5px 4px;text-align:center;vertical-align:middle;white-space:normal;overflow-wrap:break-word;font-size:9pt;color:#111}th{font-weight:bold;background:#dbeafe}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}</style></head><body><h1>${title}</h1>${bodyContent}</body></html>`;
+            const page = getWordPageSettings(element?.id === 'tabelRekapNilai' ? 'landscape' : null);
+            const titleMarkup = `<p style="font-size:13pt;font-weight:bold;margin:0 0 8pt">${escapeWordHtml(title)}</p>`;
+            return buatDokumenWordShell(page, title, `${titleMarkup}${bodyContent}`);
         }
 
         function buatTabelExcel(element, title) {
