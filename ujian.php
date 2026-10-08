@@ -259,7 +259,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             <span class="zoom-label" id="zoomLabel">100%</span>
             <button type="button" onclick="ubahZoom(0.1)" title="Perbesar lembar"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom +</button>
             <button type="button" onclick="resetZoom()" title="Kembali ke ukuran awal">Reset</button>
-            <button class="primary" type="button" onclick="window.print()"><i class="fa-solid fa-print"></i> Cetak</button>
+            <button class="primary" type="button" onclick="cetakLembarUjian()"><i class="fa-solid fa-print"></i> Cetak</button>
             <button type="button" class="hide-toolbar-inline" onclick="toggleToolbar()" title="Sembunyikan navigasi atas"><i class="fa-solid fa-chevron-up"></i> Sembunyikan</button>
         </div>
     </nav>
@@ -388,7 +388,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             {target:'#inspectorPanel',title:'4. Atur posisi dengan Inspektor',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Tekan atau tahan anak panah keyboard untuk menggeser. Usap menu atas ke atas dan panel Inspektor ke kanan untuk menyembunyikannya; klik pegangan Menu atau Inspektor untuk membukanya kembali. Panah atas/bawah memindahkan elemen di sampingnya pada baris yang sama; kiri/kanan hanya memindahkan elemen terpilih. Di kolom input Inspektor, panah tetap mengedit isian. Gunakan Reset posisi terpilih untuk mengembalikan posisi blok tersebut.'},
             {target:'#examTableBlock',title:'5. Nilai dan kolom KET',example:'<code>Rekap absen</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Ujian</code>',desc:'NIM dan nama berasal dari database. Skor, huruf, dan mutu berasal dari tombol Simpan & Kirim Nilai pada Rekap Nilai di Lembar Absen. Jika belum tampil, kirim kembali melalui sesi browser dan konteks kelas yang sama. Klik sel KET untuk menulis keterangan; garis sel tetap tercetak meskipun keterangannya kosong.'},
             {target:'#examScaleBlock',title:'6. Edit pedoman predikat',example:'<code>80–100 → A → 4 → Sangat Baik</code>',desc:'Teks pada tabel pedoman dapat diedit langsung atau melalui Inspektor. Mengedit pedoman hanya mengubah tulisan di lembar ini; skor dan huruf mahasiswa tetap mengikuti perhitungan Rekap Nilai. Periksa kesesuaian pedoman dengan aturan penilaian sebelum mencetak.'},
-            {target:'button[onclick="window.print()"]',title:'7. Zoom dan cetak A4',example:'<code>Zoom − / +</code> = tampilan layar<br><code>Cetak</code> = dokumen A4',desc:'Zoom mengubah ukuran tampilan layar dan Reset mengembalikannya ke 100%. Cetak memakai kertas A4 potret dengan tabel dan logo utuh. Tabel panjang berlanjut ke halaman berikutnya dengan judul kolom berulang. Periksa seluruh halaman pada pratinjau; sesuaikan ukuran kertas printer ke A4.'}
+            {target:'button[onclick="cetakLembarUjian()"]',title:'7. Zoom dan cetak A4',example:'<code>Zoom − / +</code> = tampilan layar<br><code>Cetak</code> = dokumen A4',desc:'Zoom mengubah ukuran tampilan layar dan Reset mengembalikannya ke 100%. Cetak memakai kertas A4 potret dengan tabel dan logo utuh. Tabel panjang berlanjut ke halaman berikutnya dengan judul kolom berulang. Periksa seluruh halaman pada pratinjau; sesuaikan ukuran kertas printer ke A4.'}
         ];
 
         let tourStep=0, tourActive=false, tourTarget=null, tourReturnFocus=null, tourHiddenPanels=[], tourPanelStates=[];
@@ -482,6 +482,27 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         const paper = document.getElementById('paperSheet');
         let zoomLevel = 1;
         let selectedElement = null;
+        function cetakLembarUjian() {
+            const ua=navigator.userAgent||'';
+            const webview=/android/i.test(ua)&&(/\bwv\b|; wv\)/i.test(ua)||!navigator.share);
+            if(webview){
+                const bridge=window.Android||window.AndroidInterface;
+                if(typeof bridge?.printPage==='function'){bridge.printPage();return;}
+                if(typeof bridge?.print==='function'){bridge.print();return;}
+                document.getElementById('bantuanAndroidCetak')?.remove();
+                const overlay=document.createElement('div');overlay.id='bantuanAndroidCetak';
+                overlay.style.cssText='position:fixed;inset:0;z-index:1000000;background:#0009;display:grid;place-items:center;padding:16px;font:16px Arial,sans-serif';
+                overlay.innerHTML='<section style="max-width:440px;width:100%;background:#fff;color:#172033;border-radius:14px;padding:20px;box-shadow:0 16px 48px #0005"><h2 style="margin:0 0 10px;font-size:19px">Cetak dari aplikasi Android</h2><p style="line-height:1.5;margin:0 0 16px">Aplikasi ini belum meneruskan perintah cetak ke Android. Buka halaman yang sama di Chrome, lalu pilih Cetak atau Simpan sebagai PDF dari menu cetak.</p><button type="button" data-open-browser style="min-height:44px;padding:10px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:bold">Buka halaman di Chrome</button> <button type="button" data-close style="min-height:44px;padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#172033">Tutup</button></section>';
+                overlay.addEventListener('click',event=>{
+                    if(event.target===overlay||event.target.closest('[data-close]'))overlay.remove();
+                    if(event.target.closest('[data-open-browser]')){
+                        const intent='intent://'+location.href.replace(/^https?:\/\//i,'')+'#Intent;scheme=https;package=com.android.chrome;end';
+                        const link=document.createElement('a');link.href=intent;link.target='_system';link.rel='noopener';document.body.appendChild(link);link.click();link.remove();overlay.remove();
+                    }
+                });document.body.appendChild(overlay);return;
+            }
+            window.print();
+        }
         function toggleToolbar() {
             document.getElementById('topToolbar').classList.toggle('hidden-toolbar');
             sinkronkanPeganganPanel();

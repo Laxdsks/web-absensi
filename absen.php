@@ -87,10 +87,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_hapus_massal_kel
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_hapus_permanen'])) {
     $id_target = trim($_POST['hapus_permanen_id']);
     if (!empty($id_target) && isset($koneksi) && $koneksi) {
-        $q_del = "DELETE FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) AND (nim=? OR nik=?)";
+        $q_del = "DELETE FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) AND nim=?";
         $stmt_del = mysqli_prepare($koneksi, $q_del);
         if ($stmt_del) {
-            mysqli_stmt_bind_param($stmt_del, "sssssss", $kelas, $kelas_lama, $prodi, $semester, $semester_lama, $id_target, $id_target);
+            mysqli_stmt_bind_param($stmt_del, "ssssss", $kelas, $kelas_lama, $prodi, $semester, $semester_lama, $id_target);
             mysqli_stmt_execute($stmt_del);
             if (mysqli_stmt_affected_rows($stmt_del) > 0) {
                 $pesan_validasi = "Sistem: Riwayat data secara permanen untuk identitas ($id_target) berhasil dihapus dari sistem.";
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_hapus_permanen']
 
 // PENARIKAN DATA MENGGUNAKAN OPERATOR EKSAK (=) SESUAI INSTRUKSI
 if (isset($koneksi) && $koneksi) {
-    $query = "SELECT * FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY nama ASC";
+    $query = "SELECT nim, nama, jk FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY nama ASC";
     $stmt  = mysqli_prepare($koneksi, $query);
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, "sssss", $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
@@ -674,7 +674,6 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                         <tr>
                             <th rowspan="3" style="width: 24px;" contenteditable="true">NO</th>
                             <th rowspan="3" style="width: 75px;" contenteditable="true" id="thLabelId"><?php echo $label_id; ?></th>
-                            <th rowspan="3" style="width: 75px;" contenteditable="true" id="thLabelNik">NIK</th>
                             <th rowspan="3" style="min-width: 120px;" contenteditable="true">NAMA MAHASISWA</th>
                             <th rowspan="3" style="width: 24px;" contenteditable="true">L/P</th>
                             <th colspan="16" id="headerPertemuan" contenteditable="true">TANGGAL / BULAN</th>
@@ -696,8 +695,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                         <?php if (!empty($data_siswa)): $no=1; foreach($data_siswa as $s): ?>
                         <tr>
                             <td class="row-no"><?php echo $no++; ?></td>
-                            <td><input type="text" value="<?php echo htmlspecialchars($s['nim'] ?? ($s['nis'] ?? '')); ?>"></td>
-                            <td><input type="text" value="<?php echo htmlspecialchars($s['nik'] ?? ''); ?>"></td>
+                            <td><input type="text" value="<?php echo htmlspecialchars($s['nim'] ?? ''); ?>"></td>
                             <td style="text-align: left; padding-left: 3px;"><input type="text" value="<?php echo htmlspecialchars($s['nama'] ?? ''); ?>" style="text-align: left;"></td>
                             <td><input type="text" value="<?php echo strtoupper($s['jk'] ?? 'L'); ?>"></td>
                             <?php for($i=1; $i<=16; $i++): ?><td><input class="attendance-cell" type="text" maxlength="1" autocomplete="off" aria-label="Absensi pertemuan <?php echo $i; ?>"></td><?php endfor; ?>
@@ -707,7 +705,6 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                             <?php for($r=1; $r<=30; $r++): ?>
                             <tr>
                                 <td class="row-no"><?php echo $r; ?></td>
-                                <td style="text-align:center;"><input type="text" value=""></td>
                                 <td style="text-align:center;"><input type="text" value=""></td>
                                 <td style="text-align: left; padding-left: 3px;"><input type="text" value="" style="text-align: left;"></td>
                                 <td style="text-align: center;"><input type="text" value="L"></td>
@@ -766,7 +763,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 <select name="hapus_permanen_id" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 6px; background: #1e293b; color: #f8fafc; border: 1px solid #475569;">
                     <option value="">-- Pilih Mahasiswa Satuan --</option>
                     <?php if(!empty($data_siswa)): foreach($data_siswa as $s): 
-                        $identifier = !empty($s['nim']) ? $s['nim'] : (!empty($s['nis']) ? $s['nis'] : (!empty($s['nik']) ? $s['nik'] : ''));
+                        $identifier = trim((string)($s['nim'] ?? ''));
                         $nama_siswa = !empty($s['nama']) ? $s['nama'] : 'Tanpa Nama';
                         if(!empty($identifier)):
                     ?>
@@ -1660,7 +1657,44 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             }
         });
 
+        function isAndroidWebView() {
+            const ua = navigator.userAgent || '';
+            return /android/i.test(ua) && (/\bwv\b|; wv\)/i.test(ua) || !navigator.share);
+        }
+
+        function bukaDiBrowserAndroid() {
+            const url = location.href;
+            const intentUrl = 'intent://' + url.replace(/^https?:\/\//i, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+            const link = document.createElement('a');
+            link.href = intentUrl;
+            link.target = '_system';
+            link.rel = 'noopener';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        }
+
+        function tampilkanBantuanAndroid(judul, pesan) {
+            document.getElementById('bantuanAndroidEkspor')?.remove();
+            const overlay = document.createElement('div');
+            overlay.id = 'bantuanAndroidEkspor';
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:1000000;background:#0009;display:grid;place-items:center;padding:16px;font:16px Arial,sans-serif;';
+            overlay.innerHTML = `<section style="max-width:440px;width:100%;background:#fff;color:#172033;border-radius:14px;padding:20px;box-shadow:0 16px 48px #0005"><h2 style="margin:0 0 10px;font-size:19px">${judul}</h2><p style="line-height:1.5;margin:0 0 16px">${pesan}</p><button type="button" data-action="browser" style="min-height:44px;padding:10px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:bold">Buka halaman di Chrome</button> <button type="button" data-action="close" style="min-height:44px;padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#172033">Tutup</button></section>`;
+            overlay.addEventListener('click', event => {
+                if (event.target === overlay || event.target.closest('[data-action="close"]')) overlay.remove();
+                if (event.target.closest('[data-action="browser"]')) { bukaDiBrowserAndroid(); overlay.remove(); }
+            });
+            document.body.appendChild(overlay);
+        }
+
         function cetakDokumen() {
+            if (isAndroidWebView()) {
+                const bridge = window.Android || window.AndroidInterface;
+                if (typeof bridge?.printPage === 'function') { bridge.printPage(); return; }
+                if (typeof bridge?.print === 'function') { bridge.print(); return; }
+                tampilkanBantuanAndroid('Cetak dari aplikasi Android', 'Aplikasi ini belum meneruskan perintah cetak ke Android. Buka halaman yang sama di Chrome, lalu pilih Cetak atau Simpan sebagai PDF dari menu cetak.');
+                return;
+            }
             window.print();
         }
 
@@ -1694,8 +1728,25 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             return `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:normal;word-wrap:break-word;font-size:9pt;mso-number-format:"\@"}th{font-weight:bold;background:#dbeafe}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
         }
 
-        function unduhFileTeks(content, mimeType, filename) {
+        async function unduhFileTeks(content, mimeType, filename) {
             const blob = new Blob(['\ufeff', content], { type: mimeType });
+            if (isAndroidWebView()) {
+                if (typeof File === 'function' && navigator.share && navigator.canShare) {
+                    try {
+                        const file = new File([blob], filename, { type: mimeType.split(';')[0] });
+                        if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: filename }); return; }
+                    } catch (error) { if (error?.name === 'AbortError') return; }
+                }
+                const bridge = window.Android || window.AndroidInterface;
+                if (typeof bridge?.saveFile === 'function') {
+                    const reader = new FileReader();
+                    reader.onload = () => bridge.saveFile(filename, mimeType, String(reader.result).split(',')[1]);
+                    reader.readAsDataURL(blob);
+                    return;
+                }
+                tampilkanBantuanAndroid('Simpan berkas dari aplikasi Android', 'Aplikasi ini belum mengaktifkan fitur unduh atau berbagi berkas. Buka halaman yang sama di Chrome, lalu tekan tombol Word atau Excel kembali untuk menyimpan berkas.');
+                return;
+            }
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1731,7 +1782,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         window.addEventListener('afterprint',selesaiCetakRekap);
         function cetakRekap() {
             siapkanCetakRekap();
-            window.print();
+            cetakDokumen();
         }
 
         function exportWordRekap() {

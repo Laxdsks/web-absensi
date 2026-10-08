@@ -56,7 +56,7 @@ if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa' && $_SERVER['REQU
     $inserted = 0; $skipped = 0;
     mysqli_begin_transaction($koneksi);
     $duplicate = mysqli_prepare($koneksi, "SELECT id FROM siswa WHERE nim=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) LIMIT 1");
-    $insert = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nik, nama, jk) VALUES ('S1', ?, ?, ?, ?, '', ?, ?)");
+    $insert = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk) VALUES ('S1', ?, ?, ?, ?, ?, ?)");
     if (!$duplicate || !$insert) {
         mysqli_rollback($koneksi);
         http_response_code(500);
@@ -92,21 +92,20 @@ $label_id = 'NIM';
 if (isset($_POST['save_siswa'])) {
     $id   = $_POST['id'] ?? '';
     $nim = trim($_POST['nim'] ?? '');
-    $nik = trim($_POST['nik'] ?? '');
     $nama = trim($_POST['nama'] ?? '');
     $jk = ($_POST['jk'] ?? 'L') === 'P' ? 'P' : 'L';
     if (!empty($id)) {
         $id = (int)$id;
-        $stmt = mysqli_prepare($koneksi, "UPDATE siswa SET nim=?, nik=?, nama=?, jk=? WHERE id=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?)");
+        $stmt = mysqli_prepare($koneksi, "UPDATE siswa SET nim=?, nama=?, jk=? WHERE id=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?)");
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'ssssisssss', $nim, $nik, $nama, $jk, $id, $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
+            mysqli_stmt_bind_param($stmt, 'sssisssss', $nim, $nama, $jk, $id, $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
         }
     } else {
-        $stmt = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nik, nama, jk) VALUES ('S1', ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk) VALUES ('S1', ?, ?, ?, ?, ?, ?)");
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'sssssss', $kelas, $prodi, $semester, $nim, $nik, $nama, $jk);
+            mysqli_stmt_bind_param($stmt, 'ssssss', $kelas, $prodi, $semester, $nim, $nama, $jk);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
         }
@@ -147,7 +146,7 @@ if (isset($_GET['hapus_semua']) && $_GET['hapus_semua'] == '1') {
 
 // SINKRONISASI BACKEND EXAK DAN LOGIKA S1 AMAN (=)
 $data_siswa = [];
-$q_str = "SELECT * FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY nama ASC";
+$q_str = "SELECT id, nim, nama, jk FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY nama ASC";
 $stmt = mysqli_prepare($koneksi, $q_str);
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'sssss', $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
@@ -450,7 +449,6 @@ if ($stmt) {
                         <tr>
                             <th style="width: 50px; text-align: center;">NO</th>
                             <th>NIM</th>
-                            <th>NIK / NISN</th>
                             <th>NAMA LENGKAP</th>
                             <th style="width: 80px; text-align: center;">L/P</th>
                             <th style="width: 120px; text-align: center;">AKSI</th>
@@ -461,17 +459,16 @@ if ($stmt) {
                         <tr>
                             <td style="text-align: center;"><?php echo $no++; ?></td>
                             <td><?php echo htmlspecialchars($s['nim'] ?? ''); ?></td>
-                            <td><?php echo htmlspecialchars($s['nik'] ?? '-'); ?></td>
                             <td style="font-weight: 600;"><?php echo htmlspecialchars($s['nama'] ?? ''); ?></td>
                             <td style="text-align: center;"><?php echo strtoupper($s['jk'] ?? 'L'); ?></td>
                             <td style="text-align: center;">
-                                <button onclick="bukaModalEdit('<?php echo $s['id']; ?>', '<?php echo htmlspecialchars($s['nim'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($s['nik'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($s['nama'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($s['jk'] ?? 'L', ENT_QUOTES); ?>')" class="btn-custom btn-primary" style="padding: 5px 10px; font-size: 11px;" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button onclick="bukaModalEdit('<?php echo $s['id']; ?>', '<?php echo htmlspecialchars($s['nim'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($s['nama'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($s['jk'] ?? 'L', ENT_QUOTES); ?>')" class="btn-custom btn-primary" style="padding: 5px 10px; font-size: 11px;" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
                                 <a href="data_siswa.php?hapus_id=<?php echo $s['id']; ?>&jenjang=<?php echo urlencode($jenjang); ?>&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&theme=<?php echo urlencode($current_theme); ?>" onclick="return confirm('Yakin ingin menghapus data mahasiswa ini?');" class="btn-custom btn-danger" style="padding: 5px 10px; font-size: 11px;" title="Hapus"><i class="fa-solid fa-trash"></i></a>
                             </td>
                         </tr>
                         <?php endforeach; else: ?>
                         <tr>
-                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada data mahasiswa untuk prodi, semester, dan kelas ini.</td>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada data mahasiswa untuk prodi, semester, dan kelas ini.</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -492,10 +489,6 @@ if ($stmt) {
                 <div class="form-group">
                     <label>NIM</label>
                     <input type="text" name="nim" id="formNim" required placeholder="Masukkan NIM mahasiswa...">
-                </div>
-                <div class="form-group">
-                    <label>NIK / NISN</label>
-                    <input type="text" name="nik" id="formNik" placeholder="Masukkan NIK / NISN...">
                 </div>
                 <div class="form-group">
                     <label>Nama Lengkap</label>
@@ -565,17 +558,15 @@ if ($stmt) {
             document.getElementById('modalTitle').innerText = 'Tambah Mahasiswa Baru';
             document.getElementById('formId').value = '';
             document.getElementById('formNim').value = '';
-            document.getElementById('formNik').value = '';
             document.getElementById('formNama').value = '';
             document.getElementById('formJk').value = 'L';
             document.getElementById('modalSiswa').classList.add('show');
         }
 
-        function bukaModalEdit(id, nim, nik, nama, jk) {
+        function bukaModalEdit(id, nim, nama, jk) {
             document.getElementById('modalTitle').innerText = 'Edit Data Mahasiswa';
             document.getElementById('formId').value = id;
             document.getElementById('formNim').value = nim;
-            document.getElementById('formNik').value = nik;
             document.getElementById('formNama').value = nama;
             document.getElementById('formJk').value = jk;
             document.getElementById('modalSiswa').classList.add('show');
