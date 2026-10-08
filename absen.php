@@ -134,7 +134,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --global-font-size: 8.5px;
+            --global-font-size: 11.333px;
             --global-padding: 1px;
             --logo-size: 58px;
             --global-font-family: 'Plus Jakarta Sans', sans-serif;
@@ -200,15 +200,17 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             position: relative;
             border-radius: 4px;
             transition: all 0.3s ease;
-            overflow: hidden;
+            overflow: visible;
             font-size: var(--global-font-size);
             margin: 0 auto !important;
             display: block;
             flex-shrink: 0;
         }
         
-        .page-break-line { position: absolute; left: 0; right: 0; height: 2px; background: rgba(239, 68, 68, 0.9); border-top: 1px dashed red; pointer-events: none; display: flex; justify-content: flex-end; padding-right: 10px; font-size: 9px; color: red; font-weight: bold; z-index: 50; top: 288mm; }
-        .page-break-line span { background: white; padding: 0 4px; transform: translateY(-50%); border: 1px solid rgba(239,68,68,0.5); border-radius: 3px; }
+        .page-preview-marker { position:absolute; left:0; right:0; height:0; border-top:2px dashed #2563eb; pointer-events:none; z-index:50; display:flex; justify-content:flex-end; padding-right:8px; }
+        .page-preview-marker span { transform:translateY(-50%); padding:3px 8px; border:1px solid #2563eb; border-radius:5px; background:#dbeafe; color:#1e3a8a; font:700 11px Arial,sans-serif; box-shadow:0 1px 4px #0003; }
+        .font-size-control { display:inline-flex; align-items:center; gap:4px; color:inherit; font-size:11px; white-space:nowrap; }
+        .font-size-control input { width:64px; min-height:30px; padding:3px 5px; border:1px solid #64748b; border-radius:5px; background:#0f172a; color:#fff; font-size:12px; }
         
         [contenteditable="true"] { outline: none; border-bottom: 1px dashed transparent; transition: border 0.2s; cursor: text; }
         [contenteditable="true"]:hover { border-bottom: 1px dashed #3b82f6; background: rgba(59,130,246,0.04); }
@@ -438,7 +440,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             body.cetak-rekap #tabelRekapNilai th, body.cetak-rekap #tabelRekapNilai td { padding: 2px !important; font-size: 7pt !important; }
             .workspace-container, .kontainer-kertas { transform: none !important; margin: 0; padding: 0; overflow: visible !important; }
             .paper-sheet { box-shadow: none !important; border-radius: 0 !important; width: 100% !important; min-height: auto !important; height: auto !important; max-height: none !important; overflow: visible !important; padding: var(--global-padding-sheet) !important; font-size: var(--global-font-size) !important; }
-            .page-break-line, .btn-hapus-logo { display: none !important; }
+            .page-preview-marker, .btn-hapus-logo { display: none !important; }
             
             .header-divider-line { border-bottom: 3px solid #000 !important; }
             .summary-box { border: 1px solid #000 !important; }
@@ -565,6 +567,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             <input type="color" id="textColorPicker" onchange="formatWarnaTeks(this.value)" title="Ubah Warna Font" style="width: 22px; height: 22px; border: none; background: transparent; cursor: pointer; border-radius: 4px;">
             <button onclick="undo()" class="btn btn-dark" title="Urungkan Perubahan / Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i> Undo</button>
             <button onclick="redo()" class="btn btn-dark" title="Ulangi Perubahan / Redo (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i> Redo</button>
+            <label class="font-size-control" title="Atur ukuran seluruh teks di lembar kerja">Ukuran <input id="fontSizeSelect" type="number" min="1" max="100" step="0.5" value="8.5" list="fontSizePresets" onchange="ubahUkuranFontCustom()" aria-label="Ukuran font dalam poin"><datalist id="fontSizePresets"><option value="1"><option value="2"><option value="4"><option value="6"><option value="8"><option value="8.5"><option value="9"><option value="10"><option value="11"><option value="12"><option value="14"><option value="16"><option value="18"><option value="20"><option value="24"><option value="28"><option value="32"><option value="36"><option value="48"><option value="72"><option value="100"></datalist> pt</label>
         </div>
         <div class="toolbar-group">
             <select id="fontFamilySelect" onchange="ubahFontFamily()" class="btn btn-dark" style="padding: 3px 5px;" title="Ganti Jenis Font Dokumen">
@@ -573,14 +576,6 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 <option value="'Roboto', sans-serif">Roboto</option>
                 <option value="'Times New Roman', serif">Times New Roman</option>
                 <option value="Arial, sans-serif">Arial</option>
-            </select>
-            <select id="fontSizeSelect" onchange="ubahUkuranFontCustom()" class="btn btn-dark" style="padding: 3px 5px;" title="Ubah Skala Ukuran Font Lembar Kerja">
-                <option value="7px">7 pt (Sangat Kecil)</option>
-                <option value="8px">8 pt (Kecil)</option>
-                <option value="8.5px" selected>8.5 pt (Normal)</option>
-                <option value="10px">10 pt (Sedang)</option>
-                <option value="11.5px">11.5 pt (Besar)</option>
-                <option value="13px">13 pt (Sangat Besar)</option>
             </select>
             <select id="paperSize" onchange="updateUkuranKertas()" class="btn btn-dark" style="padding: 3px 5px;" title="Format Ukuran Kertas Pengeprintan">
                 <option value="a4">A4</option>
@@ -607,10 +602,6 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
     
     <div class="workspace-container kontainer-kertas" id="workspaceContainer">
         <div class="paper-sheet" id="paperSheet">
-            <div class="page-break-line" id="pageBreakLine">
-                <span>⚠️ Batas Akhir Halaman 1</span>
-            </div>
-            
             <!-- KOP SURAT CETAK FISIK RESMI STKIP YAPIS DOMPU (Sesuai Permintaan Foto 100%) -->
             <div class="sheet-header selectable-element" id="sheetHeader" data-type="Header Utama" onclick="pilihElemen(event, this)">
                 <div class="logo-wrapper left-logo selectable-element" id="logoLeftWrapper" data-type="Logo Kiri" onclick="pilihElemen(event, this)">
@@ -1037,9 +1028,49 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         }
 
         function ubahUkuranFontCustom() {
-            const sz = document.getElementById('fontSizeSelect').value;
-            document.getElementById('paperSheet').style.setProperty('--global-font-size', sz);
+            const input = document.getElementById('fontSizeSelect');
+            const pt = Math.min(100, Math.max(1, Number(input.value) || 8.5));
+            input.value = String(pt);
+            document.getElementById('paperSheet').style.setProperty('--global-font-size', `${pt * 4 / 3}px`);
+            perbaruiPenandaHalaman();
         }
+
+        function tinggiHalamanLembarPx() {
+            const paper = document.getElementById('paperSheet');
+            const mm = parseFloat(paper.style.minHeight) || 297;
+            return mm * 96 / 25.4;
+        }
+
+        function perbaruiPenandaHalaman() {
+            const paper = document.getElementById('paperSheet');
+            if (!paper) return;
+            paper.querySelectorAll('.page-preview-marker').forEach(marker => marker.remove());
+            const tinggi = tinggiHalamanLembarPx();
+            const jumlahHalaman = Math.max(1, Math.ceil(paper.scrollHeight / tinggi));
+            for (let halaman = 2; halaman <= jumlahHalaman; halaman++) {
+                const marker = document.createElement('div');
+                marker.className = 'page-preview-marker';
+                marker.style.top = `${(halaman - 1) * tinggi}px`;
+                const label = document.createElement('span');
+                label.textContent = `HALAMAN ${halaman} DIMULAI ↓`;
+                marker.appendChild(label);
+                paper.appendChild(marker);
+            }
+        }
+
+        function jadwalkanPenandaHalaman() { requestAnimationFrame(perbaruiPenandaHalaman); }
+        window.addEventListener('resize', jadwalkanPenandaHalaman);
+        document.addEventListener('input', jadwalkanPenandaHalaman);
+        document.addEventListener('change', jadwalkanPenandaHalaman);
+        document.addEventListener('DOMContentLoaded', () => {
+            jadwalkanPenandaHalaman();
+            const paper = document.getElementById('paperSheet');
+            if (window.ResizeObserver && paper) {
+                const observer = new ResizeObserver(jadwalkanPenandaHalaman);
+                observer.observe(paper.querySelector('#tabelAbsen') || paper);
+                paper.querySelectorAll('img').forEach(img => img.addEventListener('load', jadwalkanPenandaHalaman));
+            }
+        });
 
         function previewLogo(event, imgId, iconId, btnHapusId) {
             simpanStateUndo();
@@ -1566,7 +1597,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             {target:'#signatureSpaceRange',title:'5. Atur ruang tanda tangan',example:'Nama dosen<br><br><br><u>Ruang tanda tangan</u>',desc:'Geser pengaturan Jarak tanda tangan di Inspektor untuk menambah atau mengurangi ruang kosong sebelum nama pada kedua tanda tangan. Pengaturan ini berbeda dari posisi blok: gunakan panah jika ingin memindahkan seluruh blok tanda tangan.'},
             {target:'#tourBtnRekap',title:'6. Buka rekap dan atur penilaian',desc:'Klik Rekap Nilai untuk membuka tabel penuh. Bobot awal: kehadiran 35%, aktivitas 35%, UTS 15%, UAS 15%; semua bobot bisa diedit. Bertanya dihitung 2 poin per kejadian, aktif/menjawab 3 poin, diskusi individu diisi dosen maksimal 25 poin. UTS/UAS diisi 0–100. Nilai awal setiap komponen 0.'},
             {target:'a[href^="ujian.php"]',title:'7. Kirim nilai ke Lembar Ujian',example:'<code>Rekap Nilai</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Lembar Ujian</code>',desc:'Di dalam rekap, klik Simpan & Kirim Nilai ke Lembar Ujian dan tunggu pemberitahuan berhasil. Setelah itu buka Lembar Ujian langsung, atau kembali melalui Data Mahasiswa. Gunakan sesi browser, prodi, semester, dan kelas yang sama. Nilai tersimpan pada session PHP; edit teks dan logo ujian tersimpan di browser perangkat.'},
-            {target:'#paperSize',title:'8. Periksa kertas, lalu cetak atau ekspor',example:'<code>A4 / F4 / Letter</code> · <code>Potret / Lanskap</code><br><code>Cetak</code> · <code>Word</code> · <code>Excel</code>',desc:'Pilih ukuran kertas, orientasi, margin, dan ukuran font sebelum mencetak. Cetak membuka pratinjau browser; periksa seluruh tabel dan tanda tangan. Word/Excel di toolbar mengekspor lembar absen. Untuk mengekspor rekap nilai, gunakan tombol Word/Excel di dalam Rekap Nilai.'},
+            {target:'#paperSize',title:'8. Atur font dan halaman, lalu cetak',example:'<code>Ukuran 1–100 pt</code> · <code>A4 / F4 / Letter</code><br><code>Garis biru = awal halaman berikutnya</code>',desc:'Ketik ukuran font 1 sampai 100 poin atau pilih angka saran; perubahan diterapkan ke teks seluruh lembar. Garis biru bertanda HALAMAN 2, 3, dan seterusnya menunjukkan posisi awal halaman berikutnya pada tampilan kerja. Garis penanda tidak ikut dicetak. Pilih ukuran kertas, orientasi, dan margin sebelum mencetak; periksa tabel dan tanda tangan pada pratinjau.'},
             {target:'#tourBtnTambah',title:'9. Bedakan baris lembar dan data tersimpan',desc:'Sisip Baris dan Hapus Baris hanya mengatur baris pada lembar yang sedang dikerjakan. Gunakan Data Mahasiswa untuk menyimpan mahasiswa ke database. Hapus Permanen membuka pilihan penghapusan data tersimpan: periksa mahasiswa dan konteks kelas sebelum mengonfirmasi karena data yang dihapus tidak dapat dipulihkan dari tombol Undo.'}
         ];
 
@@ -1700,7 +1731,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 
         function cloneUntukEkspor(element) {
             const clone = element.cloneNode(true);
-            clone.querySelectorAll('button, input[type="file"], .btn-hapus-logo, .page-break-line').forEach(el => el.remove());
+            clone.querySelectorAll('button, input[type="file"], .btn-hapus-logo, .page-preview-marker').forEach(el => el.remove());
             clone.querySelectorAll('input').forEach(input => {
                 const value = document.createElement('span');
                 value.textContent = input.value || '';

@@ -137,7 +137,11 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .toolbar .primary { background:#2563eb; color:#fff; border-color:#2563eb; }
         .zoom-label { min-width:54px; text-align:center; font-size:12px; color:var(--muted); }
         .workspace { width:100%; overflow:auto; padding:12px 4px 32px; -webkit-overflow-scrolling:touch; }
-        .paper { width:210mm; min-height:297mm; margin:0 auto; padding:13mm 12mm 14mm; background:#fff; color:#111; box-shadow:0 18px 50px #0007; transform-origin:top center; font-family:'Times New Roman',serif; }
+        .paper { width:210mm; min-height:297mm; margin:0 auto; padding:13mm 12mm 14mm; background:#fff; color:#111; box-shadow:0 18px 50px #0007; transform-origin:top center; font-family:'Times New Roman',serif; --exam-font-scale:1; position:relative; overflow:visible; }
+        .page-preview-marker { position:absolute; left:0; right:0; height:0; border-top:2px dashed #2563eb; pointer-events:none; z-index:50; display:flex; justify-content:flex-end; padding-right:8px; }
+        .page-preview-marker span { transform:translateY(-50%); padding:3px 8px; border:1px solid #2563eb; border-radius:5px; background:#dbeafe; color:#1e3a8a; font:700 11px Arial,sans-serif; box-shadow:0 1px 4px #0003; }
+        .font-size-control { display:inline-flex; align-items:center; gap:4px; font:600 12px 'Plus Jakarta Sans',sans-serif; white-space:nowrap; }
+        .font-size-control input { width:64px; min-height:34px; padding:3px 5px; border:1px solid var(--border); border-radius:7px; background:var(--panel); color:var(--text); font:600 12px 'Plus Jakarta Sans',sans-serif; }
         .sheet-header { display:grid; grid-template-columns:72px 1fr 72px; gap:8px; align-items:center; padding-bottom:7px; border-bottom:4px double #111; }
         .logo-slot { width:64px; height:64px; justify-self:center; position:relative; display:flex; align-items:center; justify-content:center; overflow:visible; border:1px dashed #94a3b8; color:#94a3b8; background:#fff; cursor:pointer; }
         .logo-slot img { display:block; width:100%; height:100%; padding:2px; object-fit:contain; flex-shrink:0; }
@@ -146,12 +150,12 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .logo-remove { position:absolute; right:0; bottom:calc(100% + 4px); border:1px solid #fecaca; border-radius:4px; background:#fee2e2; color:#991b1b; font:10px Arial,sans-serif; padding:4px; min-height:24px; cursor:pointer; white-space:nowrap; }
         .institution { text-align:center; line-height:1.14; }
         .institution .line { display:block; font-weight:700; text-transform:uppercase; }
-        .institution .line-one { font-size:12px; }
-        .institution .line-two { font-size:14px; }
-        .institution .line-three { font-size:15px; }
-        .institution .contact { display:block; margin-top:2px; font-size:9px; font-style:italic; }
-        .sheet-title { margin:9px 0 8px; text-align:center; font-size:14px; font-weight:700; text-decoration:underline; text-transform:uppercase; }
-        .meta { display:grid; grid-template-columns:1fr 1fr; gap:4px 22px; margin-bottom:9px; font-size:10px; }
+        .institution .line-one { font-size:calc(12pt * var(--exam-font-scale)); }
+        .institution .line-two { font-size:calc(14pt * var(--exam-font-scale)); }
+        .institution .line-three { font-size:calc(15pt * var(--exam-font-scale)); }
+        .institution .contact { display:block; margin-top:2px; font-size:calc(9pt * var(--exam-font-scale)); font-style:italic; }
+        .sheet-title { margin:9px 0 8px; text-align:center; font-size:calc(14pt * var(--exam-font-scale)); font-weight:700; text-decoration:underline; text-transform:uppercase; }
+        .meta { display:grid; grid-template-columns:1fr 1fr; gap:4px 22px; margin-bottom:9px; font-size:calc(10pt * var(--exam-font-scale)); }
         .meta-column { display:grid; gap:4px; align-content:start; }
         .meta-row { display:grid; grid-template-columns:112px 9px 1fr; align-items:baseline; min-height:12px; }
         .meta-label { font-weight:700; text-transform:uppercase; }
@@ -159,12 +163,12 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         [contenteditable="true"] { outline:none; cursor:text; }
         [contenteditable="true"]:hover,[contenteditable="true"]:focus { box-shadow:inset 0 -1px #2563eb; background:#dbeafe44; }
         .table-wrap { width:100%; }
-        table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:9px; }
+        table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:calc(9pt * var(--exam-font-scale)); }
         th,td { border:1px solid #111; padding:3px 4px; vertical-align:middle; overflow-wrap:anywhere; }
         th { text-align:center; font-weight:700; }
         td.center { text-align:center; }
         td.name { text-transform:uppercase; }
-        .saved-note { display:block; clear:both; margin:8px 0 0; text-align:right; color:#475569; font:9px 'Plus Jakarta Sans',sans-serif; }
+        .saved-note { display:block; clear:both; margin:8px 0 0; text-align:right; color:#475569; font:calc(9pt * var(--exam-font-scale)) 'Plus Jakarta Sans',sans-serif; }
         .selectable-element { position:relative; }
         .selectable-element.selected { outline:2px solid #2563eb; outline-offset:2px; }
         .inspector-panel { position:fixed; z-index:30; top:104px; right:16px; width:min(300px,calc(100vw - 24px)); max-height:calc(100vh - 120px); overflow:auto; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--panel); color:var(--text); box-shadow:0 12px 34px #0008; backdrop-filter:blur(12px); }
@@ -180,7 +184,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .empty-note { padding:12px; text-align:center; color:#64748b; }
         .grading-wrap { width:100%; margin-top:12px; break-inside:avoid; page-break-inside:avoid; }
         .grading-scale { width:320px; max-width:100%; margin:0 0 0 auto; break-inside:avoid; page-break-inside:avoid; }
-        .grading-scale table { font-size:8px; }
+        .grading-scale table { font-size:calc(8pt * var(--exam-font-scale)); }
         .grading-scale th,.grading-scale td { padding:3px 5px; text-align:center; }
         @media(max-width:700px) {
             body { padding:106px 4px 20px; }
@@ -198,6 +202,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             .selectable-element.selected { outline:none !important; }
             .workspace { overflow:visible; padding:0; }
             .paper { width:210mm; min-height:0 !important; height:auto !important; margin:0; padding:3mm 12mm 14mm; transform:none !important; zoom:1 !important; overflow:visible !important; box-shadow:none; }
+            .page-preview-marker { display:none !important; }
             thead { display:table-header-group; }
             tr { break-inside:avoid; page-break-inside:avoid; }
             .table-wrap,.grading-wrap,.grading-scale { overflow:visible !important; break-inside:auto; page-break-inside:auto; }
@@ -259,6 +264,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             <span class="zoom-label" id="zoomLabel">100%</span>
             <button type="button" onclick="ubahZoom(0.1)" title="Perbesar lembar"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom +</button>
             <button type="button" onclick="resetZoom()" title="Kembali ke ukuran awal">Reset</button>
+            <label class="font-size-control" title="Atur ukuran seluruh teks di lembar ujian">Ukuran <input id="examFontSize" type="number" min="1" max="100" step="0.5" value="9" list="examFontSizePresets" onchange="ubahUkuranFontUjian()" aria-label="Ukuran font dalam poin"><datalist id="examFontSizePresets"><option value="1"><option value="2"><option value="4"><option value="6"><option value="8"><option value="9"><option value="10"><option value="11"><option value="12"><option value="14"><option value="16"><option value="18"><option value="20"><option value="24"><option value="28"><option value="32"><option value="36"><option value="48"><option value="72"><option value="100"></datalist> pt</label>
             <button class="primary" type="button" onclick="cetakLembarUjian()"><i class="fa-solid fa-print"></i> Cetak</button>
             <button type="button" class="hide-toolbar-inline" onclick="toggleToolbar()" title="Sembunyikan navigasi atas"><i class="fa-solid fa-chevron-up"></i> Sembunyikan</button>
         </div>
@@ -388,7 +394,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             {target:'#inspectorPanel',title:'4. Atur posisi dengan Inspektor',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Tekan atau tahan anak panah keyboard untuk menggeser. Usap menu atas ke atas dan panel Inspektor ke kanan untuk menyembunyikannya; klik pegangan Menu atau Inspektor untuk membukanya kembali. Panah atas/bawah memindahkan elemen di sampingnya pada baris yang sama; kiri/kanan hanya memindahkan elemen terpilih. Di kolom input Inspektor, panah tetap mengedit isian. Gunakan Reset posisi terpilih untuk mengembalikan posisi blok tersebut.'},
             {target:'#examTableBlock',title:'5. Nilai dan kolom KET',example:'<code>Rekap absen</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Ujian</code>',desc:'NIM dan nama berasal dari database. Skor, huruf, dan mutu berasal dari tombol Simpan & Kirim Nilai pada Rekap Nilai di Lembar Absen. Jika belum tampil, kirim kembali melalui sesi browser dan konteks kelas yang sama. Klik sel KET untuk menulis keterangan; garis sel tetap tercetak meskipun keterangannya kosong.'},
             {target:'#examScaleBlock',title:'6. Edit pedoman predikat',example:'<code>80–100 → A → 4 → Sangat Baik</code>',desc:'Teks pada tabel pedoman dapat diedit langsung atau melalui Inspektor. Mengedit pedoman hanya mengubah tulisan di lembar ini; skor dan huruf mahasiswa tetap mengikuti perhitungan Rekap Nilai. Periksa kesesuaian pedoman dengan aturan penilaian sebelum mencetak.'},
-            {target:'button[onclick="cetakLembarUjian()"]',title:'7. Zoom dan cetak A4',example:'<code>Zoom − / +</code> = tampilan layar<br><code>Cetak</code> = dokumen A4',desc:'Zoom mengubah ukuran tampilan layar dan Reset mengembalikannya ke 100%. Cetak memakai kertas A4 potret dengan tabel dan logo utuh. Tabel panjang berlanjut ke halaman berikutnya dengan judul kolom berulang. Periksa seluruh halaman pada pratinjau; sesuaikan ukuran kertas printer ke A4.'}
+            {target:'button[onclick="cetakLembarUjian()"]',title:'7. Atur font dan cetak A4',example:'<code>Ukuran 1–100 pt</code> · <code>Garis biru = halaman berikutnya</code>',desc:'Ketik ukuran font 1 sampai 100 poin atau pilih angka saran; perubahan diterapkan ke seluruh teks lembar ujian. Garis biru bertanda HALAMAN 2, 3, dan seterusnya menunjukkan awal halaman lanjutan pada tampilan kerja dan tidak ikut dicetak. Zoom mengubah tampilan layar. Cetak memakai A4 potret; pratinjau cetak tetap menentukan pemenggalan halaman final.'}
         ];
 
         let tourStep=0, tourActive=false, tourTarget=null, tourReturnFocus=null, tourHiddenPanels=[], tourPanelStates=[];
@@ -482,6 +488,35 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         const paper = document.getElementById('paperSheet');
         let zoomLevel = 1;
         let selectedElement = null;
+        function ubahUkuranFontUjian() {
+            const input=document.getElementById('examFontSize');
+            const pt=Math.min(100,Math.max(1,Number(input.value)||9));
+            input.value=String(pt);
+            paper.style.setProperty('--exam-font-scale',String(pt/9));
+            perbaruiPenandaHalamanUjian();
+        }
+        function perbaruiPenandaHalamanUjian() {
+            if(!paper)return;
+            paper.querySelectorAll('.page-preview-marker').forEach(marker=>marker.remove());
+            const pageHeight=297*96/25.4;
+            const pages=Math.max(1,Math.ceil(paper.scrollHeight/pageHeight));
+            for(let page=2;page<=pages;page++){
+                const marker=document.createElement('div');marker.className='page-preview-marker';
+                marker.style.top=`${(page-1)*pageHeight}px`;
+                const label=document.createElement('span');label.textContent=`HALAMAN ${page} DIMULAI ↓`;
+                marker.appendChild(label);paper.appendChild(marker);
+            }
+        }
+        function jadwalkanPenandaHalamanUjian(){requestAnimationFrame(perbaruiPenandaHalamanUjian);}
+        window.addEventListener('resize',jadwalkanPenandaHalamanUjian);
+        document.addEventListener('input',jadwalkanPenandaHalamanUjian);
+        document.addEventListener('change',jadwalkanPenandaHalamanUjian);
+        document.addEventListener('DOMContentLoaded',()=>{
+            jadwalkanPenandaHalamanUjian();
+            const watched=paper.querySelector('#examTableBlock')||paper;
+            if(window.ResizeObserver)new ResizeObserver(jadwalkanPenandaHalamanUjian).observe(watched);
+            paper.querySelectorAll('img').forEach(img=>img.addEventListener('load',jadwalkanPenandaHalamanUjian));
+        });
         function cetakLembarUjian() {
             const ua=navigator.userAgent||'';
             const webview=/android/i.test(ua)&&(/\bwv\b|; wv\)/i.test(ua)||!navigator.share);
