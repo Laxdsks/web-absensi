@@ -192,12 +192,12 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             .inspector-toggle { top:auto; bottom:12px; }
         }
         @media print {
-            @page { size:A4 portrait; margin:0; }
+            @page { size:A4 portrait; margin:10mm 0 0; }
             html,body { width:210mm; min-height:297mm; margin:0; padding:0; background:#fff !important; color:#000 !important; }
             .toolbar,.inspector-panel,.inspector-toggle,.logo-slot input,.logo-remove,.saved-note { display:none !important; }
             .selectable-element.selected { outline:none !important; }
             .workspace { overflow:visible; padding:0; }
-            .paper { width:210mm; min-height:297mm; height:auto !important; margin:0; padding:13mm 12mm 14mm; transform:none !important; zoom:1 !important; overflow:visible !important; box-shadow:none; }
+            .paper { width:210mm; min-height:0 !important; height:auto !important; margin:0; padding:3mm 12mm 14mm; transform:none !important; zoom:1 !important; overflow:visible !important; box-shadow:none; }
             thead { display:table-header-group; }
             tr { break-inside:avoid; page-break-inside:avoid; }
             .table-wrap,.grading-wrap,.grading-scale { overflow:visible !important; break-inside:auto; page-break-inside:auto; }
@@ -235,11 +235,14 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         /* Pegangan menu tetap terlihat saat panel disembunyikan. */
         #topToolbar { transition:transform .25s ease,opacity .25s ease; }
         #topToolbar.hidden-toolbar { transform:translate(-50%,-130%); opacity:0; pointer-events:none; visibility:hidden; }
-        #toggleToolbarBtn { position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:10001; min-height:32px; padding:5px 12px; border:1px solid currentColor; border-radius:0 0 10px 10px; font-size:11px; cursor:pointer; touch-action:manipulation; }
+        #toggleToolbarBtn { display:none; position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:10001; min-height:32px; padding:5px 12px; border:1px solid currentColor; border-radius:0 0 10px 10px; font-size:11px; cursor:pointer; touch-action:manipulation; }
+        #toggleToolbarBtn.show { display:inline-flex; }
+        .hide-toolbar-inline { white-space:nowrap; }
         #inspectorPanel { transition:transform .25s ease,opacity .25s ease,visibility .25s ease; }
         #inspectorPanel.minimized { display:block; transform:translateX(calc(100% + 24px)); opacity:0; pointer-events:none; visibility:hidden; }
         #inspectorToggleBtn { position:fixed; top:50%; bottom:auto; right:0; transform:translateY(-50%); min-width:44px; min-height:48px; padding:8px; border-radius:10px 0 0 10px; z-index:10001; font-size:11px; touch-action:manipulation; }
         #toggleToolbarBtn:focus-visible,#inspectorToggleBtn:focus-visible { outline:3px solid #38bdf8; outline-offset:2px; }
+        @media(max-width:700px),(hover:none) { .hide-toolbar-inline { display:none !important; } }
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
     </style>
 </head>
@@ -257,6 +260,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             <button type="button" onclick="ubahZoom(0.1)" title="Perbesar lembar"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom +</button>
             <button type="button" onclick="resetZoom()" title="Kembali ke ukuran awal">Reset</button>
             <button class="primary" type="button" onclick="window.print()"><i class="fa-solid fa-print"></i> Cetak</button>
+            <button type="button" class="hide-toolbar-inline" onclick="toggleToolbar()" title="Sembunyikan navigasi atas"><i class="fa-solid fa-chevron-up"></i> Sembunyikan</button>
         </div>
     </nav>
 
@@ -491,9 +495,9 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             const menuHidden=toolbar.classList.contains('hidden-toolbar'),panelHidden=panel.classList.contains('minimized');
             toolbar.inert=menuHidden;panel.inert=panelHidden;
             menuButton.textContent=menuHidden?'⌄ Menu':'⌃ Menu';
-            menuButton.title=menuHidden?'Tampilkan menu atas':'Sembunyikan menu atas (atau usap ke atas)';
+            menuButton.title=menuHidden?'Tampilkan menu atas':'Menu atas sedang tampil';
+            menuButton.classList.toggle('show',menuHidden);
             menuButton.setAttribute('aria-expanded',String(!menuHidden));menuButton.setAttribute('aria-label',menuButton.title);
-            menuButton.style.top=menuHidden?'0px':Math.max(0,toolbar.getBoundingClientRect().bottom)+'px';
             panelButton.classList.toggle('show',panelHidden);panelButton.setAttribute('aria-expanded',String(!panelHidden));
         }
         function pasangUsapanPanel(element,axis,hide) {

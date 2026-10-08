@@ -474,11 +474,14 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         /* Pegangan menu tetap terlihat saat panel disembunyikan. */
         #topToolbar { transition:transform .25s ease,opacity .25s ease; }
         #topToolbar.hidden-toolbar { transform:translate(-50%,-130%); opacity:0; pointer-events:none; visibility:hidden; }
-        #toggleToolbarBtn { position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:10001; min-height:32px; padding:5px 12px; border:1px solid currentColor; border-radius:0 0 10px 10px; font-size:11px; cursor:pointer; touch-action:manipulation; }
+        #toggleToolbarBtn { display:none; position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:10001; min-height:32px; padding:5px 12px; border:1px solid currentColor; border-radius:0 0 10px 10px; font-size:11px; cursor:pointer; touch-action:manipulation; }
+        #toggleToolbarBtn.show { display:flex; }
+        .hide-toolbar-inline { white-space:nowrap; }
         #inspectorPanel { transition:transform .25s ease,opacity .25s ease,visibility .25s ease; }
         #inspectorPanel.minimized { display:block; transform:translateX(calc(100% + 24px)); opacity:0; pointer-events:none; visibility:hidden; }
         #inspectorToggleBtn { position:fixed; top:50%; bottom:auto; right:0; transform:translateY(-50%); min-width:44px; min-height:48px; padding:8px; border-radius:10px 0 0 10px; z-index:10001; font-size:11px; touch-action:manipulation; }
         #toggleToolbarBtn:focus-visible,#inspectorToggleBtn:focus-visible { outline:3px solid #38bdf8; outline-offset:2px; }
+        @media (max-width:700px),(hover:none) { .hide-toolbar-inline { display:none !important; } }
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
 </head>
@@ -598,6 +601,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             <button onclick="exportWord()" class="btn btn-primary" title="Ekspor dan Unduh Dokumen ke Microsoft Word (.doc)"><i class="fa-solid fa-file-word"></i> Word</button>
             <button onclick="exportExcel()" class="btn btn-success" title="Ekspor dan Unduh Lembar Kerja ke Microsoft Excel (.xls)"><i class="fa-solid fa-file-excel"></i> Excel</button>
             <button onclick="cetakDokumen()" class="btn btn-warning" id="tourBtnPrint" title="Cetak / Print Dokumen Kertas Secara Fisik atau PDF"><i class="fa-solid fa-print"></i> Cetak</button>
+            <button onclick="toggleToolbar()" class="btn btn-dark hide-toolbar-inline" type="button" title="Sembunyikan navigasi atas"><i class="fa-solid fa-chevron-up"></i> Sembunyikan</button>
         </div>
     </div>
     
@@ -962,9 +966,9 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const menuHidden=toolbar.classList.contains('hidden-toolbar'),panelHidden=panel.classList.contains('minimized');
             toolbar.inert=menuHidden;panel.inert=panelHidden;
             menuButton.textContent=menuHidden?'⌄ Menu':'⌃ Menu';
-            menuButton.title=menuHidden?'Tampilkan menu atas':'Sembunyikan menu atas (atau usap ke atas)';
+            menuButton.title=menuHidden?'Tampilkan menu atas':'Menu atas sedang tampil';
+            menuButton.classList.toggle('show',menuHidden);
             menuButton.setAttribute('aria-expanded',String(!menuHidden));menuButton.setAttribute('aria-label',menuButton.title);
-            menuButton.style.top=menuHidden?'0px':Math.max(0,toolbar.getBoundingClientRect().bottom)+'px';
             panelButton.classList.toggle('show',panelHidden);panelButton.setAttribute('aria-expanded',String(!panelHidden));
         }
         function pasangUsapanPanel(element,axis,hide) {
