@@ -422,15 +422,20 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             
             body { background: white; padding: 0; color: black; font-size: var(--global-font-size); overflow: auto !important; }
             .top-toolbar, .toolbar-toggle-btn, .floating-tools, .inspector-panel, .inspector-toggle-btn, .rekap-modal-overlay, .tour-spotlight-backdrop, .tour-speech-bubble, .custom-modal-overlay { display: none !important; }
-            body.modal-open #rekapModalOverlay.show { display: flex !important; position: static; width: 100%; height: auto; min-height: 0; background: #fff !important; color: #000 !important; opacity: 1; visibility: visible; }
-            body.modal-open .rekap-modal-content { display: block; width: 100%; height: auto; max-height: none; overflow: visible; padding: 0; background: #fff !important; color: #000 !important; }
-            body.modal-open .rekap-modal-header button { display: none !important; }
-            body.modal-open .rekap-modal-header { display: block; color: #000 !important; }
-            body.modal-open .rekap-modal-body, body.modal-open .rekap-table-wrap { overflow: visible !important; }
-            body.modal-open .rekap-export-content, body.modal-open .composition-summary, body.modal-open .weight-settings { background: #fff !important; color: #000 !important; }
-            body.modal-open .rekap-activity-help, body.modal-open .composition-summary strong { color: #000 !important; }
-            body.modal-open #tabelRekapNilai { min-width: 0; table-layout: fixed; font-size: 7pt !important; }
-            body.modal-open #tabelRekapNilai th, body.modal-open #tabelRekapNilai td { padding: 2px !important; font-size: 7pt !important; }
+            body.cetak-rekap { overflow:visible !important; height:auto !important; }
+            body.cetak-rekap > :not(#rekapModalOverlay) { display:none !important; }
+            body.cetak-rekap #rekapModalOverlay.show { display: block !important; position: static; width: 100%; height: auto; min-height: 0; background: #fff !important; color: #000 !important; opacity: 1; visibility: visible; }
+            body.cetak-rekap .rekap-modal-content { display: block; width: 100%; height: auto; max-height: none; overflow: visible; padding: 0; background: #fff !important; color: #000 !important; }
+            body.cetak-rekap .rekap-modal-header button { display: none !important; }
+            body.cetak-rekap .rekap-modal-header { display: block; color: #000 !important; }
+            body.cetak-rekap #rekapModalOverlay h3, body.cetak-rekap #rekapModalOverlay p, body.cetak-rekap #rekapModalOverlay label, body.cetak-rekap #rekapModalOverlay .rekap-activity-help, body.cetak-rekap #rekapModalOverlay .composition-summary { color:#000 !important; }
+            body.cetak-rekap #rekapModalOverlay .rekap-export-content, body.cetak-rekap #rekapModalOverlay .rekap-export-content > div { background:#fff !important; color:#000 !important; }
+            body.cetak-rekap #rekapModalOverlay input { min-height:0 !important; height:auto !important; padding:0 !important; font-size:7pt !important; background:transparent !important; color:#000 !important; border:none !important; box-shadow:none !important; }
+            body.cetak-rekap .rekap-modal-body, body.cetak-rekap .rekap-table-wrap { overflow: visible !important; }
+            body.cetak-rekap .rekap-export-content, body.cetak-rekap .composition-summary, body.cetak-rekap .weight-settings { background: #fff !important; color: #000 !important; }
+            body.cetak-rekap .rekap-activity-help, body.cetak-rekap .composition-summary strong { color: #000 !important; }
+            body.cetak-rekap #tabelRekapNilai { min-width: 0; table-layout: fixed; font-size: 7pt !important; }
+            body.cetak-rekap #tabelRekapNilai th, body.cetak-rekap #tabelRekapNilai td { padding: 2px !important; font-size: 7pt !important; }
             .workspace-container, .kontainer-kertas { transform: none !important; margin: 0; padding: 0; overflow: visible !important; }
             .paper-sheet { box-shadow: none !important; border-radius: 0 !important; width: 100% !important; min-height: auto !important; height: auto !important; max-height: none !important; overflow: visible !important; padding: var(--global-padding-sheet) !important; font-size: var(--global-font-size) !important; }
             .page-break-line, .btn-hapus-logo { display: none !important; }
@@ -466,6 +471,15 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         .tour-feature-preview code { display:inline-block; min-width:24px; padding:5px; border:1px solid #475569; border-radius:4px; background:#f1f5f9; color:#111; font-size:15px; text-align:center; }
         .tour-example-caption { width:100%; font-size:12px; font-weight:700; color:#334155; }
         @media print { .tour-spotlight-backdrop,.tour-focus-frame,.tour-speech-bubble { display:none !important; } }
+        /* Pegangan menu tetap terlihat saat panel disembunyikan. */
+        #topToolbar { transition:transform .25s ease,opacity .25s ease; }
+        #topToolbar.hidden-toolbar { transform:translate(-50%,-130%); opacity:0; pointer-events:none; visibility:hidden; }
+        #toggleToolbarBtn { position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:10001; min-height:32px; padding:5px 12px; border:1px solid currentColor; border-radius:0 0 10px 10px; font-size:11px; cursor:pointer; touch-action:manipulation; }
+        #inspectorPanel { transition:transform .25s ease,opacity .25s ease,visibility .25s ease; }
+        #inspectorPanel.minimized { display:block; transform:translateX(calc(100% + 24px)); opacity:0; pointer-events:none; visibility:hidden; }
+        #inspectorToggleBtn { position:fixed; top:50%; bottom:auto; right:0; transform:translateY(-50%); min-width:44px; min-height:48px; padding:8px; border-radius:10px 0 0 10px; z-index:10001; font-size:11px; touch-action:manipulation; }
+        #toggleToolbarBtn:focus-visible,#inspectorToggleBtn:focus-visible { outline:3px solid #38bdf8; outline-offset:2px; }
+        @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
 </head>
 <body>
@@ -477,14 +491,14 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         </script>
     <?php endif; ?>
 
-    <button class="toolbar-toggle-btn" onclick="toggleToolbar()" id="toggleToolbarBtn" title="Sembunyikan atau tampilkan pita menu atas">
+    <button class="toolbar-toggle-btn" onclick="toggleToolbar()" id="toggleToolbarBtn" aria-controls="topToolbar" title="Sembunyikan atau tampilkan pita menu atas">
         <i class="fa-solid fa-chevron-up" id="toggleIcon"></i> Sembunyikan Pita Menu
     </button>
-    <button class="inspector-toggle-btn" id="inspectorToggleBtn" onclick="toggleInspectorPanel()" title="Tampilkan navigasi tata letak">
-        <i class="fa-solid fa-sliders"></i> Panel Navigasi & Tata Letak
+    <button class="inspector-toggle-btn" id="inspectorToggleBtn" aria-controls="inspectorPanel" onclick="toggleInspectorPanel()" title="Tampilkan navigasi tata letak">
+        <i class="fa-solid fa-sliders"></i> ‹ Inspektor
     </button>
     
-    <div style="position: fixed; top: 0; right: 0; width: 30px; height: 100vh; z-index: 9995; pointer-events: auto;" title="Area pemicu usap samping"></div>
+
     <div class="inspector-panel" id="inspectorPanel" title="Usap ke kanan untuk menyembunyikan panel ini">
         <div class="inspector-header">
             <span><i class="fa-solid fa-compass-drafting"></i> Panel Tata Letak & Properti</span>
@@ -807,7 +821,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             <div class="rekap-modal-body" id="rekapModalBodyContent">
                 <div class="rekap-export-content" style="background: #1e293b; padding: 15px; border-radius: 8px; color: #f8fafc;">
                     <div style="margin-bottom: 10px; font-size: 12px; font-weight: 600; color: #38bdf8;">
-                        Titik (.) = hadir; A = alpa/tidak hadir; S = sakit; I = izin. S dan I bukan hadir, tetapi tidak menambah hitungan alpa. Nilai E otomatis hanya jika A minimal 4 kali.
+                        Titik (.) = hadir; A = alpa/tidak hadir; S = sakit; I = izin. Absen adalah jumlah A + S + I. S dan I tetap dihitung terpisah sebagai keterangan, bukan hadir, dan tidak mendapat penalti tambahan. Nilai E otomatis hanya jika A (alpa) minimal 4 kali.
                     </div>
                     <div class="composition-summary">
                         <strong>Penilaian dilakukan dengan komposisi:</strong><br>
@@ -824,13 +838,13 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     <p class="rekap-activity-help">Poin aktivitas: bertanya = 2 poin setiap kali; aktif/menambah jawaban/usul/saran = 3 poin setiap kontribusi; diskusi individu dapat diatur dosen sampai 25 poin. Nilai aktivitas dihitung dari jumlah poin tersebut (maksimal 100).</p>
                     <div class="table-responsive rekap-table-wrap">
                         <table class="attendance-table" id="tabelRekapNilai" style="width: 100%; background: white; color: black; border-collapse: collapse;">
-                            <colgroup><col style="width:4%"><col style="width:16%"><col style="width:11%"><col style="width:5%"><col style="width:5%"><col style="width:5%"><col style="width:6%"><col style="width:13%"><col style="width:8%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:5%"><col style="width:4%"></colgroup>
+                            <colgroup><col style="width:3%"><col style="width:15%"><col style="width:10%"><col style="width:5%"><col style="width:5%"><col style="width:5%"><col style="width:5%"><col style="width:5%"><col style="width:6%"><col style="width:12%"><col style="width:7%"><col style="width:5%"><col style="width:5%"><col style="width:5%"><col style="width:4%"><col style="width:3%"></colgroup>
                             <thead>
                                 <tr style="color: #0f172a;">
                                     <th class="rekap-header-blue" rowspan="2">NO</th>
                                     <th class="rekap-header-blue" rowspan="2">NAMA</th>
                                     <th class="rekap-header-blue" rowspan="2">NIM</th>
-                                    <th class="rekap-header-blue" colspan="3">DAFTAR KEHADIRAN</th>
+                                    <th class="rekap-header-blue" colspan="5">DAFTAR KEHADIRAN</th>
                                     <th class="rekap-header-yellow" colspan="3">KEAKTIFAN</th>
                                     <th class="rekap-header-yellow" rowspan="2">UTS</th>
                                     <th class="rekap-header-blue" rowspan="2">UAS</th>
@@ -838,7 +852,9 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                                 </tr>
                                 <tr style="color: #0f172a;">
                                     <th class="rekap-header-yellow">ABSENSI</th>
-                                    <th class="rekap-header-yellow">ABSEN (A)</th>
+                                    <th class="rekap-header-yellow" title="Tidak hadir: alpa, sakit, dan izin. Hanya alpa (A) minimal 4 kali memicu E otomatis.">ABSEN<br>(A + S + I)</th>
+                                    <th class="rekap-header-yellow">SAKIT (S)</th>
+                                    <th class="rekap-header-yellow">IZIN (I)</th>
                                     <th class="rekap-header-yellow">TOTAL</th>
                                     <th class="rekap-header-yellow">BERTANYA<br>(2 POIN)</th>
                                     <th class="rekap-header-yellow">AKTIF / MENAMBAH JAWABAN / USUL / SARAN<br>(3 POIN)</th>
@@ -934,30 +950,46 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         }
 
         function toggleToolbar() {
-            const tb = document.getElementById('topToolbar');
-            const icon = document.getElementById('toggleIcon');
-            const btn = document.getElementById('toggleToolbarBtn');
-            tb.classList.toggle('hidden-toolbar');
-            if(tb.classList.contains('hidden-toolbar')) {
-                icon.className = 'fa-solid fa-chevron-down';
-                btn.innerHTML = '<i class="fa-solid fa-chevron-down" id="toggleIcon"></i> Tampilkan Pita Menu';
-            } else {
-                icon.className = 'fa-solid fa-chevron-up';
-                btn.innerHTML = '<i class="fa-solid fa-chevron-up" id="toggleIcon"></i> Sembunyikan Pita Menu';
-            }
+            document.getElementById('topToolbar').classList.toggle('hidden-toolbar');
+            sinkronkanPeganganPanel();
         }
-
         function toggleInspectorPanel() {
-            const panel = document.getElementById('inspectorPanel');
-            const toggleBtn = document.getElementById('inspectorToggleBtn');
-            panel.classList.toggle('minimized');
-            if(panel.classList.contains('minimized')) {
-                toggleBtn.classList.add('show');
-            } else {
-                toggleBtn.classList.remove('show');
-            }
+            document.getElementById('inspectorPanel').classList.toggle('minimized');
+            sinkronkanPeganganPanel();
         }
-
+        function sinkronkanPeganganPanel() {
+            const toolbar=document.getElementById('topToolbar'),panel=document.getElementById('inspectorPanel'),menuButton=document.getElementById('toggleToolbarBtn'),panelButton=document.getElementById('inspectorToggleBtn');
+            const menuHidden=toolbar.classList.contains('hidden-toolbar'),panelHidden=panel.classList.contains('minimized');
+            toolbar.inert=menuHidden;panel.inert=panelHidden;
+            menuButton.textContent=menuHidden?'⌄ Menu':'⌃ Menu';
+            menuButton.title=menuHidden?'Tampilkan menu atas':'Sembunyikan menu atas (atau usap ke atas)';
+            menuButton.setAttribute('aria-expanded',String(!menuHidden));menuButton.setAttribute('aria-label',menuButton.title);
+            menuButton.style.top=menuHidden?'0px':Math.max(0,toolbar.getBoundingClientRect().bottom)+'px';
+            panelButton.classList.toggle('show',panelHidden);panelButton.setAttribute('aria-expanded',String(!panelHidden));
+        }
+        function pasangUsapanPanel(element,axis,hide) {
+            let start=null;
+            element.addEventListener('touchstart',event=>{
+                if(event.touches.length!==1||event.target.closest('input,textarea,select,[contenteditable="true"]')){start=null;return;}
+                const touch=event.touches[0];start={x:touch.clientX,y:touch.clientY,time:Date.now()};
+            },{passive:true});
+            element.addEventListener('touchend',event=>{
+                if(!start||!event.changedTouches.length)return;
+                const touch=event.changedTouches[0],dx=touch.clientX-start.x,dy=touch.clientY-start.y,elapsed=Date.now()-start.time;start=null;
+                if(typeof tourActive!=='undefined'&&tourActive)return;
+                if(elapsed>1200)return;
+                if((axis==='up'&&dy< -44&&Math.abs(dy)>Math.abs(dx)*1.35)||(axis==='right'&&dx>44&&dx>Math.abs(dy)*1.35))hide();
+            },{passive:true});
+            element.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+        }
+        const menuPanel=document.getElementById('topToolbar'),layoutPanel=document.getElementById('inspectorPanel');
+        pasangUsapanPanel(menuPanel,'up',()=>{menuPanel.classList.add('hidden-toolbar');sinkronkanPeganganPanel();});
+        pasangUsapanPanel(layoutPanel,'right',()=>{layoutPanel.classList.add('minimized');sinkronkanPeganganPanel();});
+        const panelObserver=new MutationObserver(sinkronkanPeganganPanel);
+        [menuPanel,layoutPanel].forEach(el=>panelObserver.observe(el,{attributes:true,attributeFilter:['class']}));
+        new ResizeObserver(sinkronkanPeganganPanel).observe(menuPanel);
+        window.addEventListener('resize',sinkronkanPeganganPanel);
+        sinkronkanPeganganPanel();
         function ubahZoom(delta) {
             currentZoom += delta;
             if(currentZoom < 0.5) currentZoom = 0.5;
@@ -1047,6 +1079,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             document.querySelectorAll('.selectable-element').forEach(e => e.classList.remove('selected'));
             selectedElement = el;
             el.classList.add('selected');
+            el.tabIndex = 0;
+            if (!event.target.closest('input,textarea,select,[contenteditable="true"]')) el.focus({preventScroll:true});
             const typeName = el.getAttribute('data-type') || 'Elemen';
             document.getElementById('activeElementLabel').innerText = typeName;
             
@@ -1097,7 +1131,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         pulihkanPosisiLembarAbsen();
 
         document.addEventListener('click', function(e) {
-            if(!e.target.closest('.selectable-element') && !e.target.closest('.inspector-panel')) {
+            if(!e.target.closest('.selectable-element') && !e.target.closest('.inspector-panel') && !e.target.closest('#toggleToolbarBtn,#inspectorToggleBtn,#topToolbar')) {
                 document.querySelectorAll('.selectable-element').forEach(el => el.classList.remove('selected'));
                 selectedElement = null;
                 document.getElementById('activeElementLabel').innerText = 'Pilih elemen di lembar kerja...';
@@ -1134,7 +1168,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         document.addEventListener('keydown', function(event) {
             if (typeof tourActive !== 'undefined' && tourActive) return;
             if (!selectedElement || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
-            if (event.target.closest && event.target.closest('input, textarea, select, button, a')) return;
+            if (event.target.closest && event.target.closest('input,textarea,select,a')) return;
+            if (event.target.closest && event.target.closest('button') && !event.target.closest('.inspector-panel,#toggleToolbarBtn,#inspectorToggleBtn')) return;
             event.preventDefault();
             const step = event.shiftKey ? 5 : 1;
             if (event.key === 'ArrowUp') ubahPosisiAktif('y', -step);
@@ -1325,17 +1360,20 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 const nim = inputs[0] ? inputs[0].value.trim() : '';
                 const nama = inputs[2] ? inputs[2].value.trim() : '';
                 if (!nama) return;
-                let hadirCount = 0, alpaCount = 0, totalDiisi = 0;
+                let hadirCount = 0, alpaCount = 0, sakitCount = 0, izinCount = 0, totalDiisi = 0;
                 r.querySelectorAll('.attendance-cell').forEach(cell => {
                     const val = cell.value.trim().toUpperCase();
                     if (!['.', 'A', 'S', 'I'].includes(val)) return;
                     totalDiisi++;
                     if (val === '.') hadirCount++;
                     else if (val === 'A') alpaCount++;
+                    else if (val === 'S') sakitCount++;
+                    else if (val === 'I') izinCount++;
                 });
                 const persentase = totalPertemuan > 0 ? Math.round((hadirCount / totalPertemuan) * 100) : 0;
                 const tr = document.createElement('tr');
                 tr.dataset.persenHadir = String(persentase);
+                tr.dataset.alpaCount = String(alpaCount);
                 const addCell = (text, className = '', style = '') => {
                     const cell = document.createElement('td');
                     cell.textContent = text;
@@ -1348,7 +1386,9 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 addCell(nama, 'name-value', 'text-align:left;padding-left:6px;');
                 addCell(nim, 'nim-value', 'text-align:center;');
                 addCell(hadirCount, 'present-count', 'text-align:center;');
-                addCell(alpaCount, 'alpa-count', 'text-align:center;color:#dc2626;font-weight:bold;');
+                addCell(alpaCount + sakitCount + izinCount, 'absent-count', 'text-align:center;color:#dc2626;font-weight:bold;').title = `Alpa (A): ${alpaCount}; Sakit (S): ${sakitCount}; Izin (I): ${izinCount}`;
+                addCell(sakitCount, 'sakit-count', 'text-align:center;color:#92400e;font-weight:bold;');
+                addCell(izinCount, 'izin-count', 'text-align:center;color:#0369a1;font-weight:bold;');
                 addCell(totalDiisi, 'filled-count', 'text-align:center;');
                 const oldValues = draftNilaiPerNim[nim] || [0, 0, 0, 0, 0];
                 const scores = oldValues.length >= 5 ? oldValues : [0, 0, Math.min(25, Number(oldValues[0]) || 0), oldValues[1] || 0, oldValues[2] || 0];
@@ -1419,7 +1459,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             let skorAkhir = totalBobot > 0
                 ? ((persentaseHadir * bobotAbsensi) + (aktivitas * bobotAktivitas) + (uts * bobotUTS) + (uas * bobotUAS)) / totalBobot
                 : 0;
-            const alpaVal = parseInt(row.querySelector('.alpa-count').textContent, 10) || 0;
+            const alpaVal = parseInt(row.dataset.alpaCount, 10) || 0;
             let nilaiHuruf, angkaMutu;
             if(alpaVal >= 4) {
                 skorAkhir = 0;
@@ -1461,7 +1501,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     skor_akhir: skorAkhir,
                     nilai_huruf: nilaiHuruf,
                     angka_mutu: angkaMutu,
-                    alpa: parseInt(r.querySelector('.alpa-count').innerText, 10) || 0
+                    alpa: parseInt(r.dataset.alpaCount, 10) || 0
                 });
             });
 
@@ -1520,8 +1560,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         const tourSteps=[
             {target:'#tourLogoBox',title:'1. Pasang logo dari perangkat',desc:'Klik kotak logo kiri atau kanan, lalu pilih gambar JPG atau PNG. Gambar ditampilkan utuh. Tombol Hapus di bawah logo mengosongkan logo tersebut; ukuran logo dapat diatur pada panel Inspektor.'},
             {target:'#sheetHeader',title:'2. Edit kop dan informasi kuliah',example:'<code>Klik teks</code> → <code>Ketik perubahan</code>',desc:'Klik teks pada kertas untuk mengedit kop, semester, mata kuliah, dan nama dosen. Untuk mengedit dari panel, klik blok sampai garis biru muncul, lalu isi kolom teks di Inspektor. Data mahasiswa resmi ditambah atau diedit melalui halaman Data Mahasiswa.'},
-            {target:'#tableWrapper',title:'3. Isi 16 pertemuan',example:'<code>.</code> Hadir · <code>A</code> Alpa · <code>S</code> Sakit · <code>I</code> Izin<br><code>Enter</code> Sel berikutnya · <code>Delete</code> Hapus isian',desc:'Masukkan titik, A, S, atau I pada sel pertemuan. S dan I tidak menambah hadir maupun alpa. Hanya A yang dihitung alpa; minimal 4 A membuat nilai akhir E. Tombol Sisip/Hapus Kolom mengubah jumlah pertemuan pada lembar ini.'},
-            {target:'#inspectorPanel',title:'4. Geser elemen yang terseleksi',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Gunakan tombol X/Y di panel atau anak panah keyboard. Atas/bawah menggeser elemen di sampingnya pada baris yang sama; kiri/kanan hanya menggeser elemen terpilih. Saat mengisi kolom input, panah tetap digunakan untuk mengedit isian. Reset Posisi Ini mengembalikan elemen terpilih.'},
+            {target:'#tableWrapper',title:'3. Isi 16 pertemuan',example:'<code>.</code> Hadir · <code>A</code> Alpa · <code>S</code> Sakit · <code>I</code> Izin<br><code>Enter</code> Sel berikutnya · <code>Delete</code> Hapus isian',desc:'Masukkan titik, A, S, atau I pada sel pertemuan. Pada rekap, Absen = A + S + I, dengan jumlah sakit dan izin di kolom terpisah. S dan I bukan hadir, tanpa penalti tambahan. Hanya A dihitung alpa; minimal 4 A membuat nilai akhir E. Kolom pertemuan pada lembar absen tetap sama. Tombol Sisip/Hapus Kolom mengubah jumlah pertemuan pada lembar ini.'},
+            {target:'#inspectorPanel',title:'4. Geser elemen yang terseleksi',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Gunakan tombol X/Y di panel atau tekan/tahan anak panah keyboard. Usap menu atas ke atas dan panel Inspektor ke kanan untuk menyembunyikannya; klik pegangan Menu atau Inspektor untuk membukanya kembali. Atas/bawah menggeser elemen di sampingnya pada baris yang sama; kiri/kanan hanya menggeser elemen terpilih. Saat mengisi kolom input, panah tetap digunakan untuk mengedit isian. Reset Posisi Ini mengembalikan elemen terpilih.'},
             {target:'#signatureSpaceRange',title:'5. Atur ruang tanda tangan',example:'Nama dosen<br><br><br><u>Ruang tanda tangan</u>',desc:'Geser pengaturan Jarak tanda tangan di Inspektor untuk menambah atau mengurangi ruang kosong sebelum nama pada kedua tanda tangan. Pengaturan ini berbeda dari posisi blok: gunakan panah jika ingin memindahkan seluruh blok tanda tangan.'},
             {target:'#tourBtnRekap',title:'6. Buka rekap dan atur penilaian',desc:'Klik Rekap Nilai untuk membuka tabel penuh. Bobot awal: kehadiran 35%, aktivitas 35%, UTS 15%, UAS 15%; semua bobot bisa diedit. Bertanya dihitung 2 poin per kejadian, aktif/menjawab 3 poin, diskusi individu diisi dosen maksimal 25 poin. UTS/UAS diisi 0–100. Nilai awal setiap komponen 0.'},
             {target:'a[href^="ujian.php"]',title:'7. Kirim nilai ke Lembar Ujian',example:'<code>Rekap Nilai</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Lembar Ujian</code>',desc:'Di dalam rekap, klik Simpan & Kirim Nilai ke Lembar Ujian dan tunggu pemberitahuan berhasil. Setelah itu buka Lembar Ujian langsung, atau kembali melalui Data Mahasiswa. Gunakan sesi browser, prodi, semester, dan kelas yang sama. Nilai tersimpan pada session PHP; edit teks dan logo ujian tersimpan di browser perangkat.'},
@@ -1639,7 +1679,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const exportTable = clone.matches('table') ? clone : clone.querySelector('table');
             if (exportTable) { exportTable.style.width = '100%'; exportTable.style.minWidth = '0'; exportTable.style.tableLayout = 'fixed'; }
             const bodyContent = clone.outerHTML;
-            return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0}h1{font-size:16pt;margin:0 0 10px}p{margin:5px 0 10px}table{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 12px}th,td{border:1px solid #111;padding:5px 4px;text-align:center;vertical-align:middle;white-space:normal;overflow-wrap:break-word;font-size:9pt;color:#111}th{font-weight:bold;background:#dbeafe}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}colgroup col:nth-child(1){width:4%}colgroup col:nth-child(2){width:16%}colgroup col:nth-child(3){width:11%}</style></head><body><h1>${title}</h1>${bodyContent}</body></html>`;
+            return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0}h1{font-size:16pt;margin:0 0 10px}p{margin:5px 0 10px}table{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 12px}th,td{border:1px solid #111;padding:5px 4px;text-align:center;vertical-align:middle;white-space:normal;overflow-wrap:break-word;font-size:9pt;color:#111}th{font-weight:bold;background:#dbeafe}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}</style></head><body><h1>${title}</h1>${bodyContent}</body></html>`;
         }
 
         function buatTabelExcel(element, title) {
@@ -1672,7 +1712,21 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             unduhFileTeks(html, 'application/vnd.ms-excel;charset=utf-8', 'Absensi_S1_<?php echo htmlspecialchars($kelas); ?>_Semester_<?php echo htmlspecialchars($semester); ?>.xls');
         }
 
+        function siapkanCetakRekap() {
+            const recap=document.getElementById('rekapModalOverlay').classList.contains('show');
+            document.body.classList.toggle('cetak-rekap',recap);
+            let settings=document.getElementById('rekapPrintSettings');
+            if(!settings){settings=document.createElement('style');settings.id='rekapPrintSettings';settings.media='print';document.head.appendChild(settings);}
+            settings.textContent=recap?'@page { size:A4 landscape; margin:10mm; }':'';
+        }
+        function selesaiCetakRekap() {
+            document.body.classList.remove('cetak-rekap');
+            const settings=document.getElementById('rekapPrintSettings');if(settings)settings.textContent='';
+        }
+        window.addEventListener('beforeprint',siapkanCetakRekap);
+        window.addEventListener('afterprint',selesaiCetakRekap);
         function cetakRekap() {
+            siapkanCetakRekap();
             window.print();
         }
 

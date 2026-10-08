@@ -230,10 +230,22 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .tour-feature-preview code { display:inline-block; min-width:24px; padding:5px; border:1px solid #475569; border-radius:4px; background:#f1f5f9; color:#111; font-size:15px; text-align:center; }
         .tour-example-caption { width:100%; font-size:12px; font-weight:700; color:#334155; }
         @media print { .tour-spotlight-backdrop,.tour-focus-frame,.tour-speech-bubble { display:none !important; } }
+
+        .toolbar-toggle-btn { background:var(--panel); color:var(--text); }
+        /* Pegangan menu tetap terlihat saat panel disembunyikan. */
+        #topToolbar { transition:transform .25s ease,opacity .25s ease; }
+        #topToolbar.hidden-toolbar { transform:translate(-50%,-130%); opacity:0; pointer-events:none; visibility:hidden; }
+        #toggleToolbarBtn { position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:10001; min-height:32px; padding:5px 12px; border:1px solid currentColor; border-radius:0 0 10px 10px; font-size:11px; cursor:pointer; touch-action:manipulation; }
+        #inspectorPanel { transition:transform .25s ease,opacity .25s ease,visibility .25s ease; }
+        #inspectorPanel.minimized { display:block; transform:translateX(calc(100% + 24px)); opacity:0; pointer-events:none; visibility:hidden; }
+        #inspectorToggleBtn { position:fixed; top:50%; bottom:auto; right:0; transform:translateY(-50%); min-width:44px; min-height:48px; padding:8px; border-radius:10px 0 0 10px; z-index:10001; font-size:11px; touch-action:manipulation; }
+        #toggleToolbarBtn:focus-visible,#inspectorToggleBtn:focus-visible { outline:3px solid #38bdf8; outline-offset:2px; }
+        @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
     </style>
 </head>
 <body>
-    <nav class="toolbar" aria-label="Pengaturan lembar ujian">
+    <button type="button" class="toolbar-toggle-btn" id="toggleToolbarBtn" onclick="toggleToolbar()" aria-controls="topToolbar">⌃ Menu</button>
+    <nav class="toolbar top-toolbar" id="topToolbar" title="Usap ke atas untuk menyembunyikan menu" aria-label="Pengaturan lembar ujian">
         <div class="toolbar-group">
             <a href="data_siswa.php?jenjang=S1&kelas=<?php echo rawurlencode($kelas); ?>&prodi=<?php echo rawurlencode($prodi); ?>&semester=<?php echo rawurlencode($semester); ?>&theme=<?php echo rawurlencode($theme); ?>" title="Kembali ke daftar mahasiswa"><i class="fa-solid fa-arrow-left"></i> Data Mahasiswa</a>
             <a href="absen.php?jenjang=S1&kelas=<?php echo rawurlencode($kelas); ?>&prodi=<?php echo rawurlencode($prodi); ?>&semester=<?php echo rawurlencode($semester); ?>&theme=<?php echo rawurlencode($theme); ?>" title="Buka lembar absen"><i class="fa-solid fa-clipboard-user"></i> Lembar Absen</a>
@@ -249,7 +261,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
     </nav>
 
     <aside class="inspector-panel" id="inspectorPanel" aria-label="Inspektor lembar ujian">
-        <h2>Inspektor Elemen</h2>
+        <h2 style="display:flex;align-items:center;justify-content:space-between;gap:8px;">Inspektor Elemen <button type="button" onclick="toggleInspectorPanel()" class="inspector-toggle" style="position:static;display:inline-block;" aria-label="Sembunyikan inspektor" title="Sembunyikan inspektor (atau usap ke kanan)">→</button></h2>
         <div id="activeElementLabel" style="font-size:12px;color:var(--muted);">Pilih elemen di lembar kerja...</div>
         <div class="inspector-controls">
             <button type="button" onclick="ubahPosisiAktif('x',-3)">← Geser kiri</button>
@@ -257,11 +269,11 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             <button type="button" onclick="ubahPosisiAktif('y',-3)">↑ Geser atas</button>
             <button type="button" onclick="ubahPosisiAktif('y',3)">Geser bawah ↓</button>
         </div>
-        <div style="font-size:11px;color:var(--muted);">Pilih elemen lalu gunakan tombol panah. Shift + panah bergerak 5 px. Atas/bawah menggeser elemen satu baris bersama.</div>
+        <div style="font-size:11px;color:var(--muted);">Pilih elemen lalu tekan/tahan panah keyboard. Shift + panah bergerak 5 px. Usap menu ke atas atau Inspektor ke kanan untuk menyembunyikan. Atas/bawah menggeser elemen satu baris bersama.</div>
         <button type="button" onclick="resetPosisiAktif()" style="width:100%;margin-top:8px;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--panel);color:var(--text);cursor:pointer;">Reset posisi terpilih</button>
         <div id="inspectorTextContainer" class="inspector-text" style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;"><div style="font-size:11px;color:var(--muted);">Klik blok pada lembar untuk mengedit teksnya di sini.</div></div>
     </aside>
-    <button type="button" class="inspector-toggle" id="inspectorToggleBtn" onclick="toggleInspectorPanel()">Inspektor</button>
+    <button type="button" class="inspector-toggle" id="inspectorToggleBtn" onclick="toggleInspectorPanel()" aria-controls="inspectorPanel" aria-label="Tampilkan inspektor">‹ Inspektor</button>
 
     <main class="workspace" id="workspace">
         <section class="paper" id="paperSheet">
@@ -369,7 +381,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             {target:'#logoLeftSlot',title:'1. Ganti logo tanpa memotong gambar',desc:'Klik kotak logo kiri atau kanan, lalu pilih gambar dari perangkat. Seluruh gambar mengikuti kotak dengan proporsi tetap. Tombol Pulihkan logo muncul di atas logo yang diganti dan mengembalikan logo awal. Kontrol unggah dan tombol tidak ikut dicetak.'},
             {target:'#examHeader',title:'2. Edit teks kop',example:'<code>Klik teks kop</code> → <code>Ketik perubahan</code>',desc:'Klik teks kop pada kertas untuk mengubah nama institusi, alamat, atau kontak. Bisa juga klik blok kop sampai garis biru muncul, lalu edit melalui kolom di Inspektor. Perubahan tersimpan di browser perangkat untuk prodi, semester, dan kelas ini.'},
             {target:'#examMetaLeft',title:'3. Lengkapi informasi ujian',example:'<code>Semester</code> · <code>Mata kuliah</code> · <code>Dosen</code> · <code>Jam/waktu</code>',desc:'Isi bagian informasi ujian melalui teks pada kertas atau Inspektor. Daftar mahasiswa tetap berasal dari Data Mahasiswa sesuai prodi, semester, dan kelas pada tautan. Kolom jumlah hadir/tidak hadir dapat dilengkapi untuk pelaksanaan ujian.'},
-            {target:'#inspectorPanel',title:'4. Atur posisi dengan Inspektor',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Panah atas/bawah memindahkan elemen di sampingnya pada baris yang sama; kiri/kanan hanya memindahkan elemen terpilih. Di kolom input Inspektor, panah tetap mengedit isian. Gunakan Reset posisi terpilih untuk mengembalikan posisi blok tersebut.'},
+            {target:'#inspectorPanel',title:'4. Atur posisi dengan Inspektor',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Tekan atau tahan anak panah keyboard untuk menggeser. Usap menu atas ke atas dan panel Inspektor ke kanan untuk menyembunyikannya; klik pegangan Menu atau Inspektor untuk membukanya kembali. Panah atas/bawah memindahkan elemen di sampingnya pada baris yang sama; kiri/kanan hanya memindahkan elemen terpilih. Di kolom input Inspektor, panah tetap mengedit isian. Gunakan Reset posisi terpilih untuk mengembalikan posisi blok tersebut.'},
             {target:'#examTableBlock',title:'5. Nilai dan kolom KET',example:'<code>Rekap absen</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Ujian</code>',desc:'NIM dan nama berasal dari database. Skor, huruf, dan mutu berasal dari tombol Simpan & Kirim Nilai pada Rekap Nilai di Lembar Absen. Jika belum tampil, kirim kembali melalui sesi browser dan konteks kelas yang sama. Klik sel KET untuk menulis keterangan; garis sel tetap tercetak meskipun keterangannya kosong.'},
             {target:'#examScaleBlock',title:'6. Edit pedoman predikat',example:'<code>80–100 → A → 4 → Sangat Baik</code>',desc:'Teks pada tabel pedoman dapat diedit langsung atau melalui Inspektor. Mengedit pedoman hanya mengubah tulisan di lembar ini; skor dan huruf mahasiswa tetap mengikuti perhitungan Rekap Nilai. Periksa kesesuaian pedoman dengan aturan penilaian sebelum mencetak.'},
             {target:'button[onclick="window.print()"]',title:'7. Zoom dan cetak A4',example:'<code>Zoom − / +</code> = tampilan layar<br><code>Cetak</code> = dokumen A4',desc:'Zoom mengubah ukuran tampilan layar dan Reset mengembalikannya ke 100%. Cetak memakai kertas A4 potret dengan tabel dan logo utuh. Tabel panjang berlanjut ke halaman berikutnya dengan judul kolom berulang. Periksa seluruh halaman pada pratinjau; sesuaikan ukuran kertas printer ke A4.'}
@@ -466,11 +478,47 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         const paper = document.getElementById('paperSheet');
         let zoomLevel = 1;
         let selectedElement = null;
-        function toggleInspectorPanel() {
-            const panel = document.getElementById('inspectorPanel');
-            panel.classList.toggle('minimized');
-            document.getElementById('inspectorToggleBtn').classList.toggle('show', panel.classList.contains('minimized'));
+        function toggleToolbar() {
+            document.getElementById('topToolbar').classList.toggle('hidden-toolbar');
+            sinkronkanPeganganPanel();
         }
+        function toggleInspectorPanel() {
+            document.getElementById('inspectorPanel').classList.toggle('minimized');
+            sinkronkanPeganganPanel();
+        }
+        function sinkronkanPeganganPanel() {
+            const toolbar=document.getElementById('topToolbar'),panel=document.getElementById('inspectorPanel'),menuButton=document.getElementById('toggleToolbarBtn'),panelButton=document.getElementById('inspectorToggleBtn');
+            const menuHidden=toolbar.classList.contains('hidden-toolbar'),panelHidden=panel.classList.contains('minimized');
+            toolbar.inert=menuHidden;panel.inert=panelHidden;
+            menuButton.textContent=menuHidden?'⌄ Menu':'⌃ Menu';
+            menuButton.title=menuHidden?'Tampilkan menu atas':'Sembunyikan menu atas (atau usap ke atas)';
+            menuButton.setAttribute('aria-expanded',String(!menuHidden));menuButton.setAttribute('aria-label',menuButton.title);
+            menuButton.style.top=menuHidden?'0px':Math.max(0,toolbar.getBoundingClientRect().bottom)+'px';
+            panelButton.classList.toggle('show',panelHidden);panelButton.setAttribute('aria-expanded',String(!panelHidden));
+        }
+        function pasangUsapanPanel(element,axis,hide) {
+            let start=null;
+            element.addEventListener('touchstart',event=>{
+                if(event.touches.length!==1||event.target.closest('input,textarea,select,[contenteditable="true"]')){start=null;return;}
+                const touch=event.touches[0];start={x:touch.clientX,y:touch.clientY,time:Date.now()};
+            },{passive:true});
+            element.addEventListener('touchend',event=>{
+                if(!start||!event.changedTouches.length)return;
+                const touch=event.changedTouches[0],dx=touch.clientX-start.x,dy=touch.clientY-start.y,elapsed=Date.now()-start.time;start=null;
+                if(typeof tourActive!=='undefined'&&tourActive)return;
+                if(elapsed>1200)return;
+                if((axis==='up'&&dy< -44&&Math.abs(dy)>Math.abs(dx)*1.35)||(axis==='right'&&dx>44&&dx>Math.abs(dy)*1.35))hide();
+            },{passive:true});
+            element.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+        }
+        const menuPanel=document.getElementById('topToolbar'),layoutPanel=document.getElementById('inspectorPanel');
+        pasangUsapanPanel(menuPanel,'up',()=>{menuPanel.classList.add('hidden-toolbar');sinkronkanPeganganPanel();});
+        pasangUsapanPanel(layoutPanel,'right',()=>{layoutPanel.classList.add('minimized');sinkronkanPeganganPanel();});
+        const panelObserver=new MutationObserver(sinkronkanPeganganPanel);
+        [menuPanel,layoutPanel].forEach(el=>panelObserver.observe(el,{attributes:true,attributeFilter:['class']}));
+        new ResizeObserver(sinkronkanPeganganPanel).observe(menuPanel);
+        window.addEventListener('resize',sinkronkanPeganganPanel);
+        sinkronkanPeganganPanel();
         function updateZoom() {
             paper.style.zoom = String(zoomLevel);
             document.getElementById('zoomLabel').textContent = Math.round(zoomLevel * 100) + '%';
@@ -535,6 +583,8 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             document.querySelectorAll('.selectable-element.selected').forEach(node => node.classList.remove('selected'));
             selectedElement = el;
             el.classList.add('selected');
+            el.tabIndex = 0;
+            if (!event.target.closest('input,textarea,select,[contenteditable="true"]')) el.focus({preventScroll:true});
             document.getElementById('activeElementLabel').textContent = el.dataset.type || 'Elemen';
             const container = document.getElementById('inspectorTextContainer');
             container.replaceChildren();
@@ -548,7 +598,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             });
         }
         document.addEventListener('click', event => {
-            if (!event.target.closest('.selectable-element') && !event.target.closest('.inspector-panel')) {
+            if (!event.target.closest('.selectable-element') && !event.target.closest('.inspector-panel') && !event.target.closest('#toggleToolbarBtn,#inspectorToggleBtn,#topToolbar')) {
                 document.querySelectorAll('.selectable-element.selected').forEach(node => node.classList.remove('selected'));
                 selectedElement = null;
                 document.getElementById('activeElementLabel').textContent = 'Pilih elemen di lembar kerja...';

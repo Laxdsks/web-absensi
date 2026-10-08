@@ -411,11 +411,11 @@ if ($stmt) {
             </div>
 
             <section class="content-card" id="photoImportCard" style="margin:0 0 18px;padding:16px;">
-                <h3 style="margin:0 0 8px;font-size:15px;"><i class="fa-solid fa-camera" style="color:var(--primary);"></i> Impor daftar mahasiswa dari foto</h3>
-                <p style="margin:0 0 12px;color:var(--text-muted);font-size:12px;line-height:1.5;">Unggah foto tabel yang jelas dan lurus. OCR akan membaca NIM, nama, dan L/P; periksa serta koreksi hasil sebelum menyimpan. Baris dengan NIM yang sudah ada di konteks ini dilewati.</p>
+                <h3 style="margin:0 0 8px;font-size:15px;"><i class="fa-solid fa-camera" style="color:var(--primary);"></i> Impor daftar mahasiswa dari foto atau dokumen</h3>
+                <p style="margin:0 0 12px;color:var(--text-muted);font-size:12px;line-height:1.5;">Pilih foto, PDF, Word (.doc/.docx), atau Excel (.xls/.xlsx/.csv). Seluruh halaman PDF dan lembar Excel dibaca. Tabel teks diambil langsung; scan dibaca dengan OCR. Periksa NIM, nama, dan L/P sebelum menyimpan. Baris dengan NIM yang sudah ada di konteks ini dilewati.</p>
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                    <input type="file" id="fotoDaftarMahasiswa" accept="image/jpeg,image/png,image/webp,image/bmp" onchange="muatPratinjauOcr()" style="max-width:100%;min-height:40px;">
-                    <button class="btn-custom btn-primary" type="button" id="btnOcrFoto" onclick="bacaFotoDaftarMahasiswa()" style="min-height:42px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Baca Foto</button>
+                    <input type="file" id="fotoDaftarMahasiswa" accept="image/jpeg,image/png,image/webp,image/bmp,.pdf,.doc,.docx,.xls,.xlsx,.csv" onchange="muatBerkasDaftarMahasiswa()" style="max-width:100%;min-height:40px;">
+                    <button class="btn-custom btn-primary" type="button" id="btnOcrFoto" onclick="bacaFotoDaftarMahasiswa()" style="min-height:42px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Baca Semua Baris</button>
                     <span id="ocrStatus" aria-live="polite" style="font-size:12px;color:var(--text-muted);"></span>
                 </div>
                 <div id="ocrPhotoPreview" hidden style="margin-top:14px;">
@@ -432,7 +432,7 @@ if ($stmt) {
                     <p id="ocrReviewHelp" style="font-size:12px;color:var(--text-muted);margin-bottom:10px;"></p>
                     <div class="table-responsive">
                         <table style="width:100%;border-collapse:collapse;">
-                            <thead><tr><th style="text-align:left;">NIM</th><th style="text-align:left;">Nama Mahasiswa</th><th>Jenis Kelamin</th><th>Keyakinan OCR</th><th>Aksi</th></tr></thead>
+                            <thead><tr><th style="text-align:left;">NIM</th><th style="text-align:left;">Nama Mahasiswa</th><th>Jenis Kelamin</th><th>Sumber / Keyakinan OCR</th><th>Aksi</th></tr></thead>
                             <tbody id="ocrReviewRows"></tbody>
                         </table>
                     </div>
@@ -663,13 +663,15 @@ if ($stmt) {
             const point=event=>{const r=canvas.getBoundingClientRect();return {x:Math.max(0,Math.min(ocrPhoto.source.width,(event.clientX-r.left)*ocrPhoto.source.width/r.width)),y:Math.max(0,Math.min(ocrPhoto.source.height,(event.clientY-r.top)*ocrPhoto.source.height/r.height))};};
             canvas.addEventListener('pointerdown',event=>{if(!ocrPhoto.source||document.getElementById('btnOcrFoto').disabled)return;event.preventDefault();start=point(event);canvas.setPointerCapture(event.pointerId);});
             canvas.addEventListener('pointermove',event=>{if(!start)return;const p=point(event);ocrPhoto.crop={left:Math.min(start.x,p.x),top:Math.min(start.y,p.y),right:Math.max(start.x,p.x),bottom:Math.max(start.y,p.y)};gambarPratinjauOcr();});
-            const finish=()=>{if(!start)return;start=null;if(!ocrPhoto.crop||ocrPhoto.crop.right-ocrPhoto.crop.left<30||ocrPhoto.crop.bottom-ocrPhoto.crop.top<30)ocrPhoto.crop=null;gambarPratinjauOcr();setOcrStatus(ocrPhoto.crop?'Area dipilih. Klik Baca Foto untuk membaca area bergaris biru.':'Foto siap dibaca.');};
+            const finish=()=>{if(!start)return;start=null;if(!ocrPhoto.crop||ocrPhoto.crop.right-ocrPhoto.crop.left<30||ocrPhoto.crop.bottom-ocrPhoto.crop.top<30)ocrPhoto.crop=null;gambarPratinjauOcr();setOcrStatus(ocrPhoto.crop?'Area dipilih. Klik Baca Semua Baris untuk membaca area bergaris biru.':'Foto siap dibaca.');};
             canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',finish);
         })();
         function potongKanvasOcr(source,rect) {
             const left=Math.max(0,Math.floor(rect.left)),top=Math.max(0,Math.floor(rect.top));
             const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.min(source.width-left,Math.ceil(rect.right-left)));canvas.height=Math.max(1,Math.min(source.height-top,Math.ceil(rect.bottom-top)));
-            canvas.getContext('2d').drawImage(source,left,top,canvas.width,canvas.height,0,0,canvas.width,canvas.height);return canvas;
+            const ctx=canvas.getContext('2d');
+            if(rect.leftSlope||rect.rightSlope){ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);for(let y=0;y<canvas.height;y++){const delta=top+y-(rect.anchorY||0),x=Math.max(0,left+(rect.leftSlope||0)*delta),right=Math.min(source.width,rect.right+(rect.rightSlope||0)*delta);if(right>x)ctx.drawImage(source,x,top+y,right-x,1,0,y,canvas.width,1);}}
+            else ctx.drawImage(source,left,top,canvas.width,canvas.height,0,0,canvas.width,canvas.height);return canvas;
         }
         function kelompokGarisOcr(lines,axis) {
             const groups=[];
@@ -678,19 +680,27 @@ if ($stmt) {
         }
         function deteksiGarisOcr(canvas) {
             const w=canvas.width,h=canvas.height,data=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
-            const longest=(count,pixel)=>{let start=-1,last=-1,best={start:0,end:0};for(let i=0;i<count;i++){if(pixel(i)<145){if(start<0)start=i;last=i;}else if(start>=0&&i-last>2){if(last-start>best.end-best.start)best={start,end:last};start=-1;}}if(start>=0&&last-start>best.end-best.start)best={start,end:last};return best;};
+            const longest=(count,pixel,cutoff)=>{let start=-1,last=-1,best={start:0,end:0};for(let i=0;i<count;i++){if(pixel(i)<cutoff){if(start<0)start=i;last=i;}else if(start>=0&&i-last>2){if(last-start>best.end-best.start)best={start,end:last};start=-1;}}if(start>=0&&last-start>best.end-best.start)best={start,end:last};return best;};
             const clusters=[];
-            for(let y=0;y<h;y++){
-                const run=longest(w,x=>data[(y*w+x)*4]);if(run.end-run.start<w*.28)continue;
+            // Periksa garis tegas dan samar. Garis putus dinilai dari cakupan
+            // pikselnya, bukan hanya potongan garis terpanjang.
+            for(const cutoff of [145,225])for(let y=0;y<h;y++){
+                let run=longest(w,x=>data[(y*w+x)*4],cutoff);
+                if(run.end-run.start<w*.28){
+                    let count=0,left=-1,right=-1;
+                    for(let x=0;x<w;x++)if(data[(y*w+x)*4]<cutoff){count++;if(left<0)left=x;right=x;}
+                    if(count<w*.42||count/Math.max(1,right-left+1)<.8)continue;
+                    run={start:left,end:right};
+                }
                 let group=clusters.find(g=>Math.abs(g.left-run.start)<w*.035&&Math.abs(g.right-run.end)<w*.035);
                 if(!group){group={left:run.start,right:run.end,lines:[]};clusters.push(group);}group.lines.push({y});
             }
-            const candidates=clusters.map(g=>({...g,horizontal:kelompokGarisOcr(g.lines,'y')})).filter(g=>g.horizontal.length>=4);
+            const candidates=clusters.map(g=>({...g,horizontal:kelompokGarisOcr(g.lines,'y').filter(line=>line.end-line.start<Math.max(8,h*.012))})).filter(g=>g.horizontal.length>=4);
             candidates.sort((a,b)=>(b.right-b.left)*b.horizontal.length-(a.right-a.left)*a.horizontal.length);
             if(!candidates.length)return null;
             const grid=candidates[0],top=grid.horizontal[0].position,bottom=grid.horizontal[grid.horizontal.length-1].position,vertical=[];
             for(let x=Math.max(0,grid.left-3);x<=Math.min(w-1,grid.right+3);x++){
-                const run=longest(Math.floor(bottom-top+1),y=>data[((Math.floor(top)+y)*w+x)*4]);
+                const run=longest(Math.floor(bottom-top+1),y=>data[((Math.floor(top)+y)*w+x)*4],225);
                 if(run.end-run.start>(bottom-top)*.45)vertical.push({x});
             }
             const v=kelompokGarisOcr(vertical,'x');if(v.length<3)return null;
@@ -735,14 +745,58 @@ if ($stmt) {
         function bersihkanTabelOcr(canvas) {
             const ctx=canvas.getContext('2d',{willReadFrequently:true});
             ctx.setTransform(1,0,0,1,0,0);
-            const grid=deteksiGarisOcr(canvas);if(!grid)return {canvas,grid:null};
+            const grid=deteksiGarisOcr(canvas);if(!grid||grid.right-grid.left<canvas.width*.5){const rawCanvas=document.createElement('canvas');rawCanvas.width=canvas.width;rawCanvas.height=canvas.height;rawCanvas.getContext('2d').drawImage(canvas,0,0);hapusGarisLokalOcr(canvas);return {canvas,grid:null,rawCanvas,dataBottom:canvas.height};}
             // Hapus hanya pita garis panjang; teks di tengah sel tetap dipertahankan.
             ctx.fillStyle='#fff';
             grid.horizontal.forEach(line=>ctx.fillRect(grid.left-1,line.start-1,grid.right-grid.left+3,line.end-line.start+3));
             grid.vertical.forEach(line=>ctx.fillRect(line.start-1,grid.top-1,line.end-line.start+3,grid.bottom-grid.top+3));
-            const crop={left:Math.max(0,grid.left-5),top:Math.max(0,grid.top-5),right:Math.min(canvas.width,grid.right+5),bottom:Math.min(canvas.height,grid.bottom+5)};
+            // Garis terakhir bisa hilang pada scan. Pertahankan seluruh bagian
+            // bawah foto agar mahasiswa setelah garis itu tetap bisa dibaca.
+            const crop={left:Math.max(0,grid.left-5),top:Math.max(0,grid.top-5),right:Math.min(canvas.width,grid.right+5),bottom:canvas.height};
             const table=potongKanvasOcr(canvas,crop);
             return {canvas:table,grid:{horizontal:grid.horizontal.map(l=>l.position-Math.floor(crop.top)),vertical:grid.vertical.map(l=>l.position-Math.floor(crop.left))}};
+        }
+        function garisKolomScanOcr(canvas,words) {
+            if(!canvas)return null;
+            const header=words.find(w=>/^(NIM|N1M)$/.test(tokenOcr(w.text)))||words.filter(w=>nimOcr(w.text)).sort((a,b)=>a.y-b.y)[0];if(!header)return null;
+            const w=canvas.width,h=canvas.height,pixels=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
+            const top=Math.max(0,Math.floor(header.y-header.h*.5)),bottom=Math.min(h,Math.ceil(header.y+header.h*2.2)),lines=[];
+            for(let x=2;x<w-2;x++){
+                let count=0;for(let y=top;y<bottom;y++){
+                    let dark=false;for(let dx=-2;dx<=2;dx++)if(pixels[(y*w+x+dx)*4]<225){dark=true;break;}if(dark)count++;
+                }
+                if(count>(bottom-top)*.65)lines.push({x});
+            }
+            const vertical=kelompokGarisOcr(lines,'x').map(line=>line.position);
+            if(vertical.length<3)return null;
+            const anchorY=(top+bottom)/2,lowerY=Math.max(anchorY+100,Math.round(h*.82)),span=bottom-top;
+            const slopes=vertical.map(edge=>{
+                let best={x:edge,count:0};
+                for(let x=Math.max(2,Math.floor(edge-w*.025));x<=Math.min(w-3,Math.ceil(edge+w*.025));x++){
+                    let count=0;for(let y=Math.max(0,Math.floor(lowerY-span/2));y<Math.min(h,lowerY+span/2);y++){
+                        let dark=false;for(let dx=-2;dx<=2;dx++)if(pixels[(y*w+x+dx)*4]<225){dark=true;break;}if(dark)count++;
+                    }
+                    if(count>best.count||(count===best.count&&Math.abs(x-edge)<Math.abs(best.x-edge)))best={x,count};
+                }
+                return best.count>span*.65?(best.x-edge)/(lowerY-anchorY):0;
+            });
+            return {vertical,horizontal:[],slopes,anchorY};
+        }
+        function hapusGarisLokalOcr(canvas) {
+            // Scan terlipat atau perspektif miring tidak selalu mempunyai garis
+            // utuh. Hilangkan segmen panjang tanpa memotong isi tabelnya.
+            const ctx=canvas.getContext('2d',{willReadFrequently:true}),image=ctx.getImageData(0,0,canvas.width,canvas.height),data=image.data,w=canvas.width,h=canvas.height,mask=new Uint8Array(w*h);
+            const mark=(length,pixel,minimum,horizontal,fixed)=>{
+                let start=-1,last=-1;
+                const finish=()=>{if(start>=0&&last-start>=minimum)for(let n=start;n<=last;n++)for(let pad=-1;pad<=1;pad++){
+                    const x=horizontal?n:fixed+pad,y=horizontal?fixed+pad:n;if(x>=0&&x<w&&y>=0&&y<h)mask[y*w+x]=1;
+                }start=-1;};
+                for(let n=0;n<length;n++){if(pixel(n)<175){if(start<0)start=n;last=n;}else if(start>=0&&n-last>2)finish();}finish();
+            };
+            for(let y=0;y<h;y++)mark(w,x=>data[(y*w+x)*4],Math.max(45,w*.025),true,y);
+            for(let x=0;x<w;x++)mark(h,y=>data[(y*w+x)*4],Math.max(65,h*.025),false,x);
+            for(let p=0;p<mask.length;p++)if(mask[p])data[p*4]=data[p*4+1]=data[p*4+2]=255;
+            ctx.putImageData(image,0,0);
         }
         function kataOcrTsv(tsv,offsetX=0,offsetY=0) {
             return (tsv||'').trim().split(/\r?\n/).slice(1).flatMap(line=>{
@@ -771,27 +825,36 @@ if ($stmt) {
             const sexHead=words.find(w=>/^(L\/P|P\/L|LP|PL|JK|KELAMIN|GENDER|JENISKELAMIN)$/.test(tokenOcr(w.text))&&(!nimHead||Math.abs(w.y-nimHead.y)<70));
             let nimX=nimHead?nimHead.x+nimHead.w/2:null;
             if(nimX===null){const anchors=words.filter(w=>nimOcr(w.text));if(anchors.length<2)return null;nimX=anchors.map(w=>w.x+w.w/2).sort((a,b)=>a-b)[Math.floor(anchors.length/2)];}
-            const bounds=x=>{if(!grid)return null;for(let i=0;i<grid.vertical.length-1;i++)if(x>=grid.vertical[i]&&x<=grid.vertical[i+1])return {left:grid.vertical[i]+3,right:grid.vertical[i+1]-3};return null;};
+            const bounds=x=>{if(!grid)return null;for(let i=0;i<grid.vertical.length-1;i++)if(x>=grid.vertical[i]&&x<=grid.vertical[i+1])return {left:grid.vertical[i]+3,right:grid.vertical[i+1]-3,leftSlope:grid.slopes?.[i]||0,rightSlope:grid.slopes?.[i+1]||0,anchorY:grid.anchorY||0};return null;};
             let nim=bounds(nimX),name=nameHead?bounds(nameHead.x+nameHead.w/2):null,sex=sexHead?bounds(sexHead.x+sexHead.w/2):null;
             if(nim&&!name){const i=grid.vertical.findIndex(x=>Math.abs(x-(nim.right+3))<4);if(i>=0&&i<grid.vertical.length-1)name={left:grid.vertical[i]+3,right:grid.vertical[i+1]-3};}
-            if(!nim||!name){if(!nimHead||!nameHead)return null;const nameX=nameHead.x+nameHead.w/2,mid=(nimX+nameX)/2;
+            if(!nim||!name){
+                if(!nimHead||!nameHead){
+                    const anchors=words.filter(w=>nimOcr(w.text)&&Math.abs(w.x+w.w/2-nimX)<width*.04);if(anchors.length<2)return null;
+                    const firstNames=anchors.flatMap(anchor=>{const row=words.filter(w=>w.x>anchor.x+anchor.w&&Math.abs(w.y+w.h/2-anchor.y-anchor.h/2)<anchor.h*.7).sort((a,b)=>a.x-b.x);const first=row.find(w=>/[A-Za-z]/.test(w.text)&&tokenOcr(w.text).length>1);return first&&namaOcr([first])?[first]:[];});if(firstNames.length<2)return null;
+                    const edge=(Math.max(...anchors.map(w=>w.x+w.w))+Math.min(...firstNames.map(w=>w.x)))/2;
+                    const scores=words.filter(w=>/^\d{1,3}$/.test(w.text)&&w.x>edge+width*.08&&anchors.some(a=>Math.abs(w.y+w.h/2-a.y-a.h/2)<a.h*.7));
+                    const scoreX=scores.length>=3?scores.map(w=>w.x).sort((a,b)=>a-b)[Math.floor(scores.length/2)]:Math.min(width,edge+width*.35);
+                    return {nim:{left:Math.max(0,Math.min(...anchors.map(w=>w.x))-width*.008),right:edge},name:{left:edge,right:scoreX-6},sex:null,dataTop:Math.max(0,Math.min(...anchors.map(w=>w.y),...words.filter(w=>w.x+w.w/2>=edge&&w.x+w.w/2<=scoreX&&tokenOcr(w.text).length>1&&namaOcr([w])).map(w=>w.y))-6),hasHeader:false};
+                }
+                const nameX=nameHead.x+nameHead.w/2,mid=(nimX+nameX)/2;
                 nim=nimX<nameX?{left:0,right:mid}:{left:mid,right:width};name=nimX<nameX?{left:mid,right:width}:{left:0,right:mid};
                 if(sexHead){const sexX=sexHead.x+sexHead.w/2,edge=(nameX+sexX)/2;sex=sexX>nameX?{left:edge,right:width}:{left:0,right:edge};if(sexX>nameX)name.right=edge;else name.left=edge;}
             }
-            const headerBottom=nimHead?Math.max(nimHead.y+nimHead.h,nameHead?nameHead.y+nameHead.h:0):0;
+            const headerBottom=nimHead?Math.max(nimHead.y+nimHead.h,nameHead?nameHead.y+nameHead.h:0):Math.max(0,Math.min(...words.filter(w=>nimOcr(w.text)||(w.x+w.w/2>=name.left&&w.x+w.w/2<=name.right&&tokenOcr(w.text).length>1&&namaOcr([w]))).map(w=>w.y))-9);
             const dataTop=grid&&nimHead?(grid.horizontal.find(y=>y>headerBottom+2)??headerBottom+3):headerBottom+3;
             return {nim,name,sex,dataTop,hasHeader:!!nimHead};
         }
         function namaOcr(words) {
             const name=words.map(w=>w.text.replace(/[|\[\]{}]/g,'').trim()).filter(t=>/[A-Za-zÀ-ž]/.test(t)).join(' ').replace(/\s+/g,' ').trim();
-            return /\b(?:TAHUN\s*AKADEMIK|SEMESTER|DOSEN|EMAIL|TELP|TLP|TLPN|PRODI|JLN|JALAN|MAT[A]?KULIAH)\b/i.test(name)||name.replace(/[^A-Za-zÀ-ž]/g,'').length<2?'':name;
+            return /\b(?:TAHUN\s*AKADEMIK|SEMESTER|DOSEN|NAMA|MAHASISWA|NIM|NPM|NRP|EMAIL|TELP|TLP|TLPN|PRODI|JLN|JALAN|NIDN|NIP|PENGAWAS|PENGAMPU|MAT[A]?KULIAH)\b/i.test(name)||name.replace(/[^A-Za-zÀ-ž]/g,'').length<2?'':name;
         }
         function genderOcr(words) { const token=words.map(w=>tokenOcr(w.text)).join('');return /^(P+|PEREMPUAN|WANITA)$/.test(token)?'P':/^(L+|LAKI|LAKILAKI|PRIA)$/.test(token)?'L':''; }
         function gabungKolomOcr(nimWords,nameWords,sexWords,grid,dataTop,allowNumeric) {
             const grouped=words=>{
                 if(!grid)return barisKataOcr(words.filter(w=>w.y+w.h/2>=dataTop));
-                const groups=new Map();words.forEach(w=>{const cy=w.y+w.h/2;if(cy<dataTop)return;const row=grid.horizontal.findIndex((y,i)=>i<grid.horizontal.length-1&&cy>=y&&cy<grid.horizontal[i+1]);if(row<0)return;if(!groups.has(row))groups.set(row,{cy:(grid.horizontal[row]+grid.horizontal[row+1])/2,height:grid.horizontal[row+1]-grid.horizontal[row],words:[]});groups.get(row).words.push(w);});
-                return Array.from(groups.values()).sort((a,b)=>a.cy-b.cy).map(r=>({...r,words:r.words.sort((a,b)=>a.x-b.x)}));
+                const groups=new Map(),outside=[];words.forEach(w=>{const cy=w.y+w.h/2;if(cy<dataTop)return;const row=grid.horizontal.findIndex((y,i)=>i<grid.horizontal.length-1&&cy>=y&&cy<grid.horizontal[i+1]);if(row<0){outside.push(w);return;}if(!groups.has(row))groups.set(row,{cy:(grid.horizontal[row]+grid.horizontal[row+1])/2,height:grid.horizontal[row+1]-grid.horizontal[row],words:[]});groups.get(row).words.push(w);});
+                return Array.from(groups.values()).concat(barisKataOcr(outside)).sort((a,b)=>a.cy-b.cy).map(r=>({...r,words:r.words.sort((a,b)=>a.x-b.x)}));
             };
             const nims=grouped(nimWords),names=grouped(nameWords),sexes=grouped(sexWords),rows=[];
             nims.forEach(row=>{
@@ -799,8 +862,61 @@ if ($stmt) {
                 const near=list=>list.find(r=>Math.abs(row.cy-r.cy)<Math.max(row.height,r.height)*.65);
                 const name=near(names);if(!name)return;const nama=namaOcr(name.words);if(!nama)return;
                 const sex=near(sexes),avg=words=>words.reduce((s,w)=>s+w.conf,0)/Math.max(1,words.length);
-                rows.push({nim,nama,jk:sex?genderOcr(sex.words):'',confidence:Math.round(Math.min(avg(row.words),avg(name.words))),corrected:tokenOcr(raw)!==nim});
+                rows.push({nim,nama,jk:sex?genderOcr(sex.words):'',confidence:Math.round(Math.min(avg(row.words),avg(name.words))),corrected:tokenOcr(raw)!==nim,sourceY:row.cy});
             });return rows;
+        }
+        function rentangBarisOcr(canvas,layout,grid) {
+            const data=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,canvas.width,canvas.height).data;
+            const col=layout.name||layout.nim,left=Math.max(0,Math.ceil(col.left)),right=Math.min(canvas.width,Math.floor(col.right)),width=right-left;
+            const bands=[];let start=-1,last=-1;
+            const finish=()=>{if(start>=0&&last-start>=3)bands.push({top:start,bottom:last+1});start=-1;};
+            for(let y=Math.ceil(layout.dataTop);y<(layout.dataBottom||canvas.height);y++){
+                let count=0;for(let x=left;x<right;x++)if(data[(y*canvas.width+x)*4]<185)count++;
+                // Abaikan sisa garis panjang; cari pita teks NIM setiap baris.
+                if(count>=Math.max(3,width*.015)&&count<width*.7){if(start<0)start=y;last=y;}
+                else if(start>=0&&y-last>2)finish();
+            }
+            finish();
+            if(!layout.hasHeader&&bands.length>=5){
+                const heights=bands.map(b=>b.bottom-b.top).sort((a,b)=>a-b),gap=Math.max(40,heights[Math.floor(heights.length/2)]*3);
+                const stop=bands.findIndex((band,i)=>i>=5&&band.top-bands[i-1].bottom>gap);if(stop>=0)bands.splice(stop);
+            }
+            const padded=bands.map((b,i)=>{const pad=Math.max(4,(b.bottom-b.top)*.4);return {top:Math.max(layout.dataTop,b.top-pad,i?(bands[i-1].bottom+b.top)/2:0),bottom:Math.min(canvas.height,b.bottom+pad,i<bands.length-1?(b.bottom+bands[i+1].top)/2:canvas.height)};});
+            if(!grid)return padded;
+            const cells=[];
+            for(let i=0;i<grid.horizontal.length-1;i++){
+                const top=grid.horizontal[i],bottom=grid.horizontal[i+1];if(top<layout.dataTop-2)continue;
+                const inside=padded.filter(b=>(b.top+b.bottom)/2>=top&&(b.top+b.bottom)/2<bottom);
+                if(inside.length>1)cells.push(...inside);else cells.push({top,bottom});
+            }
+            return cells.concat(padded.filter(b=>(b.top+b.bottom)/2>=grid.horizontal[grid.horizontal.length-1])).sort((a,b)=>a.top-b.top);
+        }
+        async function lengkapiBarisOcr(worker,canvas,layout,grid,rows,knownNims=[]) {
+            const bands=rentangBarisOcr(canvas,layout,grid);
+            const readCell=async(col,band,isNim)=>{
+                if(!col)return [];
+                const left=Math.max(0,Math.floor(col.left)),top=Math.max(0,Math.ceil(band.top+2));
+                const cell=potongKanvasOcr(canvas,{...col,left,top,right:col.right,bottom:band.bottom-2});
+                const pixels=cell.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cell.width,cell.height).data;
+                let ink=0;for(let p=0;p<pixels.length;p+=4)if(pixels[p]<185)ink++;
+                if(ink<12)return [];
+                const padded=document.createElement('canvas');padded.width=cell.width+32;padded.height=cell.height+24;
+                const ctx=padded.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,padded.width,padded.height);ctx.drawImage(cell,16,12);
+                await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:isNim?'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':''});
+                const result=await worker.recognize(padded,{}, {tsv:true});return kataOcrTsv(result.data.tsv,left-16,top-12);
+            };
+            for(let i=0;i<bands.length;i++){
+                const band=bands[i];
+                if(rows.some(row=>row.sourceY>=band.top&&row.sourceY<band.bottom))continue;
+                setOcrStatus('Memeriksa semua baris: '+(i+1)+' / '+bands.length+'…');
+                const nimWords=await readCell(layout.nim,band,true),nameWords=await readCell(layout.name,band,false);
+                const raw=nimWords.map(w=>w.text).join(''),known=knownNims.filter(w=>w.y+w.h/2>=band.top&&w.y+w.h/2<band.bottom).map(w=>w.text).join(''),nim=nimOcr(raw,layout.hasHeader)||nimOcr(known,layout.hasHeader),nama=namaOcr(nameWords);
+                if(!nama||(!nim&&nama.replace(/[^A-Za-zÀ-ž]/g,'').length<3))continue;
+                const sexWords=await readCell(layout.sex,band,false),avg=words=>words.reduce((s,w)=>s+w.conf,0)/Math.max(1,words.length);
+                rows.push({nim,nama,jk:genderOcr(sexWords),confidence:Math.round(Math.min(avg(nimWords),avg(nameWords))),corrected:tokenOcr(raw)!==nim,sourceY:(band.top+band.bottom)/2});
+            }
+            await worker.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:''});
+            return rows.sort((a,b)=>a.sourceY-b.sourceY);
         }
         function parseOcrDaftarTsv(tsv,grid=null,width=0) {
             const words=kataOcrTsv(tsv);if(!words.length)return [];
@@ -820,55 +936,266 @@ if ($stmt) {
             const addInput=(value,label)=>{const td=document.createElement('td'),input=document.createElement('input');input.type='text';input.value=value;input.setAttribute('aria-label',label);input.style.cssText='width:100%;min-width:110px;padding:9px;border:1px solid var(--card-border);border-radius:8px;background:var(--input-bg);color:var(--text-main);';td.appendChild(input);tr.appendChild(td);return input;};
             addInput(row.nim||'','NIM baris '+index);addInput(row.nama||'','Nama baris '+index);
             const genderCell=document.createElement('td'),gender=document.createElement('select');gender.setAttribute('aria-label','Jenis kelamin baris '+index);gender.innerHTML='<option value="">Pilih L/P…</option><option value="L">Laki-laki (L)</option><option value="P">Perempuan (P)</option>';gender.value=row.jk||'';gender.style.cssText='min-height:40px;padding:7px;border-radius:8px;background:var(--input-bg);color:var(--text-main);';genderCell.appendChild(gender);tr.appendChild(genderCell);
-            const confidenceCell=document.createElement('td');confidenceCell.textContent=Number.isFinite(row.confidence)?row.confidence+'%'+(row.corrected?' · periksa NIM':''):'Koreksi manual';confidenceCell.style.cssText='text-align:center;'+(row.confidence<80?'color:#f59e0b;':'');tr.appendChild(confidenceCell);
+            const confidenceCell=document.createElement('td');confidenceCell.textContent=(row.source?row.source+' · ':'')+(Number.isFinite(row.confidence)?row.confidence+'%'+(!row.nim||!row.nama?' · lengkapi '+(!row.nim?'NIM':'nama'):row.corrected?' · periksa NIM':''):row.source?'dibaca langsung':'Koreksi manual');confidenceCell.style.cssText='text-align:center;'+(row.confidence<80?'color:#f59e0b;':'');tr.appendChild(confidenceCell);
             const actionCell=document.createElement('td'),remove=document.createElement('button');remove.type='button';remove.className='btn-custom btn-danger';remove.textContent='Hapus';remove.onclick=()=>tr.remove();actionCell.appendChild(remove);tr.appendChild(actionCell);tbody.appendChild(tr);
         }
         function tampilkanHasilOcr(rows) {
             document.getElementById('ocrReviewRows').replaceChildren();rows.forEach((row,i)=>tambahBarisOcr(row,i+1));
             document.getElementById('ocrReviewPanel').hidden=false;
             const empty=rows.filter(row=>!row.jk).length;
-            document.getElementById('ocrReviewHelp').textContent='Periksa NIM dan nama dengan foto sebelum menyimpan. Persentase adalah perkiraan OCR. '+(empty?empty+' baris tidak memuat L/P; pilih jenis kelamin sendiri, atau gunakan pengisian L/P yang kosong.':'L/P dibaca dari kolom foto.');
-            setOcrStatus(rows.length+' baris mahasiswa terbaca. Kop dan angka pertemuan tidak diimpor.');
+            const ocr=rows.some(row=>Number.isFinite(row.confidence)),missing=rows.filter(row=>!row.nim||!row.nama).length;
+            document.getElementById('ocrReviewHelp').textContent='Periksa semua '+rows.length+' baris dengan berkas asli sebelum menyimpan. '+(ocr?'Persentase adalah perkiraan OCR. ':'Teks dokumen dibaca langsung tanpa OCR. ')+(missing?missing+' baris perlu dilengkapi NIM atau namanya. ':'')+(empty?empty+' baris tidak memuat L/P; pilih jenis kelamin sendiri, atau gunakan pengisian L/P yang kosong.':'L/P dibaca dari kolom berkas.');
+            setOcrStatus(rows.length+' baris mahasiswa ditampilkan untuk diperiksa'+(missing?' ('+missing+' perlu dilengkapi)':'')+'.');
         }
         function tambahBarisKoreksiOcr() { document.getElementById('ocrReviewPanel').hidden=false;tambahBarisOcr({},document.getElementById('ocrReviewRows').rows.length+1); }
         function isiGenderOcrKosong() { const value=document.getElementById('ocrEmptyGender').value;if(!value)return;document.querySelectorAll('#ocrReviewRows select').forEach(select=>{if(!select.value)select.value=value;}); }
-        async function bacaFotoDaftarMahasiswa() {
-            const file=document.getElementById('fotoDaftarMahasiswa').files[0];
-            if(!file){showToast('Pilih foto daftar mahasiswa terlebih dahulu.','error');return;}
-            if(!await muatPratinjauOcr())return;
-            const button=document.getElementById('btnOcrFoto');button.disabled=true;
-            const controls=[document.getElementById('fotoDaftarMahasiswa'),...document.querySelectorAll('#ocrPhotoPreview button,#ocrPhotoPreview input')];
-            controls.forEach(control=>control.disabled=true);
+        const importLibraryPromises = {};
+        function muatPustakaImpor(name,url) {
+            if(window[name])return Promise.resolve(window[name]);
+            if(!importLibraryPromises[name])importLibraryPromises[name]=new Promise((resolve,reject)=>{
+                const script=document.createElement('script');script.src=url;
+                script.onload=()=>window[name]?resolve(window[name]):reject(new Error('Pustaka '+name+' tidak tersedia.'));
+                script.onerror=()=>{delete importLibraryPromises[name];script.remove();reject(new Error('Pustaka pembaca berkas gagal dimuat. Periksa internet lalu coba lagi.'));};
+                document.head.appendChild(script);
+            });return importLibraryPromises[name];
+        }
+        function jenisBerkasDaftar(file) {
+            const ext=(file.name.split('.').pop()||'').toLowerCase();
+            return ['pdf','doc','docx','xls','xlsx','csv'].includes(ext)?ext:file.type.startsWith('image/')||['jpg','jpeg','png','webp','bmp'].includes(ext)?'image':'';
+        }
+        async function muatBerkasDaftarMahasiswa() {
+            const file=document.getElementById('fotoDaftarMahasiswa').files[0];if(!file)return;
             document.getElementById('ocrReviewPanel').hidden=true;document.getElementById('ocrReviewRows').replaceChildren();
-            let worker=null;
-            try {
-                if(!window.Tesseract)throw new Error('Pustaka OCR tidak termuat. Periksa internet lalu muat ulang halaman.');
-                setOcrStatus('Menyiapkan foto dan mencari garis tabel…');
-                const selected=ocrPhoto.crop?potongKanvasOcr(ocrPhoto.source,ocrPhoto.crop):ocrPhoto.source;
+            if(jenisBerkasDaftar(file)==='image')return muatPratinjauOcr();
+            ocrPhoto.ticket++;ocrPhoto.file=null;ocrPhoto.image=null;ocrPhoto.source=null;ocrPhoto.loading=null;
+            document.getElementById('ocrPhotoPreview').hidden=true;
+            setOcrStatus(jenisBerkasDaftar(file)?'Berkas siap. Klik Baca Semua Baris; seluruh halaman atau lembar akan diperiksa.':'Pilih foto, PDF, DOC/DOCX, atau XLS/XLSX/CSV.');
+        }
+        function nimBerkas(value) {
+            const code=String(value??'').trim().replace(/^'/,'').replace(/\s+/g,'');
+            return /^[A-Za-z0-9][A-Za-z0-9./_-]{4,49}$/.test(code)&&(code.match(/\d/g)||[]).length>=5?code:'';
+        }
+        function teksSelBerkas(value) { return String(value??'').replace(/\s+/g,' ').trim(); }
+        function parseTabelBerkas(table,source) {
+            const out=[];let columns=null;
+            for(const values of table){
+                const cells=values.map(teksSelBerkas),labels=cells.map(s=>tokenOcr(s).replace(/\//g,''));
+                const nimAt=labels.findIndex(s=>/^(NIM|NPM|NRP|NOMORINDUKMAHASISWA)$/.test(s)),nameAt=labels.findIndex(s=>/^(NAMA|NAMAMAHASISWA|NAMALENGKAP|NAMASISWA)$/.test(s));
+                if(nimAt>=0&&nameAt>=0){columns={nim:nimAt,name:nameAt,sex:labels.findIndex(s=>/^(LP|PL|JK|JENISKELAMIN|KELAMIN|GENDER)$/.test(s))};continue;}
+                let at=columns?columns.nim:cells.findIndex(value=>nimBerkas(value));if(at<0)continue;
+                const nim=nimBerkas(cells[at]),name=columns?columns.name:at+1;
+                if(!nim||(!columns&&!/[A-Za-z]/.test(nim)&&!/^\d{1,3}$/.test(cells[0])))continue;
+                const nama=teksSelBerkas(cells[name]||'');if(!namaOcr([{text:nama}]))continue;
+                const jk=columns&&columns.sex>=0?genderOcr([{text:cells[columns.sex]||''}]):'';
+                out.push({nim,nama,jk,source});
+            }return out;
+        }
+        function parseHtmlBerkas(html,source) {
+            const doc=new DOMParser().parseFromString(html,'text/html'),rows=[];
+            doc.querySelectorAll('table').forEach(table=>{
+                const matrix=[...table.rows].map(row=>[...row.cells].map(cell=>cell.textContent));rows.push(...parseTabelBerkas(matrix,source));
+            });return {rows,doc};
+        }
+        function parseTeksWord(text,source) {
+            // Word lama menandai akhir sel dengan U+0007. Baca seluruh rantai
+            // sel; halaman tidak membatasi jumlah mahasiswa yang diambil.
+            if(text.includes('\x07')){
+                const cells=text.split('\x07').map(teksSelBerkas),labels=cells.map(tokenOcr),head=labels.findIndex(s=>/^(NIM|NPM|NRP)$/.test(s));
+                const nameHead=labels.findIndex(s=>/^(NAMA|NAMAMAHASISWA|NAMALENGKAP)$/.test(s));
+                const sexHead=labels.findIndex(s=>/^(L\/P|P\/L|LP|PL|JK|JENISKELAMIN)$/.test(s));
+                const out=[];for(let i=Math.max(0,head+1);i<cells.length;i++){
+                    const nim=nimBerkas(cells[i]);if(!nim)continue;
+                    const nameAt=head>=0&&nameHead>=0?i+nameHead-head:i+1,nama=cells[nameAt]||'';
+                    if(!namaOcr([{text:nama}]))continue;
+                    const sexAt=sexHead>=0&&head>=0?i+sexHead-head:-1;
+                    out.push({nim,nama,jk:sexAt>=0?genderOcr([{text:cells[sexAt]||''}]):'',source});
+                }return out;
+            }
+            return parseTabelBerkas(text.replace(/\r\n?/g,'\n').split('\n').map(line=>line.split(/\t| {2,}/)),source);
+        }
+        function teksDocLama(buffer,CFB) {
+            const container=CFB.read(new Uint8Array(buffer),{type:'array'}),word=CFB.find(container,'WordDocument');
+            if(!word||!word.content)throw new Error('DOC tidak memuat teks Word yang dapat dibaca. Simpan ulang sebagai DOCX atau PDF.');
+            const bytes=new Uint8Array(word.content),view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+            const u16=offset=>view.getUint16(offset,true),u32=offset=>view.getUint32(offset,true);
+            if(bytes.length<154||u16(0)!==0xa5ec)throw new Error('Format DOC lama tidak dikenali. Simpan ulang sebagai DOCX atau PDF.');
+            if(u16(10)&0x0100)throw new Error('DOC terkunci dengan kata sandi. Unggah salinan yang tidak terkunci.');
+            const table=CFB.find(container,(u16(10)&0x0200)?'1Table':'0Table');
+            const csw=u16(32),lw=34+csw*2,cslw=u16(lw),pairs=lw+2+cslw*4+2;
+            if(!table||pairs+34*8>bytes.length)throw new Error('Tabel teks DOC tidak tersedia. Simpan ulang sebagai DOCX.');
+            const ccpText=u32(lw+2+12),fcClx=u32(pairs+33*8),lcbClx=u32(pairs+33*8+4);
+            const tb=new Uint8Array(table.content),tv=new DataView(tb.buffer,tb.byteOffset,tb.byteLength);let pos=fcClx;
+            while(pos<fcClx+lcbClx&&pos<tb.length&&tb[pos]===1){if(pos+3>tb.length)break;pos+=3+tv.getUint16(pos+1,true);}
+            if(pos+5>tb.length||tb[pos]!==2)throw new Error('Teks DOC tidak dapat dibaca. Simpan ulang sebagai DOCX.');
+            const size=tv.getUint32(pos+1,true),start=pos+5,count=(size-4)/12;
+            if(count<1||!Number.isInteger(count)||start+size>tb.length)throw new Error('Data teks DOC rusak atau tidak lengkap.');
+            let text='';for(let i=0;i<count;i++){
+                const first=tv.getUint32(start+i*4,true),last=Math.min(ccpText,tv.getUint32(start+(i+1)*4,true));if(last<=first)continue;
+                const encoded=tv.getUint32(start+(count+1)*4+i*8+2,true),compressed=!!(encoded&0x40000000),offset=(encoded&0x3fffffff)/(compressed?2:1),length=(last-first)*(compressed?1:2);
+                if(offset+length>bytes.length)throw new Error('Bagian teks DOC tidak lengkap.');
+                text+=new TextDecoder(compressed?'windows-1252':'utf-16le').decode(bytes.subarray(offset,offset+length));
+            }return text;
+        }
+        function teksRtfBerkas(text) {
+            const stack=[];let state={skip:false,uc:1},fallback=0,out='';
+            const tokens=/([{}])|\\([A-Za-z]+)(-?\d+)? ?|\\'([0-9a-fA-F]{2})|\\([^A-Za-z])|([^\\{}]+)/g;let m;
+            const put=char=>{if(fallback){fallback--;return;}if(!state.skip)out+=char;};
+            while((m=tokens.exec(text))){
+                if(m[1]==='{'){stack.push({...state});continue;}if(m[1]==='}'){state=stack.pop()||{skip:false,uc:1};continue;}
+                if(m[2]){const key=m[2],num=Number(m[3]);
+                    if(/^(fonttbl|colortbl|stylesheet|info|pict|object|header|footer|fldinst|datastore)$/.test(key))state.skip=true;
+                    else if(key==='uc')state.uc=num;
+                    else if(key==='u'){if(!state.skip)out+=String.fromCharCode(num&0xffff);fallback=state.uc;}
+                    else if(!state.skip){if(key==='cell')out+='\t';else if(['row','par','line'].includes(key))out+='\n';else if(key==='tab')out+='\t';}
+                }else if(m[4])put(new TextDecoder('windows-1252').decode(new Uint8Array([parseInt(m[4],16)])));
+                else if(m[5]==='*')state.skip=true;else if(m[5])put(m[5]==='~'?' ':m[5]);else if(m[6])for(const char of m[6])put(char);
+            }return out;
+        }
+        function rowsPdfTeks(content,viewport) {
+            const words=[];for(const item of content.items){if(!item.str||!item.transform)continue;
+                const point=viewport.convertToViewportPoint(item.transform[4],item.transform[5]),text=item.str,h=Math.max(3,item.height*viewport.scale),w=Math.max(1,item.width*viewport.scale);
+                const matcher=/\S+/g;let match;while((match=matcher.exec(text)))words.push({text:match[0],x:point[0]+w*match.index/Math.max(1,text.length),y:point[1]-h,w:w*match[0].length/Math.max(1,text.length),h,conf:100});
+            }
+            const layout=kolomOcr(words,null,viewport.width),out=[];
+            for(const row of barisKataOcr(words)){
+                if(layout&&row.cy<layout.dataTop)continue;
+                const at=row.words.findIndex(w=>nimBerkas(w.text));if(at<0)continue;
+                const nim=nimBerkas(row.words[at].text);
+                if(!layout&&!(/^[A-Za-z]/.test(nim)&&/^\d{1,3}$/.test(row.words[0].text)))continue;
+                const names=layout?row.words.filter(w=>w.x+w.w/2>=layout.name.left&&w.x+w.w/2<=layout.name.right):row.words.slice(at+1);
+                const nama=namaOcr(names);if(!nama)continue;
+                const sex=layout&&layout.sex?row.words.filter(w=>w.x+w.w/2>=layout.sex.left&&w.x+w.w/2<=layout.sex.right):[];
+                out.push({nim,nama,jk:genderOcr(sex)});
+            }return out;
+        }
+        async function kanvasGambarBerkas(src) {
+            const img=new Image();img.src=src;await img.decode();
+            const scale=Math.min(1,3000/Math.max(img.width,img.height),Math.sqrt(8000000/(img.width*img.height)));
+            const canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);return canvas;
+        }
+        async function kanvasScanPdf(page,pdfjs) {
+            // Untuk PDF satu gambar tanpa teks, pakai piksel scan aslinya.
+            // Ini menghindari pengecilan/pembesaran berulang yang mengaburkan NIM.
+            if(page.rotate)return null;
+            const ops=await page.getOperatorList(),pictures=[];let matrix=[1,0,0,1,0,0];const stack=[];
+            for(let i=0;i<ops.fnArray.length;i++){
+                const op=ops.fnArray[i],args=ops.argsArray[i];
+                if(op===pdfjs.OPS.save)stack.push(matrix.slice());
+                else if(op===pdfjs.OPS.restore)matrix=stack.pop()||matrix;
+                else if(op===pdfjs.OPS.transform){const [a,b,c,d,e,f]=matrix,[g,h,j,k,l,m]=args;matrix=[a*g+c*h,b*g+d*h,a*j+c*k,b*j+d*k,a*l+c*m+e,b*l+d*m+f];}
+                else if(op===pdfjs.OPS.paintImageXObject)pictures.push({id:args[0],matrix:matrix.slice()});
+                else if(op===pdfjs.OPS.paintInlineImageXObject||op===pdfjs.OPS.paintImageMaskXObject)return null;
+            }
+            if(pictures.length!==1)return null;
+            const picture=pictures[0],m=picture.matrix;if(m[0]<=0||m[3]<=0||Math.abs(m[1])>.01||Math.abs(m[2])>.01)return null;
+            const objects=picture.id.startsWith('g_')?page.commonObjs:page.objs,img=await new Promise(resolve=>objects.get(picture.id,resolve));if(!img||(!img.bitmap&&!img.data)||img.width*img.height>8000000)return null;
+            let drawable=img.bitmap;
+            if(!drawable){
+                drawable=document.createElement('canvas');drawable.width=img.width;drawable.height=img.height;
+                const pixels=new Uint8ClampedArray(img.width*img.height*4);
+                if(img.kind===3)pixels.set(img.data);
+                else for(let y=0;y<img.height;y++)for(let x=0;x<img.width;x++){
+                    const p=y*img.width+x,o=p*4;
+                    if(img.kind===2){pixels[o]=img.data[p*3];pixels[o+1]=img.data[p*3+1];pixels[o+2]=img.data[p*3+2];pixels[o+3]=255;}
+                    else if(img.kind===1){const value=((img.data[y*Math.ceil(img.width/8)+(x>>3)]>>(7-(x%8)))&1)*255;pixels[o]=pixels[o+1]=pixels[o+2]=value;pixels[o+3]=255;}
+                    else return null;
+                }
+                drawable.getContext('2d').putImageData(new ImageData(pixels,img.width,img.height),0,0);
+            }
+            const scale=Math.min(1,3000/Math.max(img.width,img.height),Math.sqrt(8000000/(img.width*img.height)));
+            const canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(drawable,0,0,canvas.width,canvas.height);return canvas;
+        }
+        function gabungBerkas(rows) {
+            const seen=new Set();return rows.filter(row=>{if(!row.nim||!row.nama)return true;const key=row.nim.toUpperCase()+'|'+row.nama.replace(/\s+/g,'').toUpperCase();if(seen.has(key))return false;seen.add(key);return true;});
+        }
+        async function bacaDokumenDaftarMahasiswa(file) {
+            const button=document.getElementById('btnOcrFoto'),input=document.getElementById('fotoDaftarMahasiswa');button.disabled=true;input.disabled=true;
+            document.getElementById('ocrReviewPanel').hidden=true;document.getElementById('ocrReviewRows').replaceChildren();
+            let worker=null,pdf=null,continuation=null;const rows=[],scanCache=new Map();
+            const ocr=async(canvas,source)=>{
+                let hash='';
+                if(globalThis.crypto?.subtle){try{const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(blob)hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),n=>n.toString(16).padStart(2,'0')).join('');}catch(error){}}
+                let found=hash?scanCache.get(hash):null;
+                if(!found){if(!worker)worker=await buatWorkerDaftar();found=await pindaiKanvasDaftar(canvas,worker,continuation);if(hash)scanCache.set(hash,found);}
+                if(found.layoutHint)continuation=found.layoutHint;
+                return found.map(row=>({...row,source}));
+            };
+            try{
+                if(file.size>20*1024*1024)throw new Error('Ukuran dokumen maksimal 20 MB.');
+                const type=jenisBerkasDaftar(file),buffer=await file.arrayBuffer();setOcrStatus('Membaca seluruh isi '+type.toUpperCase()+'…');
+                if(type==='pdf'){
+                    if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
+                    const pdfjs=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
+                    pdfjs.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+                    pdf=await pdfjs.getDocument({data:new Uint8Array(buffer),isEvalSupported:false,cMapUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/cmaps/',cMapPacked:true,standardFontDataUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/standard_fonts/'}).promise;
+                    for(let i=1;i<=pdf.numPages;i++){
+                        setOcrStatus('PDF: halaman '+i+' / '+pdf.numPages+'…');const page=await pdf.getPage(i),view=page.getViewport({scale:1});
+                        const text=await page.getTextContent(),direct=rowsPdfTeks(text,view);
+                        if(direct.length)rows.push(...direct.map(row=>({...row,source:'PDF halaman '+i+' · teks'})));
+                        else{
+                            const native=text.items.some(item=>item.str?.trim())?null:await kanvasScanPdf(page,pdfjs);
+                            if(native){rows.push(...await ocr(native,'PDF halaman '+i+' · OCR'));native.width=native.height=1;page.cleanup();continue;}
+                            const scale=Math.min(3,2400/view.width,Math.sqrt(8000000/(view.width*view.height))),viewport=page.getViewport({scale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+                            await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
+                            rows.push(...await ocr(canvas,'PDF halaman '+i+' · OCR'));canvas.width=canvas.height=1;
+                        }
+                        page.cleanup();
+                    }
+                }else if(['xls','xlsx','csv'].includes(type)){
+                    const XLSX=await muatPustakaImpor('XLSX','https://cdn.jsdelivr.net/npm/@e965/xlsx@0.20.3/dist/xlsx.full.min.js'),book=XLSX.read(buffer,{type:'array',cellText:true});
+                    for(const name of book.SheetNames){setOcrStatus('Membaca lembar Excel: '+name+'…');rows.push(...parseTabelBerkas(XLSX.utils.sheet_to_json(book.Sheets[name],{header:1,raw:false,defval:''}), 'Excel · '+name));}
+                }else if(type==='docx'){
+                    const mammoth=await muatPustakaImpor('mammoth','https://cdn.jsdelivr.net/npm/mammoth@1.13.0/mammoth.browser.min.js'),converted=await mammoth.convertToHtml({arrayBuffer:buffer}),parsed=parseHtmlBerkas(converted.value,'Word · tabel');rows.push(...parsed.rows);
+                    if(!rows.length){const raw=await mammoth.extractRawText({arrayBuffer:buffer});rows.push(...parseTeksWord(raw.value,'Word · teks'));}
+                    if(!rows.length){const images=[...parsed.doc.querySelectorAll('img[src^="data:image/"]')];for(let i=0;i<images.length;i++){setOcrStatus('Word: gambar '+(i+1)+' / '+images.length+'…');rows.push(...await ocr(await kanvasGambarBerkas(images[i].getAttribute('src')),'Word gambar '+(i+1)+' · OCR'));}}
+                }else if(type==='doc'){
+                    const probe=new TextDecoder().decode(new Uint8Array(buffer,0,Math.min(buffer.byteLength,512)));
+                    if(/^\s*(?:<!doctype|<html|<\?xml)/i.test(probe))rows.push(...parseHtmlBerkas(new TextDecoder().decode(buffer),'DOC · tabel').rows);
+                    else if(/^\s*{\\rtf/.test(probe))rows.push(...parseTeksWord(teksRtfBerkas(new TextDecoder('windows-1252').decode(buffer)),'DOC · teks'));
+                    else {const XLSX=await muatPustakaImpor('XLSX','https://cdn.jsdelivr.net/npm/@e965/xlsx@0.20.3/dist/xlsx.full.min.js');rows.push(...parseTeksWord(teksDocLama(buffer,XLSX.CFB),'DOC · teks'));}
+                }else throw new Error('Pilih foto, PDF, DOC/DOCX, atau XLS/XLSX/CSV.');
+                if(!rows.length)throw new Error('Belum ada mahasiswa yang terbaca. Pastikan tabel memuat judul NIM dan Nama Mahasiswa; untuk scan gunakan gambar yang jelas.');
+                tampilkanHasilOcr(gabungBerkas(rows));
+            }catch(error){const message=error.name==='PasswordException'?'PDF terkunci dengan kata sandi. Unggah salinan yang tidak terkunci.':error.message;setOcrStatus(message);showToast(message,'error');}
+            finally{try{if(worker)await worker.terminate();if(pdf)await pdf.destroy();}finally{button.disabled=false;input.disabled=false;}}
+        }
+        async function buatWorkerDaftar() {
+            const Tesseract=await muatPustakaImpor('Tesseract','https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+            return Tesseract.createWorker('eng',1,{workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',langPath:'https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@main',gzip:false});
+        }
+        async function pindaiKanvasDaftar(selected,worker,continuation=null) {
                 const prepared=preparasiFotoOcr(selected),canvas=prepared.canvas,grid=prepared.grid;
                 setOcrStatus(grid?'Tabel ditemukan. Memuat OCR untuk membaca kolom…':'Memuat OCR. Bila hasil kurang lengkap, pilih area tabel pada pratinjau.');
-                worker=await Tesseract.createWorker('eng',1,{workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',langPath:'https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@main',gzip:false});
-                await worker.setParameters({tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'});
+                await worker.setParameters({tessedit_pageseg_mode:'11',preserve_interword_spaces:'1',tessedit_char_whitelist:''});
                 const header=grid?potongKanvasOcr(canvas,{left:0,right:canvas.width,top:0,bottom:grid.horizontal[1]}):canvas;
                 setOcrStatus('Mengenali judul kolom NIM dan nama…');
-                let scan=await worker.recognize(header,{}, {tsv:true}),words=kataOcrTsv(scan.data.tsv),layout=kolomOcr(words,grid,canvas.width);
-                if(!layout&&grid){scan=await worker.recognize(canvas,{}, {tsv:true});words=kataOcrTsv(scan.data.tsv);layout=kolomOcr(words,grid,canvas.width);}
+                let scan=await worker.recognize(header,{}, {tsv:true}),words=kataOcrTsv(scan.data.tsv),layout=kolomOcr(words,grid||garisKolomScanOcr(prepared.rawCanvas,words),canvas.width);
+                if(!layout&&grid){scan=await worker.recognize(canvas,{}, {tsv:true});words=kataOcrTsv(scan.data.tsv);layout=kolomOcr(words,grid||garisKolomScanOcr(prepared.rawCanvas,words),canvas.width);}
+                if(continuation&&!grid&&(!layout||(!layout.hasHeader&&!layout.nim.anchorY))){
+                    const scale=col=>col?{left:col.left*canvas.width,right:col.right*canvas.width}:null;
+                    const anchors=words.filter(w=>nimOcr(w.text));
+                    layout={...(layout||{hasHeader:false,dataTop:anchors.length?Math.max(0,Math.min(...anchors.map(w=>w.y))-6):0}),nim:scale(continuation.nim),name:scale(continuation.name),sex:scale(continuation.sex)};
+                }
+                if(layout){layout.dataBottom=prepared.dataBottom||canvas.height;if(!layout.hasHeader)layout.dataTop=Math.max(0,layout.dataTop-60);}
                 let rows=[];
                 if(layout){
                     await worker.setParameters({tessedit_pageseg_mode:'6'});
-                    const readColumn=async(col,label)=>{if(!col)return [];setOcrStatus('Membaca kolom '+label+'…');const left=Math.max(0,Math.floor(col.left)),top=Math.max(0,Math.floor(layout.dataTop));const crop=potongKanvasOcr(canvas,{left,top,right:col.right,bottom:canvas.height});const result=await worker.recognize(crop,{}, {tsv:true});return kataOcrTsv(result.data.tsv,left,top);};
+                    const readColumn=async(col,label)=>{if(!col)return [];setOcrStatus('Membaca kolom '+label+'…');const left=Math.max(0,Math.floor(col.left)),top=Math.max(0,Math.floor(layout.dataTop));const crop=potongKanvasOcr(canvas,{...col,left,top,right:col.right,bottom:layout.dataBottom});const result=await worker.recognize(crop,{}, {tsv:true});return kataOcrTsv(result.data.tsv,left,top);};
                     let nims=await readColumn(layout.nim,'NIM');
                     // Baca ulang sel yang meragukan, terutama huruf awal NIM yang
                     // kadang terlewat saat satu kolom panjang dibaca sekaligus.
-                    if(grid){
+                    const retryBands=grid?grid.horizontal.slice(0,-1).map((top,i)=>({top,bottom:grid.horizontal[i+1]})):rentangBarisOcr(canvas,layout,null);
+                    if(retryBands.length){
                         const prefixed=nims.filter(w=>/^[A-Z]/.test(nimOcr(w.text))).length>=2;
+                        const lengths=nims.map(w=>nimOcr(w.text,layout.hasHeader)).filter(Boolean),frequency=new Map();lengths.forEach(code=>frequency.set(code.length,(frequency.get(code.length)||0)+1));
+                        const common=[...frequency].sort((a,b)=>b[1]-a[1])[0],expectedLength=common&&common[1]>=3&&common[1]>=lengths.length*.6?common[0]:0;
                         await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'});
-                        for(let i=0;i<grid.horizontal.length-1;i++){
-                            const top=grid.horizontal[i],bottom=grid.horizontal[i+1];if(top<layout.dataTop-2)continue;
+                        for(const band of retryBands){
+                            const {top,bottom}=band;if(top<layout.dataTop-2)continue;
                             const current=nims.filter(w=>w.y+w.h/2>=top&&w.y+w.h/2<bottom),raw=current.map(w=>w.text).join('');
-                            if(nimOcr(raw,layout.hasHeader)&&current.every(w=>w.conf>=85)&&!(prefixed&&/^\d/.test(tokenOcr(raw))))continue;
+                            if(nimOcr(raw,layout.hasHeader)&&current.every(w=>w.conf>=85)&&(!expectedLength||nimOcr(raw,layout.hasHeader).length===expectedLength)&&!(prefixed&&/^\d/.test(tokenOcr(raw))))continue;
                             setOcrStatus('Memeriksa ulang NIM pada baris tabel…');
-                            const left=Math.floor(layout.nim.left),rowTop=Math.ceil(top+3),cell=potongKanvasOcr(canvas,{left,top:rowTop,right:layout.nim.right,bottom:bottom-3});
+                            const left=Math.floor(layout.nim.left),rowTop=Math.ceil(top+3),cell=potongKanvasOcr(canvas,{...layout.nim,left,top:rowTop,right:layout.nim.right,bottom:bottom-3});
                             const padded=document.createElement('canvas');padded.width=cell.width+32;padded.height=cell.height+24;
                             const ctx=padded.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,padded.width,padded.height);ctx.drawImage(cell,16,12);
                             const original=ctx.getImageData(0,0,padded.width,padded.height),oldCode=nimOcr(raw,layout.hasHeader);
@@ -878,7 +1205,7 @@ if ($stmt) {
                                 ctx.putImageData(pixels,0,0);
                                 const retry=await worker.recognize(padded,{}, {tsv:true}),replacement=kataOcrTsv(retry.data.tsv,left-16,rowTop-12);
                                 const code=nimOcr(replacement.map(w=>w.text).join(''),layout.hasHeader);
-                                if(code&&!(/^[A-Z]/.test(oldCode)&&/^\d/.test(code))){
+                                if(code&&(!expectedLength||code.length===expectedLength)&&!(/^[A-Z]/.test(oldCode)&&/^\d/.test(code))){
                                     nims=nims.filter(w=>!(w.y+w.h/2>=top&&w.y+w.h/2<bottom)).concat(replacement);
                                     if(!prefixed||/^[A-Z]/.test(code))break;
                                 }
@@ -888,8 +1215,28 @@ if ($stmt) {
                     }
                     const names=await readColumn(layout.name,'nama mahasiswa'),sex=await readColumn(layout.sex,'L/P');
                     rows=gabungKolomOcr(nims,names,sex,grid,layout.dataTop,layout.hasHeader);
+                    rows=await lengkapiBarisOcr(worker,canvas,layout,grid,!grid&&!layout.hasHeader?[]:rows,nims);
                 } else rows=parseOcrDaftarTsv(scan.data.tsv,grid,canvas.width);
-                if(!rows.length)throw new Error('Belum ada baris mahasiswa yang terbaca. Pilih area tabel NIM dan nama pada pratinjau, luruskan foto, lalu Baca Foto kembali.');
+            if(layout&&layout.hasHeader&&!grid){const normalize=col=>col?{left:col.left/canvas.width,right:col.right/canvas.width}:null;rows.layoutHint={nim:normalize(layout.nim),name:normalize(layout.name),sex:normalize(layout.sex)};}
+            return rows;
+        }
+
+        async function bacaFotoDaftarMahasiswa() {
+            const file=document.getElementById('fotoDaftarMahasiswa').files[0];
+            if(!file){showToast('Pilih foto daftar mahasiswa terlebih dahulu.','error');return;}
+            if(jenisBerkasDaftar(file)!=='image')return bacaDokumenDaftarMahasiswa(file);
+            if(!await muatPratinjauOcr())return;
+            const button=document.getElementById('btnOcrFoto');button.disabled=true;
+            const controls=[document.getElementById('fotoDaftarMahasiswa'),...document.querySelectorAll('#ocrPhotoPreview button,#ocrPhotoPreview input')];
+            controls.forEach(control=>control.disabled=true);
+            document.getElementById('ocrReviewPanel').hidden=true;document.getElementById('ocrReviewRows').replaceChildren();
+            let worker=null;
+            try {
+                setOcrStatus('Menyiapkan foto dan mencari garis tabel…');
+                const selected=ocrPhoto.crop?potongKanvasOcr(ocrPhoto.source,ocrPhoto.crop):ocrPhoto.source;
+                worker=await buatWorkerDaftar();
+                const rows=await pindaiKanvasDaftar(selected,worker);
+                if(!rows.length)throw new Error('Belum ada baris mahasiswa yang terbaca. Pilih area tabel NIM dan nama pada pratinjau, luruskan foto, lalu Baca Semua Baris kembali.');
                 tampilkanHasilOcr(rows);
             } catch(error){setOcrStatus(error.message);showToast(error.message,'error');}
             finally {try{if(worker)await worker.terminate();}finally{button.disabled=false;controls.forEach(control=>control.disabled=false);}}
