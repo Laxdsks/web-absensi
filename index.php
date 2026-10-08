@@ -196,6 +196,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         };
     </script>
     
+    <script src="assets/app-audio.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -285,6 +286,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 1;
         }
+        body.has-custom-wallpaper #particleCanvas { display: none; }
         
         .toast-container { position: fixed; top: 20px; left: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
         .toast {
@@ -477,14 +479,36 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                     </select>
                     <div id="bgManualScaleWrap" style="display:none;margin-top:8px;">
                         <label for="bgScaleRange" style="font-size:11px;display:flex;justify-content:space-between;">Skala <span id="bgScaleValue">100%</span></label>
-                        <input type="range" id="bgScaleRange" min="25" max="200" step="5" value="100" oninput="updateBgWallpaperSizing()" style="width:100%;min-height:32px;">
+                    <input type="range" id="bgScaleRange" min="1" max="200" step="1" value="100" oninput="updateBgWallpaperSizing()" style="width:100%;min-height:32px;">
                     </div>
-                    <small style="display:block;margin-top:6px;font-size:10px;color:var(--text-muted);line-height:1.45;">Foto disimpan pada resolusi aslinya tanpa dikompres. Pilih Ukuran asli agar gambar tidak diperbesar, atau atur skala manual.</small>
+                    <div style="margin-top:8px;">
+                        <label for="bgPositionX" style="font-size:11px;display:flex;justify-content:space-between;">Geser kiri / kanan <span id="bgPositionXValue">50%</span></label>
+                        <input type="range" id="bgPositionX" min="0" max="100" value="50" oninput="updateBgWallpaperPosition()" style="width:100%;min-height:32px;">
+                        <label for="bgPositionY" style="font-size:11px;display:flex;justify-content:space-between;margin-top:4px;">Geser atas / bawah <span id="bgPositionYValue">50%</span></label>
+                        <input type="range" id="bgPositionY" min="0" max="100" value="50" oninput="updateBgWallpaperPosition()" style="width:100%;min-height:32px;">
+                    </div>
+                    <small id="bgQualityHint" style="display:block;margin-top:6px;font-size:10px;color:var(--text-muted);line-height:1.45;">Foto disimpan pada resolusi aslinya. Gambar beresolusi rendah tidak dapat dibuat lebih tajam; mode ukuran asli mencegah pembesaran tambahan.</small>
                 </div>
                 <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;gap:8px;">
                     <span style="font-size: 10px; color: var(--text-muted);">Format: JPG, PNG, WEBP</span>
                     <button type="button" onclick="removeBgWallpaper()" style="background: none; border: none; color: #ef4444; font-size: 11px; font-weight: bold; cursor: pointer;min-height:38px;"><i class="fa-solid fa-trash-can"></i> Hapus Wallpaper</button>
                 </div>
+            </div>
+            <div class="form-group" style="padding:12px;border:1px solid var(--card-border);border-radius:12px;background:rgba(0,0,0,.04);">
+                <label>Efek suara tombol</label>
+                <select id="uiSoundEffect" class="form-control" onchange="simpanAudioAntarmuka()">
+                    <option value="1">1 · Klik lembut</option><option value="2">2 · Nada ganda</option><option value="3">3 · Pop</option><option value="4">4 · Denting</option><option value="5">5 · Geser</option><option value="6">6 · Arpeggio</option>
+                </select>
+                <label for="uiSoundVolume" style="font-size:11px;display:flex;justify-content:space-between;margin-top:9px;">Volume <span id="uiSoundVolumeValue">25%</span></label>
+                <input id="uiSoundVolume" type="range" min="0" max="100" value="25" oninput="simpanAudioAntarmuka()" style="width:100%;min-height:32px;">
+                <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;margin-top:8px;"><input id="uiSoundMuted" type="checkbox" onchange="simpanAudioAntarmuka()"> Senyapkan efek suara</label>
+                <button type="button" data-no-click-sound onclick="previewEfekSuara()" class="form-control" style="margin-top:8px;cursor:pointer;"><i class="fa-solid fa-volume-high"></i> Coba efek terpilih</button>
+                <small style="display:block;margin-top:5px;font-size:10px;color:var(--text-muted);">Pilihan dan volume berlaku sama di semua halaman.</small>
+            </div>
+            <div class="form-group" style="padding:12px;border:1px solid var(--card-border);border-radius:12px;background:rgba(0,0,0,.04);">
+                <label>Musik tanpa iklan di pemutar arsip</label>
+                <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin:0 0 8px;">Cari audio pada Internet Archive. Pemutar terpisah menjaga musik tetap berjalan saat halaman ini berpindah, selama jendela pemutar dibiarkan terbuka.</p>
+                <button type="button" onclick="bukaPemutarMusik()" class="form-control" style="cursor:pointer;"><i class="fa-solid fa-music"></i> Buka pemutar musik</button>
             </div>
             <button type="button" class="btn-submit" onclick="saveProfileChanges()">Simpan Perubahan Pengaturan <i class="fa-solid fa-floppy-disk"></i></button>
         </div>
@@ -676,9 +700,12 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         // --- NADA CHIME AUDIO SCI-FI ASLI ---
         function playSciFiChime() {
             try {
+                const settings = window.AbsensiUIAudio?.readSettings() || {volume:25, muted:false};
+                if (settings.muted || settings.volume <= 0) return;
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (!AudioContext) return;
                 const ctx = new AudioContext();
+                const masterVolume = Math.min(0.12, settings.volume / 100 * 0.12);
                 
                 const osc1 = ctx.createOscillator();
                 const gain1 = ctx.createGain();
@@ -693,11 +720,11 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                 osc2.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.8);
                 
                 gain1.gain.setValueAtTime(0, ctx.currentTime);
-                gain1.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.1);
+                gain1.gain.linearRampToValueAtTime(masterVolume, ctx.currentTime + 0.1);
                 gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2);
                 
                 gain2.gain.setValueAtTime(0, ctx.currentTime);
-                gain2.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.2);
+                gain2.gain.linearRampToValueAtTime(masterVolume * 0.5, ctx.currentTime + 0.2);
                 gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2.5);
                 
                 osc1.connect(gain1);
@@ -714,23 +741,51 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         
         // --- MANIPULASI WALLPAPER BACKGROUND DARI LOCALSTORAGE ---
         function applyBgWallpaperSizing() {
-            const mode = localStorage.getItem('custom_bg_wallpaper_mode') || 'cover';
-            const scale = Math.max(25, Math.min(200, parseInt(localStorage.getItem('custom_bg_wallpaper_scale') || '100', 10) || 100));
+            let mode = localStorage.getItem('custom_bg_wallpaper_mode') || 'cover';
+            let scale = Math.max(1, Math.min(200, parseInt(localStorage.getItem('custom_bg_wallpaper_scale') || '100', 10) || 100));
+            const imageWidth = Number(localStorage.getItem('custom_bg_wallpaper_width')) || 0;
+            const imageHeight = Number(localStorage.getItem('custom_bg_wallpaper_height')) || 0;
+            const canCoverWithoutUpscale = !imageWidth || !imageHeight || (imageWidth >= window.innerWidth && imageHeight >= window.innerHeight);
+            if (mode === 'cover' && !canCoverWithoutUpscale) {
+                mode = 'auto';
+                try { localStorage.setItem('custom_bg_wallpaper_mode', mode); } catch (error) {}
+            }
+            const maxManualScale = imageWidth && imageHeight ? Math.max(1, Math.min(200, Math.floor(Math.min(imageWidth / Math.max(1, window.innerWidth), imageHeight / Math.max(1, window.innerHeight)) * 100))) : 200;
+            scale = Math.min(scale, maxManualScale);
             const selector = document.getElementById('bgFitMode');
             const slider = document.getElementById('bgScaleRange');
             const manualWrap = document.getElementById('bgManualScaleWrap');
             if (selector) selector.value = ['cover','contain','auto','manual'].includes(mode) ? mode : 'cover';
-            if (slider) slider.value = String(scale);
+            if (slider) { slider.max = String(maxManualScale); slider.value = String(scale); }
             if (manualWrap) manualWrap.style.display = mode === 'manual' ? 'block' : 'none';
             const label = document.getElementById('bgScaleValue');
             if (label) label.textContent = scale + '%';
+            const x = Math.max(0, Math.min(100, parseInt(localStorage.getItem('custom_bg_wallpaper_x') || '50', 10)));
+            const y = Math.max(0, Math.min(100, parseInt(localStorage.getItem('custom_bg_wallpaper_y') || '50', 10)));
+            const xSlider = document.getElementById('bgPositionX'), ySlider = document.getElementById('bgPositionY');
+            if (xSlider) xSlider.value = String(x);
+            if (ySlider) ySlider.value = String(y);
+            const xLabel = document.getElementById('bgPositionXValue'), yLabel = document.getElementById('bgPositionYValue');
+            if (xLabel) xLabel.textContent = x + '%';
+            if (yLabel) yLabel.textContent = y + '%';
             if (mode === 'contain') document.body.style.backgroundSize = 'contain';
             else if (mode === 'auto') document.body.style.backgroundSize = 'auto';
             else if (mode === 'manual') document.body.style.backgroundSize = scale + '% auto';
             else document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundPosition = `${x}% ${y}%`;
             document.body.style.backgroundRepeat = 'no-repeat';
             document.body.style.backgroundAttachment = 'fixed';
+            if (parseInt(localStorage.getItem('custom_bg_wallpaper_scale') || '100', 10) !== scale) {
+                try { localStorage.setItem('custom_bg_wallpaper_scale', String(scale)); } catch (error) {}
+            }
+        }
+
+        function updateBgWallpaperPosition() {
+            const x = Math.max(0, Math.min(100, Number(document.getElementById('bgPositionX').value) || 0));
+            const y = Math.max(0, Math.min(100, Number(document.getElementById('bgPositionY').value) || 0));
+            try { localStorage.setItem('custom_bg_wallpaper_x', String(x)); localStorage.setItem('custom_bg_wallpaper_y', String(y)); }
+            catch (error) { showToast('Posisi wallpaper tidak dapat disimpan di browser.', 'error'); }
+            applyBgWallpaperSizing();
         }
 
         function updateBgWallpaperSizing() {
@@ -738,7 +793,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             const slider = document.getElementById('bgScaleRange');
             if (!selector || !slider) return;
             const mode = selector.value;
-            const scale = Math.max(25, Math.min(200, parseInt(slider.value, 10) || 100));
+            const scale = Math.max(1, Math.min(parseInt(slider.max, 10) || 200, parseInt(slider.value, 10) || 100));
             try {
                 localStorage.setItem('custom_bg_wallpaper_mode', mode);
                 localStorage.setItem('custom_bg_wallpaper_scale', String(scale));
@@ -748,7 +803,16 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
 
         function applySavedBgWallpaper() {
             const savedBg = localStorage.getItem('custom_bg_wallpaper');
-            if (savedBg) document.body.style.backgroundImage = `url("${savedBg}")`;
+            if (savedBg) {
+                document.body.classList.add('has-custom-wallpaper');
+                document.body.style.backgroundImage = `url("${savedBg}")`;
+                const width = Number(localStorage.getItem('custom_bg_wallpaper_width')) || 0;
+                const height = Number(localStorage.getItem('custom_bg_wallpaper_height')) || 0;
+                if (width && height) document.getElementById('bgQualityHint').textContent = `Resolusi foto asli: ${width} × ${height}px. Pembesaran otomatis dibatasi agar foto kecil tidak makin buram.`;
+            } else {
+                document.body.classList.remove('has-custom-wallpaper');
+                document.body.style.backgroundImage = '';
+            }
             applyBgWallpaperSizing();
         }
 
@@ -757,14 +821,24 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             if (!file) return;
             if (!file.type.startsWith('image/')) { showToast('Pilih berkas gambar yang valid.', 'error'); return; }
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
-                    // File disimpan sebagai data URL aslinya; tidak diubah ukuran atau dikompres.
+                    const check = new Image(); check.src = e.target.result; await check.decode();
+                    // Simpan piksel sumber tanpa kompresi; ukuran kecil tidak dinaikkan paksa.
                     localStorage.setItem('custom_bg_wallpaper', e.target.result);
+                    localStorage.setItem('custom_bg_wallpaper_width', String(check.naturalWidth));
+                    localStorage.setItem('custom_bg_wallpaper_height', String(check.naturalHeight));
+                    const fitScale = Math.max(window.innerWidth / check.naturalWidth, window.innerHeight / check.naturalHeight);
+                    const tooSmall = fitScale > 1.05;
+                    const hint = document.getElementById('bgQualityHint');
+                    if (tooSmall) {
+                        localStorage.setItem('custom_bg_wallpaper_mode', 'auto');
+                        if (hint) hint.textContent = `Resolusi foto ${check.naturalWidth} × ${check.naturalHeight}px lebih kecil dari layar. Mode ukuran asli dipilih supaya gambar tidak diperbesar dan terlihat pecah.`;
+                    } else if (hint) hint.textContent = `Resolusi foto: ${check.naturalWidth} × ${check.naturalHeight}px. Berkas asli dipertahankan tanpa kompresi atau pembesaran buatan.`;
                     applySavedBgWallpaper();
-                    showToast('Wallpaper diterapkan pada resolusi asli. Atur mode ukuran jika gambar tampak terlalu besar.', 'success');
+                    showToast(tooSmall ? 'Foto kecil ditampilkan tanpa pembesaran otomatis agar tidak makin buram.' : 'Wallpaper asli diterapkan tanpa kompresi.', 'success');
                 } catch (error) {
-                    showToast('Berkas terlalu besar untuk ruang penyimpanan browser. Pilih gambar lebih kecil.', 'error');
+                    showToast('Gambar tidak bisa dibaca atau melebihi ruang penyimpanan browser. Coba berkas lain yang lebih kecil.', 'error');
                 }
             };
             reader.readAsDataURL(file);
@@ -774,10 +848,41 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             localStorage.removeItem('custom_bg_wallpaper');
             localStorage.removeItem('custom_bg_wallpaper_mode');
             localStorage.removeItem('custom_bg_wallpaper_scale');
+            localStorage.removeItem('custom_bg_wallpaper_x');
+            localStorage.removeItem('custom_bg_wallpaper_y');
+            localStorage.removeItem('custom_bg_wallpaper_width');
+            localStorage.removeItem('custom_bg_wallpaper_height');
             document.body.style.backgroundImage = '';
             applyBgWallpaperSizing();
             showToast('Wallpaper background dikembalikan ke bawaan tema', 'success');
         }
+
+        function isiPengaturanAudioAntarmuka() {
+            if (!window.AbsensiUIAudio) return;
+            const settings = window.AbsensiUIAudio.readSettings();
+            document.getElementById('uiSoundEffect').value = String(settings.effect);
+            document.getElementById('uiSoundVolume').value = String(settings.volume);
+            document.getElementById('uiSoundMuted').checked = settings.muted;
+            document.getElementById('uiSoundVolumeValue').textContent = settings.volume + '%';
+        }
+
+        function simpanAudioAntarmuka() {
+            if (!window.AbsensiUIAudio) return;
+            const settings = window.AbsensiUIAudio.saveSettings({
+                effect: document.getElementById('uiSoundEffect').value,
+                volume: document.getElementById('uiSoundVolume').value,
+                muted: document.getElementById('uiSoundMuted').checked
+            });
+            document.getElementById('uiSoundVolumeValue').textContent = settings.volume + '%';
+        }
+
+        function previewEfekSuara() {
+            simpanAudioAntarmuka();
+            window.AbsensiUIAudio?.preview(document.getElementById('uiSoundEffect').value);
+        }
+
+        function bukaPemutarMusik() { window.AbsensiUIAudio?.openMusicPlayer(); }
+        document.addEventListener('DOMContentLoaded', isiPengaturanAudioAntarmuka, {once:true});
         
         window.onload = function() {
             initParticleCanvas();
@@ -792,6 +897,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             }
             updateFormLogic();
         };
+        window.addEventListener('resize', applyBgWallpaperSizing, {passive:true});
         
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
@@ -981,6 +1087,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             const allowedThemes = ['malam', 'putih', 'samudra', 'senja'];
             if (!allowedThemes.includes(themeName)) return;
             document.documentElement.setAttribute('data-theme', themeName);
+            window.AbsensiUIAudio?.setTheme(themeName);
             const themeInput = document.getElementById('selectedThemeInput');
             if (themeInput) themeInput.value = themeName;
             
