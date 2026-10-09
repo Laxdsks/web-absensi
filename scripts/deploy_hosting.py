@@ -16,7 +16,6 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 FILES = (
     "assets/app-audio.js",
-    "assets/logo-stkip-yapis-dompu.png",
     "assets/sheet-signatures.css",
     "assets/sheet-signatures.js",
     "auth_guard.php",
