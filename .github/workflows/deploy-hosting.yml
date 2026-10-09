@@ -39,3 +39,5 @@ jobs:
           FTP_PORT: ${{ vars.FTP_PORT || '21' }}
           FTP_USE_INFINITYFREE_ACCOUNT: 'true'
         run: python3 scripts/deploy_hosting.py
+      - name: Verify application and teacher access on live hosting
+        run: python3 scripts/verify_hosting.py

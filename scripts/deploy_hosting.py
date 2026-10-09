@@ -176,6 +176,15 @@ def publish(files):
                     client.cwd(directory_name)
                     client.cwd("/" + directory.strip("/"))
                 directories.add(directory_name)
+            try:
+                current_digest, current_length = remote_file_info(client, name)
+            except ftplib.error_perm as error:
+                if not str(error).startswith("550"):
+                    raise
+            else:
+                if current_digest == digest and current_length == path.stat().st_size:
+                    print(f"Current file already verified: {name}", flush=True)
+                    continue
             # Stage binary assets under a neutral extension. Hosting file-type
             # handlers must not rewrite an image/model before byte verification.
             temporary = str(remote.with_name(f".{remote.name}.deploy-{tag}.txt"))
