@@ -11,11 +11,12 @@ import ssl
 import sys
 import time
 import uuid
+import struct
 
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = (
-    "app_core.php", "app_attendance.php", "app_push.php",
+    "app/.htaccess", "app_core.php", "app_attendance.php", "app_push.php",
     "assets/app-audio.js", "assets/sheet-signatures.css", "assets/sheet-signatures.js", "assets/sheet-spacing.js", "assets/offline-bridge.js", "assets/native-export.js",
     "auth_guard.php", "app_api.php", "music_player.php", "data_siswa.php", "absen.php", "ujian.php", "index.php", "app-sw.js",
 )
@@ -128,7 +129,16 @@ def verify_upload(client, temporary, name, path, digest, installed=False):
             return
     action = "Installed file" if installed else "Upload"
     preservation = "" if installed else " Existing application files were retained."
-    raise ValueError(f"{action} verification failed: {name}; expected {path.stat().st_size} bytes, received {uploaded_length} bytes; checksum match: {uploaded_digest == digest}.{preservation}")
+    image_info = ""
+    if name in ("app/icon-192.png", "app/icon-512.png"):
+        # These are public application icons, not account configuration/data.
+        data = bytearray()
+        client.retrbinary("RETR " + temporary, data.extend)
+        if data[:8] == b"\x89PNG\r\n\x1a\n" and len(data) >= 24:
+            image_info = " PNG dimensions: " + "x".join(str(n) for n in struct.unpack(">II", data[16:24])) + "."
+        else:
+            image_info = " Returned file is not a PNG image."
+    raise ValueError(f"{action} verification failed: {name}; expected {path.stat().st_size} bytes, received {uploaded_length} bytes; checksum match: {uploaded_digest == digest}.{image_info}{preservation}")
 
 
 def publish(files):
@@ -166,7 +176,9 @@ def publish(files):
                     client.cwd(directory_name)
                     client.cwd("/" + directory.strip("/"))
                 directories.add(directory_name)
-            temporary = str(remote.with_name(f".{remote.stem}.deploy-{tag}{remote.suffix}"))
+            # Stage binary assets under a neutral extension. Hosting file-type
+            # handlers must not rewrite an image/model before byte verification.
+            temporary = str(remote.with_name(f".{remote.name}.deploy-{tag}.txt"))
             staged.append((temporary, name, digest))
             with path.open("rb") as source:
                 client.storbinary("STOR " + temporary, source)

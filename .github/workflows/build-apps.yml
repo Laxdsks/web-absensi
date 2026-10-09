@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths: ['native/**','app/**','assets/**','package.json','package-lock.json','app-sw.js','.github/workflows/build-apps.yml']
   workflow_dispatch:
+concurrency:
+  group: application-installers
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
