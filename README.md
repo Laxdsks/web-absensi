@@ -23,7 +23,15 @@ Jika alamat hosting berubah, perbarui tujuan pengalihan dan tautan di `index.htm
 
 ## Memasang pembaruan aplikasi di hosting PHP
 
-Salin file PHP aplikasi dan folder `assets` ke direktori web hosting. Pertahankan `koneksi.php` yang sudah disesuaikan dengan database hosting Anda. `index.html`, `_config.yml`, dan folder `docs` digunakan untuk GitHub Pages; halaman masuk aplikasi di hosting tetap `index.php`.
+GitHub Pages mengarahkan pengunjung ke hosting 42web. Pengalihan itu tidak mengirim perubahan skrip PHP ke hosting. Workflow **Publish PHP application to hosting** menghubungkan pembaruan branch `main` dengan hosting, sehingga perubahan aplikasi dapat dikirim otomatis.
+
+Hubungkan FTP sekali melalui **Settings → Secrets and variables → Actions → Repository secrets** di repositori ini. Simpan `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, dan `FTP_DIRECTORY` sesuai panel hosting. `FTP_SERVER` hanya nama server FTP, tanpa `ftp://`; `FTP_DIRECTORY` harus direktori aplikasi yang sudah memuat `index.php` dan `koneksi.php`, biasanya `/htdocs/`. Simpan kata sandi di GitHub Secrets, bukan di skrip, chat, atau variabel publik.
+
+Workflow memakai FTPS dengan verifikasi sertifikat. Jika panel hosting hanya menyediakan FTP biasa, set repository variable `FTP_PROTOCOL` menjadi `ftp`; koneksi FTP biasa tidak mengenkripsi transfer. Port bawaan 21 dapat diubah melalui variable `FTP_PORT` bila panel hosting menentukan port lain. Workflow tidak menurunkan keamanan koneksi secara otomatis.
+
+Setelah koneksi tersimpan, jalankan **Actions → Publish PHP application to hosting → Run workflow** untuk pembaruan awal. Perubahan berikutnya pada file aplikasi di `main` menjalankan penerbitan otomatis. Log baru menyatakan berhasil setelah setiap file pada hosting cocok dengan SHA-256 file dari revisi GitHub tersebut. Jika koneksi belum diatur atau server menolak pengiriman, workflow gagal dan situs belum dapat dinyatakan diperbarui.
+
+Script penerbitan hanya mengirim file aplikasi dalam daftar eksplisit dan asetnya. `koneksi.php`, database, data JSON pengguna, `.htaccess`, dan pengarah GitHub Pages tidak dikirim atau dihapus. `index.html`, `_config.yml`, dan folder `docs` digunakan untuk GitHub Pages; halaman masuk aplikasi di hosting tetap `index.php`.
 
 Repositori publik dan hak akses aplikasi adalah dua pengaturan berbeda. Halaman pembuka GitHub dapat dilihat siapa saja, sedangkan akses data mahasiswa tetap memerlukan login aplikasi.
 
@@ -33,4 +41,4 @@ Di bagian bawah Lembar Absen, klik **+ Tanda tangan / foto** pada blok Kaprodi a
 
 Pilih gambar PNG, JPG, atau WEBP (maksimal 10 MB), atau pilih blok tanda tangan lalu tempel gambar dari clipboard. Klik blok untuk menampilkan tombol **Ganti gambar** dan **Hapus**. Gambar ikut cetak/PDF; tombol unggah tidak dicetak. Lembar Absen juga menyertakan gambar pada ekspor Word. Pengaturan **Jarak tanda tangan** di Inspektor Absen mengatur tinggi ruang gambar.
 
-Gambar tersimpan di browser perangkat, terpisah untuk tiap jenis lembar, prodi, semester, dan kelas. Gambar tidak otomatis tersedia pada perangkat lain dan dapat hilang jika data situs dihapus. Saat memperbarui hosting, salin juga `assets/sheet-signatures.js` dan `assets/sheet-signatures.css` bersama file PHP.
+Gambar tersimpan di browser perangkat, terpisah untuk tiap jenis lembar, prodi, semester, dan kelas. Gambar tidak otomatis tersedia pada perangkat lain dan dapat hilang jika data situs dihapus. Workflow penerbitan turut mengirim `assets/sheet-signatures.js` dan `assets/sheet-signatures.css` bersama file PHP.

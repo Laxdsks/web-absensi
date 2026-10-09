@@ -1,0 +1,38 @@
+name: Publish PHP application to hosting
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.php'
+      - '!koneksi.php'
+      - 'assets/**'
+      - 'scripts/deploy_hosting.py'
+      - '.github/workflows/deploy-hosting.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: php-hosting-production
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Read application revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check deployment manifest
+        run: python3 scripts/deploy_hosting.py --dry-run
+      - name: Install application files on existing PHP hosting
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIRECTORY: ${{ secrets.FTP_DIRECTORY }}
+          FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftps' }}
+          FTP_PORT: ${{ vars.FTP_PORT || '21' }}
+        run: python3 scripts/deploy_hosting.py
