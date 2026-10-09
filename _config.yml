@@ -1,0 +1,16 @@
+# GitHub Pages dari main /(root) hanya menerbitkan halaman pengarah.
+# PHP dan konfigurasi aplikasi dijalankan di hosting PHP.
+exclude:
+  - README.md
+  - index.php
+  - data_siswa.php
+  - absen.php
+  - ujian.php
+  - music_player.php
+  - auth_guard.php
+  - koneksi.php
+  - assets
+  - docs
+  - admin_config.json
+  - login_logs.json
+  - web_status.json
