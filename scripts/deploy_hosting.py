@@ -125,6 +125,9 @@ def main():
         return 0
     except (ValueError, OSError, ftplib.Error, EOFError) as error:
         print(f"Deployment failed: {error}", file=sys.stderr)
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            message = str(error).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(f"::error title=Hosting was not fully updated::{message}", flush=True)
         return 1
 
 
