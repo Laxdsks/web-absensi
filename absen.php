@@ -246,6 +246,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         table.attendance-table th, table.attendance-table td { border: 1px solid #000 !important; padding: var(--global-padding); text-align: center; vertical-align: middle; font-size: var(--global-font-size); }
         table.attendance-table th { background: #f1f5f9; font-weight: 700; color: #0f172a; text-transform: uppercase; font-size: calc(var(--global-font-size) - 0.5px); }
         table.attendance-table td input { width: 100%; border: none; background: transparent; text-align: center; font-size: var(--global-font-size); outline: none; }
+        #tabelAbsen tbody td:nth-child(2), #tabelAbsen tbody td:nth-child(3) { padding: 2px 5px !important; }
+        #tabelAbsen tbody td:nth-child(2) input, #tabelAbsen tbody td:nth-child(3) input { display: block; box-sizing: border-box; width: 100%; min-width: 0; padding: 0 2px; text-align: left; white-space: nowrap; }
         table.attendance-table td input.attendance-cell { min-width: 12px; height: 18px; padding: 0; font-weight: 700; text-transform: uppercase; touch-action: manipulation; }
         .meeting-number { min-width: 16px; background: #e2e8f0 !important; font-size: calc(var(--global-font-size) - 0.25px) !important; }
         .date-entry { min-width: 16px; height: 18px; background: #e2e8f0 !important; }
@@ -677,8 +679,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     <thead>
                         <tr>
                             <th rowspan="3" style="width: 24px;" contenteditable="true">NO</th>
-                            <th rowspan="3" style="width: 75px;" contenteditable="true" id="thLabelId"><?php echo $label_id; ?></th>
-                            <th rowspan="3" style="min-width: 120px;" contenteditable="true">NAMA MAHASISWA</th>
+                            <th rowspan="3" style="width: 105px; min-width: 105px;" contenteditable="true" id="thLabelId"><?php echo $label_id; ?></th>
+                            <th rowspan="3" style="width: 180px; min-width: 165px;" contenteditable="true">NAMA MAHASISWA</th>
                             <th rowspan="3" style="width: 24px;" contenteditable="true">L/P</th>
                             <th colspan="16" id="headerPertemuan" contenteditable="true">TANGGAL / BULAN</th>
                             <th rowspan="3" style="width: 30px;" contenteditable="true">KET</th>
