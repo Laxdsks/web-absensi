@@ -121,6 +121,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
+    <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261009">
+    <script src="assets/sheet-signatures.js?v=20261009" defer></script>
     <title>Lembar Daftar Hadir & Rekap Nilai - S1 <?php echo htmlspecialchars($kelas_lama); ?> - <?php echo htmlspecialchars($semester_lama); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -230,12 +232,12 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         .header-text .line-3 { font-size: calc(var(--global-font-size) + 4px); font-weight: 900; text-transform: uppercase; margin-bottom: 2px; display: block; }
         .header-text .line-4, .header-text .line-5 { font-size: calc(var(--global-font-size) - 0.5px); color: #334155; display: block; font-style: italic; }
         
-        .meta-wrapper { display: flex; justify-content: space-between; gap: 20px; font-size: var(--global-font-size); margin-bottom: 8px; }
-        .meta-column { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 2px; }
-        .meta-row { display: flex; align-items: center; font-weight: 600; }
-        .meta-label { width: 100px; }
+        .meta-wrapper { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; font-size: var(--global-font-size); margin-bottom: 8px; }
+        .meta-column { min-width: 0; display: grid; grid-template-columns: max-content 10px minmax(0, 1fr); align-content: start; align-items: baseline; gap: 3px 0; padding: 2px; }
+        .meta-row { display: contents; font-weight: 600; }
+        .meta-label { white-space: nowrap; }
         .meta-colon { width: 10px; }
-        .meta-val { flex: 1; }
+        .meta-val { min-width: 0; overflow-wrap: break-word; }
         
         .table-responsive { width: 100%; overflow-x: auto; margin-bottom: 6px; }
         table.attendance-table { width: 100%; border-collapse: collapse; font-size: var(--global-font-size); }
@@ -421,7 +423,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             .logo-box.has-image { border: none !important; background: transparent !important; }
             .logo-box input, .logo-box button, input[type="file"], .logo-box i { display: none !important; }
             
-            body { background: white; padding: 0; color: black; font-size: var(--global-font-size); overflow: auto !important; }
+            body { display:block; min-height:0; background: white; padding: 0; color: black; font-size: var(--global-font-size); overflow: auto !important; }
             .top-toolbar, .toolbar-toggle-btn, .floating-tools, .inspector-panel, .inspector-toggle-btn, .rekap-modal-overlay, .tour-spotlight-backdrop, .tour-speech-bubble, .custom-modal-overlay { display: none !important; }
             body.cetak-rekap { overflow:visible !important; height:auto !important; }
             body.cetak-rekap > :not(#rekapModalOverlay) { display:none !important; }
@@ -722,7 +724,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             <div class="signature-section">
                 <div class="signature-box selectable-element" id="uniLeftBox" data-type="Kotak Tanda Tangan Kiri (Kaprodi)" onclick="pilihElemen(event, this)">
                     <div contenteditable="true">Mengetahui,<br>Ketua Program Studi <?php echo htmlspecialchars($prodi); ?></div>
-                    <div class="signature-space"></div>
+                    <div class="signature-space" data-signature-slot="kaprodi" data-signature-label="Tanda tangan Kaprodi"></div>
                     <div>
                         <div contenteditable="true" style="font-weight: 700;">Ketua Prodi, M.Pd.</div>
                         <div contenteditable="true">NIP. 197501012000031002</div>
@@ -730,7 +732,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 </div>
                 <div class="signature-box selectable-element" id="uniRightBox" data-type="Kotak Tanda Tangan Kanan (Dosen)" onclick="pilihElemen(event, this)">
                     <div contenteditable="true">Dompu, September 2026<br>Dosen Pengampu Mata Kuliah</div>
-                    <div class="signature-space"></div>
+                    <div class="signature-space" data-signature-slot="dosen" data-signature-label="Tanda tangan dosen pengampu"></div>
                     <div>
                         <div contenteditable="true" style="font-weight: 700;">Tim Dosen Pengampu, M.Pd.</div>
                         <div contenteditable="true">NIP. 198802022019031001</div>
@@ -917,7 +919,11 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             document.getElementById('signatureSpaceValue').textContent = px + ' px';
             absenLayoutSettings.signatureSpace = px;
             simpanPengaturanLayoutAbsen();
+            jadwalkanPenandaHalaman();
         }
+        document.addEventListener('DOMContentLoaded', () => {
+            SheetSignatures.install({root:document.getElementById('paperSheet'), storageKey:absenLayoutSettingsKey + '-signatures', onChange:jadwalkanPenandaHalaman});
+        });
         try {
             const signatureSpace = Number.isFinite(Number(absenLayoutSettings.signatureSpace)) ? Math.max(0, Math.min(160, Number(absenLayoutSettings.signatureSpace))) : 72;
             const signatureControl = document.getElementById('signatureSpaceRange');
@@ -1740,7 +1746,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             {target:'#sheetHeader',title:'2. Edit kop dan informasi kuliah',example:'<code>Klik teks</code> → <code>Ketik perubahan</code>',desc:'Klik teks pada kertas untuk mengedit kop, semester, mata kuliah, dan nama dosen. Untuk mengedit dari panel, klik blok sampai garis biru muncul, lalu isi kolom teks di Inspektor. Data mahasiswa resmi ditambah atau diedit melalui halaman Data Mahasiswa.'},
             {target:'#tableWrapper',title:'3. Isi 16 pertemuan',example:'<code>.</code> Hadir · <code>A</code> Alpa · <code>S</code> Sakit · <code>I</code> Izin<br><code>Enter</code> Sel berikutnya · <code>Delete</code> Hapus isian',desc:'Masukkan titik, A, S, atau I pada sel pertemuan. Pada rekap, Absen = A + S + I, dengan jumlah sakit dan izin di kolom terpisah. S dan I bukan hadir, tanpa penalti tambahan. Hanya A dihitung alpa; minimal 4 A membuat nilai akhir E. Kolom pertemuan pada lembar absen tetap sama. Tombol Sisip/Hapus Kolom mengubah jumlah pertemuan pada lembar ini.'},
             {target:'#inspectorPanel',title:'4. Geser elemen yang terseleksi',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Gunakan tombol X/Y di panel atau tekan/tahan anak panah keyboard. Usap menu atas ke atas dan panel Inspektor ke kanan untuk menyembunyikannya; klik pegangan Menu atau Inspektor untuk membukanya kembali. Atas/bawah menggeser elemen di sampingnya pada baris yang sama; kiri/kanan hanya menggeser elemen terpilih. Saat mengisi kolom input, panah tetap digunakan untuk mengedit isian. Reset Posisi Ini mengembalikan elemen terpilih.'},
-            {target:'#signatureSpaceRange',title:'5. Atur ruang tanda tangan',example:'Nama dosen<br><br><br><u>Ruang tanda tangan</u>',desc:'Geser pengaturan Jarak tanda tangan di Inspektor untuk menambah atau mengurangi ruang kosong sebelum nama pada kedua tanda tangan. Pengaturan ini berbeda dari posisi blok: gunakan panah jika ingin memindahkan seluruh blok tanda tangan.'},
+            {target:'#uniLeftBox',title:'5. Foto dan tanda tangan dosen',example:'<code>+ Tanda tangan / foto</code> → <code>Pilih gambar</code>',desc:'Klik + Tanda tangan / foto pada blok kiri atau kanan untuk memasukkan PNG, JPG, atau WEBP. Bisa juga pilih blok lalu tempel gambar dari clipboard. Gambar tersimpan di browser perangkat untuk kelas ini dan ikut cetak/Word; tombol unggah tidak ikut dicetak. Klik blok untuk menampilkan Ganti gambar dan Hapus. Atur Jarak tanda tangan di Inspektor untuk ruang gambar, atau gunakan panah untuk memindahkan seluruh blok.'},
             {target:'#tourBtnRekap',title:'6. Buka rekap dan atur penilaian',desc:'Klik Rekap Nilai untuk membuka tabel penuh. Bobot awal: kehadiran 35%, aktivitas 35%, UTS 15%, UAS 15%; semua bobot bisa diedit. Bertanya dihitung 2 poin per kejadian, aktif/menjawab 3 poin, diskusi individu diisi dosen maksimal 25 poin. UTS/UAS diisi 0–100. Nilai awal setiap komponen 0.'},
             {target:'a[href^="ujian.php"]',title:'7. Kirim nilai ke Lembar Ujian',example:'<code>Rekap Nilai</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Lembar Ujian</code>',desc:'Di dalam rekap, klik Simpan & Kirim Nilai ke Lembar Ujian dan tunggu pemberitahuan berhasil. Setelah itu buka Lembar Ujian langsung, atau kembali melalui Data Mahasiswa. Gunakan sesi browser, prodi, semester, dan kelas yang sama. Nilai tersimpan pada session PHP; edit teks dan logo ujian tersimpan di browser perangkat.'},
             {target:'#paperSize',title:'8. Atur font dan halaman, lalu cetak',example:'<code>Ukuran 1–100 pt</code> · <code>A4 / F4 / Letter</code><br><code>Garis biru = awal halaman berikutnya</code>',desc:'Ketik ukuran font 1 sampai 100 poin atau pilih angka saran; perubahan diterapkan ke teks seluruh lembar. Garis biru bertanda HALAMAN 2, 3, dan seterusnya menunjukkan posisi awal halaman berikutnya pada tampilan kerja. Garis penanda tidak ikut dicetak. Pilih ukuran kertas, orientasi, dan margin sebelum mencetak; periksa tabel dan tanda tangan pada pratinjau.'},
@@ -1877,7 +1883,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 
         function cloneUntukEkspor(element) {
             const clone = element.cloneNode(true);
-            clone.querySelectorAll('button, input[type="file"], .btn-hapus-logo, .page-preview-marker, .page-preview-only').forEach(el => el.remove());
+            clone.querySelectorAll('button, input[type="file"], .sheet-signature-controls, .sheet-signature-image[hidden], .btn-hapus-logo, .page-preview-marker, .page-preview-only').forEach(el => el.remove());
             clone.querySelectorAll('input').forEach(input => {
                 const value = document.createElement('span');
                 value.textContent = input.value || '';
@@ -1989,7 +1995,13 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const signatureMarkup = Array.from(element.querySelectorAll('.signature-box')).map(box => {
                 const pieces = Array.from(box.children).map(child => {
                     if (child.classList.contains('signature-space')) {
-                        const height = Math.max(0, parseFloat(getComputedStyle(child).height) || 72);
+                        const height = Math.max(0, parseFloat(getComputedStyle(child).height) || 0);
+                        const image = child.querySelector('.sheet-signature-image:not([hidden])');
+                        if (image?.src && height > 0) {
+                            const scale = Math.min(210 / Math.max(1,image.naturalWidth), height / Math.max(1,image.naturalHeight));
+                            const width = Math.max(1,Math.round(image.naturalWidth * scale)), imageHeight = Math.max(1,Math.round(image.naturalHeight * scale));
+                            return `<div style="height:${height}px;margin:0"><img src="${escapeWordHtml(image.src)}" width="${width}" height="${imageHeight}" alt="${escapeWordHtml(image.alt)}" style="width:${width}px;height:${imageHeight}px;display:block"></div>`;
+                        }
                         return `<div style="height:${height}px;line-height:${height}px">&nbsp;</div>`;
                     }
                     const safeChild = child.cloneNode(true);

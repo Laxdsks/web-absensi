@@ -618,7 +618,7 @@ if ($stmt) {
         }
         function gambarFotoOcr() {
             if (!ocrPhoto.image) return;
-            const image=ocrPhoto.image, scale=Math.min(1,3000/Math.max(image.width,image.height),Math.sqrt(8000000/(image.width*image.height)));
+            const image=ocrPhoto.image, scale=Math.min(1,3200/Math.max(image.width,image.height),Math.sqrt(8000000/(image.width*image.height)));
             const w=image.width*scale,h=image.height*scale, angle=(ocrPhoto.turn+ocrPhoto.skew)*Math.PI/180;
             const canvas=document.createElement('canvas');
             canvas.width=Math.ceil(Math.abs(w*Math.cos(angle))+Math.abs(h*Math.sin(angle)));
@@ -714,7 +714,7 @@ if ($stmt) {
             return canvas;
         }
         function preparasiFotoOcr(source) {
-            const scale=Math.min(3,2600/source.width,Math.sqrt(8000000/(source.width*source.height)));
+            const scale=Math.min(3,3200/source.width,Math.sqrt(8000000/(source.width*source.height)));
             const canvas=document.createElement('canvas');canvas.width=Math.round(source.width*scale);canvas.height=Math.round(source.height*scale);
             const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.imageSmoothingQuality='high';ctx.drawImage(source,0,0,canvas.width,canvas.height);
             const image=ctx.getImageData(0,0,canvas.width,canvas.height),pixels=image.data;
@@ -727,7 +727,8 @@ if ($stmt) {
         function bersihkanTabelOcr(canvas) {
             const ctx=canvas.getContext('2d',{willReadFrequently:true});
             ctx.setTransform(1,0,0,1,0,0);
-            const grid=deteksiGarisOcr(canvas);if(!grid||grid.right-grid.left<canvas.width*.5){const rawCanvas=document.createElement('canvas');rawCanvas.width=canvas.width;rawCanvas.height=canvas.height;rawCanvas.getContext('2d').drawImage(canvas,0,0);hapusGarisLokalOcr(canvas);return {canvas,grid:null,rawCanvas,dataBottom:canvas.height};}
+            const rawCanvas=document.createElement('canvas');rawCanvas.width=canvas.width;rawCanvas.height=canvas.height;rawCanvas.getContext('2d').drawImage(canvas,0,0);
+            const grid=deteksiGarisOcr(canvas);if(!grid||grid.right-grid.left<canvas.width*.5){hapusGarisLokalOcr(canvas);return {canvas,grid:null,rawCanvas,dataBottom:canvas.height};}
             // Hapus hanya pita garis panjang; teks di tengah sel tetap dipertahankan.
             ctx.fillStyle='#fff';
             grid.horizontal.forEach(line=>ctx.fillRect(grid.left-1,line.start-1,grid.right-grid.left+3,line.end-line.start+3));
@@ -736,7 +737,7 @@ if ($stmt) {
             // bawah foto agar mahasiswa setelah garis itu tetap bisa dibaca.
             const crop={left:Math.max(0,grid.left-5),top:Math.max(0,grid.top-5),right:Math.min(canvas.width,grid.right+5),bottom:canvas.height};
             const table=potongKanvasOcr(canvas,crop);
-            return {canvas:table,grid:{horizontal:grid.horizontal.map(l=>l.position-Math.floor(crop.top)),vertical:grid.vertical.map(l=>l.position-Math.floor(crop.left))}};
+            return {canvas:table,rawCanvas:potongKanvasOcr(rawCanvas,crop),grid:{horizontal:grid.horizontal.map(l=>l.position-Math.floor(crop.top)),vertical:grid.vertical.map(l=>l.position-Math.floor(crop.left))}};
         }
         function garisKolomScanOcr(canvas,words) {
             if(!canvas)return null;
@@ -797,25 +798,25 @@ if ($stmt) {
         }
         function normalisasiNimKelas(value,prefixPattern,allowNumeric=true) {
             const code=nimOcr(value,allowNumeric);
-            return prefixPattern&&/^\d+$/.test(code)&&code.length===prefixPattern.digits?prefixPattern.prefix+code:code;
+            return prefixPattern&&/^\d+$/.test(code)&&(code.length===prefixPattern.digits||(prefixPattern.seenPrefix&&Math.abs(code.length-prefixPattern.digits)===1))?prefixPattern.prefix+code:code;
+        }
+        function polaAwalanNimKelas(codes) {
+            const groups=new Map();let total=0;
+            for(const code of codes){
+                const match=String(code||'').match(/^([A-Z]{1,3})(\d{8,15})$/);if(!match)continue;
+                total++;const key=match[1]+'|'+match[2].length;
+                if(!groups.has(key))groups.set(key,{prefix:match[1],digits:match[2].length,count:0});groups.get(key).count++;
+            }
+            const best=[...groups.values()].sort((a,b)=>b.count-a.count)[0];
+            return best&&best.count>=2&&best.count>=total*.85?{prefix:best.prefix,digits:best.digits}:null;
         }
         function rapikanPolaNimKelas(rows) {
-            const items=rows.map(row=>({row,code:String(row.nim||'').toUpperCase()})).filter(item=>/^[A-Z]{1,3}\d{8,15}$/.test(item.code));
-            if(items.length<8)return rows;
-            const prefixes=new Map();items.forEach(item=>{const key=item.code.slice(0,4);prefixes.set(key,(prefixes.get(key)||0)+1);});
-            const commonPrefix=[...prefixes].sort((a,b)=>b[1]-a[1])[0];if(!commonPrefix||commonPrefix[1]<8||commonPrefix[1]<items.length*.55)return rows;
-            const cohort=items.filter(item=>item.code.startsWith(commonPrefix[0])),lengths=new Map();cohort.forEach(item=>lengths.set(item.code.length,(lengths.get(item.code.length)||0)+1));
-            const commonLength=[...lengths].sort((a,b)=>b[1]-a[1])[0];if(!commonLength||commonLength[1]<8||commonLength[1]<cohort.length*.55)return rows;
-            const stable=new Map();
-            for(let position=4;position<commonLength[0]-3;position++){
-                const counts=new Map();cohort.filter(item=>item.code.length===commonLength[0]).forEach(item=>counts.set(item.code[position],(counts.get(item.code[position])||0)+1));
-                const top=[...counts].sort((a,b)=>b[1]-a[1])[0];if(top&&top[1]>=Math.max(8,commonLength[1]*.68))stable.set(position,top[0]);
-            }
-            cohort.forEach(item=>{
-                if(item.code.length!==commonLength[0]){item.row.corrected=true;item.row.confidence=Math.min(item.row.confidence??100,70);return;}
-                const chars=item.code.split('');let changed=false;
-                stable.forEach((value,position)=>{if(chars[position]!==value){chars[position]=value;changed=true;}});
-                if(changed){item.row.nim=chars.join('');item.row.corrected=true;item.row.confidence=Math.min(item.row.confidence??100,70);}
+            const pattern=polaAwalanNimKelas(rows.map(row=>row.nim));
+            rows.forEach(row=>{
+                const normalized=normalisasiNimKelas(row.nim,pattern,true);
+                // Awalan dapat dipulihkan dari bukti baris lain; angka identitas
+                // tidak diubah agar menyerupai mayoritas mahasiswa.
+                if(normalized&&normalized!==row.nim){row.nim=normalized;row.corrected=true;row.confidence=Math.min(row.confidence??100,70);}
             });
             return rows;
         }
@@ -827,8 +828,9 @@ if ($stmt) {
         }
         function kolomOcr(words,grid,width) {
             const nimHead=words.find(w=>/^(NIM|N1M)$/.test(tokenOcr(w.text)));
-            const nameHead=words.find(w=>/^(NAMA|MAHASISWA)$/.test(tokenOcr(w.text))&&(!nimHead||Math.abs(w.y-nimHead.y)<Math.max(70,nimHead.h*3)));
-            const sexHead=words.find(w=>/^(L\/P|P\/L|LP|PL|JK|KELAMIN|GENDER|JENISKELAMIN)$/.test(tokenOcr(w.text))&&(!nimHead||Math.abs(w.y-nimHead.y)<70));
+            const nearestHeader=pattern=>words.filter(w=>pattern.test(tokenOcr(w.text))&&(!nimHead||Math.abs(w.y-nimHead.y)<Math.max(70,nimHead.h*3))).sort((a,b)=>nimHead?Math.abs(a.y-nimHead.y)-Math.abs(b.y-nimHead.y):a.y-b.y)[0];
+            const nameHead=nearestHeader(/^(NAMA|MAHASISWA)$/);
+            const sexHead=nearestHeader(/^(L\/P|P\/L|LP|PL|JK|KELAMIN|GENDER|JENISKELAMIN)$/);
             let nimX=nimHead?nimHead.x+nimHead.w/2:null;
             if(nimX===null){const anchors=words.filter(w=>nimOcr(w.text));if(anchors.length<2)return null;nimX=anchors.map(w=>w.x+w.w/2).sort((a,b)=>a-b)[Math.floor(anchors.length/2)];}
             const bounds=x=>{if(!grid)return null;for(let i=0;i<grid.vertical.length-1;i++)if(x>=grid.vertical[i]&&x<=grid.vertical[i+1])return {left:grid.vertical[i]+3,right:grid.vertical[i+1]-3,leftSlope:grid.slopes?.[i]||0,rightSlope:grid.slopes?.[i+1]||0,anchorY:grid.anchorY||0};return null;};
@@ -881,7 +883,7 @@ if ($stmt) {
             return {nim:bounds(nimColumn),name:bounds(nameColumn),sex:sexColumn?bounds(sexColumn):null,dataTop:grid.horizontal[rowIndex],hasHeader:true,inferred:true};
         }
         function namaOcr(words) {
-            const name=words.map(w=>w.text.replace(/[|\[\]{}]/g,'').trim()).filter(t=>/[A-Za-zÀ-ž]/.test(t)).join(' ').replace(/\s+/g,' ').trim();
+            const name=words.map(w=>w.text.replace(/[|\[\]{}]/g,'').replace(/^[\\/]+|[\\/]+$/g,'').trim()).filter(t=>/[A-Za-zÀ-ž]/.test(t)).join(' ').replace(/\s+/g,' ').trim();
             return /\b(?:TAHUN\s*AKADEMIK|SEMESTER|DOSEN|NAMA|MAHASISWA|NIM|NPM|NRP|EMAIL|TELP|TLP|TLPN|PRODI|JLN|JALAN|NIDN|NIP|PENGAWAS|PENGAMPU|MAT[A]?KULIAH)\b/i.test(name)||name.replace(/[^A-Za-zÀ-ž]/g,'').length<2?'':name;
         }
         function genderOcr(words) { const token=words.map(w=>tokenOcr(w.text)).join('');return /^(P+|PEREMPUAN|WANITA)$/.test(token)?'P':/^(L+|LAKI|LAKILAKI|PRIA)$/.test(token)?'L':''; }
@@ -961,7 +963,52 @@ if ($stmt) {
             for(let i=0;i<2&&first>1&&hasStudentText(first-1);i++)first--;
             return Array.from({length:last-first+1},(_,i)=>{const number=first+i,sourceY=best.offset+number*best.pitch;return {top:sourceY-best.pitch/2,bottom:sourceY+best.pitch/2,number,sourceY};});
         }
-        async function lengkapiBarisOcr(worker,canvas,layout,grid,rows,knownNims=[],numberBands=null,prefixPattern=null) {
+        async function bacaSelIdentitasOcr(worker,canvas,rawCanvas,col,band,isNim,seed,prefixPattern) {
+            const candidates=new Map();
+            const add=(value,confidence)=>{
+                const normalized=isNim?normalisasiNimKelas(value,prefixPattern,true):namaOcr([{text:value}]);if(!normalized)return;
+                const key=isNim?normalized:normalized.toUpperCase(),item=candidates.get(key)||{value:normalized,votes:0,total:0,maxConfidence:0,corrected:false};
+                item.votes++;item.total+=confidence;item.maxConfidence=Math.max(item.maxConfidence,confidence);item.corrected ||= isNim&&tokenOcr(value)!==normalized;candidates.set(key,item);
+            };
+            if(seed?.value)add(seed.value,seed.confidence||0);
+            if(!col)return {value:seed?.value||'',confidence:seed?.confidence||0,disputed:false};
+            const left=Math.max(0,Math.floor(col.left)),top=Math.max(0,Math.ceil(band.top+1)),rect={...col,left,top,right:col.right,bottom:band.bottom-1};
+            const cell=potongKanvasOcr(canvas,rect),original=rawCanvas?potongKanvasOcr(rawCanvas,rect):cell;
+            const pixels=cell.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cell.width,cell.height).data;
+            let ink=0;for(let p=0;p<pixels.length;p+=4)if(pixels[p]<185)ink++;
+            if(ink>=12){
+                const recognize=async(source,psm,threshold)=>{
+                    const sample=document.createElement('canvas');sample.width=source.width;sample.height=source.height;
+                    const ctx=sample.getContext('2d');ctx.drawImage(source,0,0);
+                    if(threshold){const image=ctx.getImageData(0,0,sample.width,sample.height);for(let p=0;p<image.data.length;p+=4){const value=image.data[p]<threshold?0:255;image.data[p]=image.data[p+1]=image.data[p+2]=value;}ctx.putImageData(image,0,0);}
+                    const scale=Math.min(3,Math.max(1,48/Math.max(1,cell.height))),padded=document.createElement('canvas');
+                    padded.width=Math.ceil(cell.width*scale)+40;padded.height=Math.ceil(cell.height*scale)+32;
+                    const out=padded.getContext('2d');out.fillStyle='#fff';out.fillRect(0,0,padded.width,padded.height);out.imageSmoothingQuality='high';out.drawImage(sample,20,16,cell.width*scale,cell.height*scale);
+                    await worker.setParameters({tessedit_pageseg_mode:psm,tessedit_char_whitelist:isNim?'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':''});
+                    const result=await worker.recognize(padded,{}, {tsv:true}),words=kataOcrTsv(result.data.tsv);
+                    const nameWords=words.filter(w=>/[A-Za-zÀ-ž]/.test(w.text));
+                    const confidence=isNim?words.reduce((sum,w)=>sum+w.conf,0)/Math.max(1,words.length):nameWords.length?Math.min(...nameWords.map(w=>w.conf)):0;
+                    add(isNim?words.map(w=>w.text).join(''):namaOcr(words),confidence);
+                };
+                // Satu kolom panjang dapat kehilangan huruf awal atau menggabung
+                // nama antarbaris. Baca setiap sel pada beberapa tampilan piksel.
+                await recognize(cell,'7',0);
+                await recognize(cell,'13',165);
+                await recognize(original,'7',0);
+                if(candidates.size>1||![...candidates.values()].some(item=>item.total/item.votes>=90))await recognize(cell,'7',190);
+            }
+            // Pengulangan hasil dengan keyakinan 0 tidak boleh mengalahkan
+            // bacaan yang lebih jelas, terutama untuk nama panjang.
+            const rank=item=>item.maxConfidence+Math.min(3,item.votes)*5+(isNim&&prefixPattern&&item.value.length===prefixPattern.prefix.length+prefixPattern.digits?8:0)-(isNim?0:/[0-9\\/]/.test(item.value)?15:0);
+            const choices=[...candidates.values()].sort((a,b)=>rank(b)-rank(a)),best=choices[0];
+            if(isNim&&prefixPattern&&best&&/^\d+$/.test(best.value)&&candidates.has(prefixPattern.prefix+best.value)){
+                // Untuk bacaan yang panjangnya tidak lazim, pulihkan awalan
+                // hanya jika sel yang sama benar-benar menghasilkan huruf itu.
+                best.value=prefixPattern.prefix+best.value;best.corrected=true;
+            }
+            return {value:best?.value||'',confidence:best?Math.round(best.total/best.votes):0,corrected:!!best?.corrected,disputed:choices.length>1};
+        }
+        async function lengkapiBarisOcr(worker,canvas,layout,grid,rows,knownNims=[],numberBands=null,prefixPattern=null,rawCanvas=null,evidenceWords=[]) {
             const bands=numberBands||rentangBarisOcr(canvas,layout,grid);
             const readCell=async(col,band,isNim)=>{
                 if(!col)return [];
@@ -978,16 +1025,18 @@ if ($stmt) {
             for(let i=0;i<bands.length;i++){
                 const band=bands[i];
                 const existingIndex=rows.findIndex(row=>row.sourceY>=band.top&&row.sourceY<band.bottom),existing=existingIndex>=0?rows[existingIndex]:null;
-                if(existing&&!numberBands)continue;
                 setOcrStatus('Memeriksa semua baris: '+(i+1)+' / '+bands.length+'…');
-                const nimWords=await readCell(layout.nim,band,true),nameWords=await readCell(layout.name,band,false);
-                const raw=nimWords.map(w=>w.text).join(''),known=knownNims.filter(w=>w.y+w.h/2>=band.top&&w.y+w.h/2<band.bottom).map(w=>w.text).join(''),nim=normalisasiNimKelas(raw,prefixPattern,layout.hasHeader)||normalisasiNimKelas(known,prefixPattern,layout.hasHeader),nama=namaOcr(nameWords);
+                const knownWords=knownNims.filter(w=>w.y+w.h/2>=band.top&&w.y+w.h/2<band.bottom).sort((a,b)=>a.x-b.x),avg=words=>words.reduce((sum,w)=>sum+w.conf,0)/Math.max(1,words.length);
+                const seenPrefix=prefixPattern&&evidenceWords.some(w=>w.y+w.h/2>=band.top&&w.y+w.h/2<band.bottom&&w.x+w.w/2>=layout.nim.left&&w.x+w.w/2<=layout.nim.right&&tokenOcr(w.text).startsWith(prefixPattern.prefix));
+                const rowPattern=prefixPattern?{...prefixPattern,seenPrefix:!!seenPrefix}:null;
+                const nimRead=await bacaSelIdentitasOcr(worker,canvas,rawCanvas,layout.nim,band,true,{value:existing?.nim||knownWords.map(w=>w.text).join(''),confidence:existing?.nimConfidence??avg(knownWords)},rowPattern);
+                const nameRead=await bacaSelIdentitasOcr(worker,canvas,rawCanvas,layout.name,band,false,{value:existing?.nama||'',confidence:existing?.nameConfidence??0},null);
+                const nim=nimRead.value,nama=nameRead.value;
                 if(existing){
-                    const avg=words=>words.reduce((sum,w)=>sum+w.conf,0)/Math.max(1,words.length),nimConfidence=avg(nimWords),nameConfidence=avg(nameWords);
-                    if(nim&&(!existing.nim||nimConfidence>(existing.nimConfidence??existing.confidence??0))){if(existing.nim&&existing.nim!==nim)existing.corrected=true;existing.nim=nim;existing.nimConfidence=nimConfidence;}
-                    if(nama&&(!existing.nama||nameConfidence>(existing.nameConfidence??existing.confidence??0))){if(existing.nama&&existing.nama!==nama)existing.corrected=true;existing.nama=nama;existing.nameConfidence=nameConfidence;}
+                    if(nim){if(existing.nim!==nim)existing.corrected=true;existing.nim=nim;existing.nimConfidence=nimRead.confidence;}
+                    if(nama){if(existing.nama!==nama)existing.corrected=true;existing.nama=nama;existing.nameConfidence=nameRead.confidence;}
                     existing.confidence=Math.round(Math.min(existing.nimConfidence??0,existing.nameConfidence??0));
-                    if((existing.nimConfidence??0)<85||(existing.nameConfidence??0)<85)existing.corrected=true;
+                    if(nimRead.disputed||nameRead.disputed||nimRead.corrected||existing.confidence<85)existing.corrected=true;
                     if(!existing.jk){const sexWords=await readCell(layout.sex,band,false);existing.jk=genderOcr(sexWords);}
                     continue;
                 }
@@ -1000,9 +1049,8 @@ if ($stmt) {
                     rows.push({nim,nama,jk:'',confidence:0,corrected:true,sourceY:(band.top+band.bottom)/2});
                     continue;
                 }
-                const sexWords=await readCell(layout.sex,band,false),avg=words=>words.reduce((s,w)=>s+w.conf,0)/Math.max(1,words.length);
-                const nimConfidence=avg(nimWords),nameConfidence=avg(nameWords);
-                rows.push({nim,nama,jk:genderOcr(sexWords),confidence:Math.round(Math.min(nimConfidence,nameConfidence)),nimConfidence,nameConfidence,corrected:tokenOcr(raw)!==nim,sourceY:(band.top+band.bottom)/2});
+                const sexWords=await readCell(layout.sex,band,false),nimConfidence=nimRead.confidence,nameConfidence=nameRead.confidence;
+                rows.push({nim,nama,jk:genderOcr(sexWords),confidence:Math.round(Math.min(nimConfidence,nameConfidence)),nimConfidence,nameConfidence,corrected:nimRead.disputed||nameRead.disputed||nimRead.corrected,sourceY:(band.top+band.bottom)/2});
             }
             await worker.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:''});
             return rows.sort((a,b)=>a.sourceY-b.sourceY);
@@ -1075,10 +1123,10 @@ if ($stmt) {
                 if(nimAt>=0&&nameAt>=0){columns={nim:nimAt,name:nameAt,sex:labels.findIndex(s=>/^(LP|PL|JK|JENISKELAMIN|KELAMIN|GENDER)$/.test(s))};continue;}
                 let at=columns?columns.nim:cells.findIndex(value=>nimBerkas(value));if(at<0)continue;
                 const nim=nimBerkas(cells[at]),name=columns?columns.name:at+1;
-                if((!nim&&!columns)||(!nim&&!columns&&!/[A-Za-z]/.test(nim)&&!/^\d{1,3}$/.test(cells[0])))continue;
-                const nama=teksSelBerkas(cells[name]||'');if(!namaOcr([{text:nama}]))continue;
+                if(!nim&&!columns)continue;
+                const nama=teksSelBerkas(cells[name]||'');if((!nama&&(!nim||!columns))||(nama&&!namaOcr([{text:nama}])))continue;
                 const jk=columns&&columns.sex>=0?genderOcr([{text:cells[columns.sex]||''}]):'';
-                out.push({nim:nim||'',nama,jk,source,confidence:100,corrected:!nim});
+                out.push({nim:nim||'',nama,jk,source,confidence:100,corrected:!nim||!nama});
             }return out;
         }
         function parseHtmlBerkas(html,source) {
@@ -1148,15 +1196,30 @@ if ($stmt) {
                 const matcher=/\S+/g;let match;while((match=matcher.exec(text)))words.push({text:match[0],x:point[0]+w*match.index/Math.max(1,text.length),y:point[1]-h,w:w*match[0].length/Math.max(1,text.length),h,conf:100});
             }
             const layout=kolomOcr(words,null,viewport.width),out=[];
+            const nimHeader=words.find(w=>/^(NIM|NPM|NRP)$/.test(tokenOcr(w.text)));
+            const nextHeaders=nimHeader?words.filter(w=>w.x>nimHeader.x&&Math.abs(w.y-nimHeader.y)<nimHeader.h*2&&/^(SKOR|NILAI|UTS|UAS|KET|TANGGAL|ABSEN|ABSENSI|L\/P|P\/L|LP|PL|JK|KELAMIN|GENDER|JENISKELAMIN)$/.test(tokenOcr(w.text))):[];
+            // Posisi judul bukan batas tengah antarjudul: nama panjang masih
+            // dapat menempati ruang sampai kolom berikutnya dimulai.
+            const nameRight=nextHeaders.length?Math.min(...nextHeaders.map(w=>w.x)):(layout?.name.right??viewport.width);
+            const sexHeader=nextHeaders.find(w=>/^(L\/P|P\/L|LP|PL|JK|KELAMIN|GENDER|JENISKELAMIN)$/.test(tokenOcr(w.text)));
+            const sexRight=sexHeader?Math.min(viewport.width,...nextHeaders.filter(w=>w.x>sexHeader.x).map(w=>w.x)):0;
             for(const row of barisKataOcr(words)){
                 if(layout&&row.cy<layout.dataTop)continue;
-                const at=row.words.findIndex(w=>nimBerkas(w.text));
-                const nim=at>=0?nimBerkas(row.words[at].text):'';
+                let nim='',at=-1,last=-1;
+                // PDF sering menyimpan C dan angka NIM sebagai objek teks
+                // berbeda. Gabungkan potongan dalam sel, tanpa nomor urut.
+                for(let i=0;i<row.words.length;i++){
+                    const token=row.words[i].text;if(i===0&&/^\d{1,3}$/.test(token))continue;
+                    if(!nimBerkas(token)&&!/^[A-Za-z]{0,3}\d+$/.test(token)&&!(/^[A-Za-z]{1,3}$/.test(token)&&/^\d+$/.test(row.words[i+1]?.text||'')))continue;
+                    let value=token,j=i;
+                    while(j+1<row.words.length&&/^\d+$/.test(row.words[j+1].text)&&row.words[j+1].x-row.words[j].x-row.words[j].w<row.height*1.5){value+=row.words[++j].text;}
+                    if(nimBerkas(value)){nim=nimBerkas(value);at=i;last=j;break;}
+                }
                 if(!layout&&!(/^[A-Za-z]/.test(nim)&&/^\d{1,3}$/.test(row.words[0].text)))continue;
-                const names=layout?row.words.filter(w=>w.x+w.w/2>=layout.name.left&&w.x+w.w/2<=layout.name.right):row.words.slice(at+1);
-                const nama=namaOcr(names);if(!nama)continue;
-                const sex=layout&&layout.sex?row.words.filter(w=>w.x+w.w/2>=layout.sex.left&&w.x+w.w/2<=layout.sex.right):[];
-                out.push({nim,nama,jk:genderOcr(sex),confidence:100,corrected:!nim});
+                const names=last>=0?row.words.slice(last+1).filter(w=>w.x<nameRight):layout?row.words.filter(w=>w.x+w.w/2>=layout.name.left&&w.x<nameRight):[];
+                const nama=namaOcr(names);if(!nama&&!nim)continue;
+                const sex=sexHeader?row.words.filter(w=>w.x>=sexHeader.x-row.height*.5&&w.x<sexRight):[];
+                out.push({nim,nama,jk:genderOcr(sex),confidence:100,corrected:!nim||!nama});
             }return out;
         }
         async function kanvasGambarBerkas(src) {
@@ -1252,7 +1315,7 @@ if ($stmt) {
         }
         async function buatWorkerDaftar() {
             const Tesseract=await muatPustakaImpor('Tesseract','https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
-            return Tesseract.createWorker('eng',1,{workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',langPath:'https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@main',gzip:false});
+            return Tesseract.createWorker('eng',1,{workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',langPath:'https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@main',gzip:false},{load_system_dawg:'0',load_freq_dawg:'0'});
         }
         async function pindaiKanvasDaftar(selected,worker,continuation=null) {
                 const prepared=preparasiFotoOcr(selected),canvas=prepared.canvas,grid=prepared.grid;
@@ -1281,7 +1344,7 @@ if ($stmt) {
                     if(retryBands.length){
                         const prefixed=nims.filter(w=>/^[A-Z]/.test(nimOcr(w.text))).length>=2;
                         const lengths=nims.map(w=>nimOcr(w.text,layout.hasHeader)).filter(Boolean),frequency=new Map();lengths.forEach(code=>frequency.set(code.length,(frequency.get(code.length)||0)+1));
-                        const common=[...frequency].sort((a,b)=>b[1]-a[1])[0],expectedLength=common&&common[1]>=3&&common[1]>=lengths.length*.6?common[0]:0;
+                        const common=[...frequency].sort((a,b)=>b[1]-a[1])[0];let expectedLength=common&&common[1]>=3&&common[1]>=lengths.length*.6?common[0]:0;
                         const prefixGroups=new Map(),prefixEvidence=[];
                         [...words,...nims].forEach(word=>{
                             const center=word.x+word.w/2;if(center<layout.nim.left-3||center>layout.nim.right+3)return;
@@ -1291,7 +1354,10 @@ if ($stmt) {
                         });
                         prefixEvidence.forEach(item=>{if(!prefixGroups.has(item.prefix))prefixGroups.set(item.prefix,[]);prefixGroups.get(item.prefix).push(item.digits);});
                         const prefixChoice=[...prefixGroups].sort((a,b)=>b[1].length-a[1].length)[0],prefixDigits=prefixChoice&&prefixChoice[1].sort((a,b)=>a-b)[Math.floor(prefixChoice[1].length/2)];
-                        if(prefixChoice&&prefixChoice[1].length>=2)prefixPattern={prefix:prefixChoice[0],digits:prefixDigits};
+                        if(prefixChoice&&prefixChoice[1].length>=2&&prefixChoice[1].length>=prefixEvidence.length*.85){
+                            prefixPattern={prefix:prefixChoice[0],digits:prefixDigits};
+                            expectedLength=prefixPattern.prefix.length+prefixPattern.digits;
+                        }
                         await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'});
                         for(const band of retryBands){
                             const {top,bottom}=band;if(top<layout.dataTop-2)continue;
@@ -1311,7 +1377,7 @@ if ($stmt) {
                                 await worker.setParameters({tessedit_pageseg_mode:psm,tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'});
                                 const retry=await worker.recognize(padded,{}, {tsv:true}),replacement=kataOcrTsv(retry.data.tsv).map(word=>({...word,x:left+(word.x-16)/scale,y:rowTop+(word.y-12)/scale,w:word.w/scale,h:word.h/scale}));
                                 const rawCode=nimOcr(replacement.map(w=>w.text).join(''),layout.hasHeader),code=normalisasiNimKelas(rawCode,prefixPattern,layout.hasHeader);
-                                const rightLength=!expectedLength||rawCode.length===expectedLength||(prefixPattern&&/^\d+$/.test(rawCode)&&rawCode.length===prefixPattern.digits&&rawCode.length+prefixPattern.prefix.length===expectedLength);
+                                const rightLength=!expectedLength||(prefixPattern?code.startsWith(prefixPattern.prefix)&&code.length===expectedLength:rawCode.length===expectedLength);
                                 if(!code||!rightLength)continue;
                                 const confidence=replacement.reduce((sum,w)=>sum+w.conf,0)/Math.max(1,replacement.length),choice=candidates.get(code)||{code,words:replacement,votes:0,totalConfidence:0};
                                 choice.votes++;choice.totalConfidence+=confidence;if(confidence>choice.totalConfidence/choice.votes)choice.words=replacement;candidates.set(code,choice);
@@ -1323,9 +1389,9 @@ if ($stmt) {
                     }
                     const names=await readColumn(layout.name,'nama mahasiswa'),sex=await readColumn(layout.sex,'L/P');
                     rows=gabungKolomOcr(nims,names,sex,grid,layout.dataTop,layout.hasHeader);
-                    rows=await lengkapiBarisOcr(worker,canvas,layout,grid,!grid&&!layout.hasHeader?[]:rows,nims,numberBands,prefixPattern);
+                    rows=await lengkapiBarisOcr(worker,canvas,layout,grid,!grid&&!layout.hasHeader?[]:rows,nims,numberBands,prefixPattern,prepared.rawCanvas,words);
                     if(prefixPattern)rows.forEach(row=>{const normalized=normalisasiNimKelas(row.nim,prefixPattern,true);if(normalized&&normalized!==row.nim){row.nim=normalized;row.corrected=true;}});
-                    if(numberBands)rows=rapikanPolaNimKelas(rows);
+                    rows=rapikanPolaNimKelas(rows);
                 } else rows=parseOcrDaftarTsv(scan.data.tsv,grid,canvas.width);
             if(layout&&layout.hasHeader&&!grid){const normalize=col=>col?{left:col.left/canvas.width,right:col.right/canvas.width}:null;rows.layoutHint={nim:normalize(layout.nim),name:normalize(layout.name),sex:normalize(layout.sex)};}
             return rows;

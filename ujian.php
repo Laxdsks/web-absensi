@@ -125,6 +125,8 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
+    <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261009">
+    <script src="assets/sheet-signatures.js?v=20261009" defer></script>
     <title>Lembar Ujian - <?php echo $escape($kelas_lama . ' / ' . $semester_lama); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -161,11 +163,11 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .institution .line-three { font-size:calc(15pt * var(--exam-font-scale)); }
         .institution .contact { display:block; margin-top:2px; font-size:calc(9pt * var(--exam-font-scale)); font-style:italic; }
         .sheet-title { margin:9px 0 8px; text-align:center; font-size:calc(14pt * var(--exam-font-scale)); font-weight:700; text-decoration:underline; text-transform:uppercase; }
-        .meta { display:grid; grid-template-columns:1fr 1fr; gap:4px 22px; margin-bottom:9px; font-size:calc(10pt * var(--exam-font-scale)); }
-        .meta-column { display:grid; gap:4px; align-content:start; }
-        .meta-row { display:grid; grid-template-columns:112px 9px 1fr; align-items:baseline; min-height:12px; }
-        .meta-label { font-weight:700; text-transform:uppercase; }
-        .meta-value { min-height:13px; }
+        .meta { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:4px 22px; margin-bottom:9px; font-size:calc(10pt * var(--exam-font-scale)); }
+        .meta-column { min-width:0; display:grid; grid-template-columns:max-content 9px minmax(0,1fr); gap:4px 0; align-content:start; align-items:baseline; }
+        .meta-row { display:contents; }
+        .meta-label { font-weight:700; text-transform:uppercase; white-space:nowrap; padding-right:4px; }
+        .meta-value { min-width:0; min-height:13px; overflow-wrap:break-word; }
         [contenteditable="true"] { outline:none; cursor:text; }
         [contenteditable="true"]:hover,[contenteditable="true"]:focus { box-shadow:inset 0 -1px #2563eb; background:#dbeafe44; }
         .table-wrap { width:100%; }
@@ -193,6 +195,11 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .grading-scale { width:320px; max-width:100%; margin:0 0 0 auto; break-inside:avoid; page-break-inside:avoid; }
         .grading-scale table { font-size:calc(8pt * var(--exam-font-scale)); }
         .grading-scale th,.grading-scale td { padding:3px 5px; text-align:center; }
+        .signature-section { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-top:22px; font-size:calc(9pt * var(--exam-font-scale)); break-inside:avoid; page-break-inside:avoid; }
+        .signature-box { width:230px; max-width:48%; text-align:left; }
+        .signature-space { height:72px; }
+        .signature-name { display:block; min-height:1.2em; border-bottom:1px solid #111; font-weight:700; }
+        .signature-identity [contenteditable] { display:inline-block; min-width:90px; min-height:1.2em; }
         @media(max-width:700px) {
             body { padding:106px 4px 20px; }
             .toolbar { justify-content:center; }
@@ -204,14 +211,14 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         }
         @media print {
             @page { size:A4 portrait; margin:10mm 0 0; }
-            html,body { width:210mm; min-height:297mm; margin:0; padding:0; background:#fff !important; color:#000 !important; }
+            html,body { width:210mm; min-height:0; margin:0; padding:0; background:#fff !important; color:#000 !important; }
             .toolbar,.inspector-panel,.inspector-toggle,.logo-slot input,.logo-remove,.saved-note { display:none !important; }
             .selectable-element.selected { outline:none !important; }
             .workspace { overflow:visible; padding:0; }
-            .paper { width:210mm; min-height:0 !important; height:auto !important; margin:0; padding:3mm 12mm 14mm; transform:none !important; zoom:1 !important; overflow:visible !important; box-shadow:none; background:#fff !important; background-image:none !important; }
+            .paper { width:210mm; min-height:0 !important; height:auto !important; margin:0; padding:3mm 12mm 8mm; transform:none !important; zoom:1 !important; overflow:visible !important; box-shadow:none; background:#fff !important; background-image:none !important; }
             .page-preview-marker,.page-preview-only { display:none !important; }
             thead { display:table-header-group; }
-            tr { break-inside:avoid; page-break-inside:avoid; }
+            tr,.signature-section { break-inside:avoid; page-break-inside:avoid; }
             .table-wrap,.grading-wrap,.grading-scale { overflow:visible !important; break-inside:auto; page-break-inside:auto; }
             .grading-scale table { break-inside:avoid; page-break-inside:avoid; }
             .saved-note { display:block !important; position:static !important; margin-top:6px; }
@@ -337,8 +344,8 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                     <div class="meta-row"><span class="meta-label">Jurusan/Prodi</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="prodi-label"><?php echo $escape($prodi); ?></span></div>
                 </div>
                 <div class="meta-column selectable-element" id="examMetaRight" data-type="Informasi ujian kanan" onclick="pilihElemen(event,this)">
-                    <div class="meta-row"><span class="meta-label">Kelas/Ruangan</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="room-label"><?php echo $escape($kelas); ?> / __________</span></div>
-                    <div class="meta-row"><span class="meta-label">Jam/Waktu</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="time-label">________________________</span></div>
+                    <div class="meta-row"><span class="meta-label">Kelas/Ruangan</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="room-label"></span></div>
+                    <div class="meta-row"><span class="meta-label">Jam/Waktu</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="time-label"></span></div>
                     <div class="meta-row"><span class="meta-label">Jumlah Mahasiswa</span><span>:</span><span class="meta-value"><?php echo count($data_siswa); ?></span></div>
                     <div class="meta-row"><span class="meta-label">Mahasiswa Hadir</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="present-count">0</span></div>
                     <div class="meta-row"><span class="meta-label">Tidak Hadir</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="absent-count">0</span></div>
@@ -386,6 +393,21 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                   <p class="saved-note">Nilai dikirim dari rekap absen: <?php echo $escape(date('d-m-Y H:i', strtotime($saved_grade['saved_at']))); ?></p>
               <?php endif; ?>
             </section>
+            <section class="signature-section" aria-label="Tanda tangan pengawas dan dosen">
+                <div class="signature-box selectable-element" id="examSupervisorBox" data-type="Tanda tangan Pengawas Ujian" onclick="pilihElemen(event,this)">
+                    <div contenteditable="true" data-edit-key="supervisor-title">Pengawas Ujian</div>
+                    <div class="signature-space" data-signature-slot="pengawas" data-signature-label="Tanda tangan pengawas ujian"></div>
+                    <div class="signature-name" contenteditable="true" data-edit-key="supervisor-name" aria-label="Nama pengawas ujian"></div>
+                    <div class="signature-identity">NIDN. <span contenteditable="true" data-edit-key="supervisor-nidn" aria-label="NIDN pengawas ujian"></span></div>
+                </div>
+                <div class="signature-box selectable-element" id="examLecturerBox" data-type="Tanda tangan Dosen Pengampu" onclick="pilihElemen(event,this)">
+                    <div contenteditable="true" data-edit-key="lecturer-date">Dompu,</div>
+                    <div contenteditable="true" data-edit-key="lecturer-title">Dosen Pengampu Mata Kuliah</div>
+                    <div class="signature-space" data-signature-slot="dosen" data-signature-label="Tanda tangan dosen pengampu"></div>
+                    <div class="signature-name" contenteditable="true" data-edit-key="lecturer-name" aria-label="Nama dosen pengampu"></div>
+                    <div class="signature-identity">NIDN. <span contenteditable="true" data-edit-key="lecturer-nidn" aria-label="NIDN dosen pengampu"></span></div>
+                </div>
+            </section>
         </section>
     </main>
 
@@ -413,7 +435,8 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             {target:'#inspectorPanel',title:'4. Atur posisi dengan Inspektor',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Tekan atau tahan anak panah keyboard untuk menggeser. Usap menu atas ke atas dan panel Inspektor ke kanan untuk menyembunyikannya; klik pegangan Menu atau Inspektor untuk membukanya kembali. Panah atas/bawah memindahkan elemen di sampingnya pada baris yang sama; kiri/kanan hanya memindahkan elemen terpilih. Di kolom input Inspektor, panah tetap mengedit isian. Gunakan Reset posisi terpilih untuk mengembalikan posisi blok tersebut.'},
             {target:'#examTableBlock',title:'5. Nilai dan kolom KET',example:'<code>Rekap absen</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Ujian</code>',desc:'NIM dan nama berasal dari database. Skor, huruf, dan mutu berasal dari tombol Simpan & Kirim Nilai pada Rekap Nilai di Lembar Absen. Jika belum tampil, kirim kembali melalui sesi browser dan konteks kelas yang sama. Klik sel KET untuk menulis keterangan; garis sel tetap tercetak meskipun keterangannya kosong.'},
             {target:'#examScaleBlock',title:'6. Edit pedoman predikat',example:'<code>80–100 → A → 4 → Sangat Baik</code>',desc:'Teks pada tabel pedoman dapat diedit langsung atau melalui Inspektor. Mengedit pedoman hanya mengubah tulisan di lembar ini; skor dan huruf mahasiswa tetap mengikuti perhitungan Rekap Nilai. Periksa kesesuaian pedoman dengan aturan penilaian sebelum mencetak.'},
-            {target:'button[onclick="cetakLembarUjian()"]',title:'7. Atur font dan cetak A4',example:'<code>Ukuran 1–100 pt</code> · <code>Garis biru = halaman berikutnya</code>',desc:'Ketik ukuran font 1 sampai 100 poin atau pilih angka saran; perubahan diterapkan ke seluruh teks lembar ujian. Garis biru bertanda HALAMAN 2, 3, dan seterusnya menunjukkan awal halaman lanjutan pada tampilan kerja dan tidak ikut dicetak. Zoom mengubah tampilan layar. Cetak memakai A4 potret; pratinjau cetak tetap menentukan pemenggalan halaman final.'}
+            {target:'#examSupervisorBox',title:'7. Tanda tangan pengawas dan dosen',example:'<code>+ Tanda tangan / foto</code> → <code>Pilih gambar</code>',desc:'Blok kiri untuk Pengawas Ujian, blok kanan untuk Dosen Pengampu Mata Kuliah. Nama dan NIDN kosong; ketik sendiri pada kertas atau Inspektor. Klik + Tanda tangan / foto untuk mengunggah PNG, JPG, atau WEBP, atau pilih blok lalu tempel gambar dari clipboard. Gambar tersimpan untuk lembar dan kelas ini di browser perangkat. Pilih blok untuk mengganti, menghapus, atau menggeser gambar bersama teksnya. Gambar ikut dicetak, tombol unggah tidak.'},
+            {target:'button[onclick="cetakLembarUjian()"]',title:'8. Atur font dan cetak A4',example:'<code>Ukuran 1–100 pt</code> · <code>Garis biru = halaman berikutnya</code>',desc:'Ketik ukuran font 1 sampai 100 poin atau pilih angka saran; perubahan diterapkan ke seluruh teks lembar ujian. Garis biru bertanda HALAMAN 2, 3, dan seterusnya menunjukkan awal halaman lanjutan pada tampilan kerja dan tidak ikut dicetak. Zoom mengubah tampilan layar. Cetak memakai A4 potret; pratinjau cetak tetap menentukan pemenggalan halaman final.'}
         ];
 
         let tourStep=0, tourActive=false, tourTarget=null, tourReturnFocus=null, tourHiddenPanels=[], tourPanelStates=[];
@@ -546,12 +569,11 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 }
                 pageIndex++;addMarker(pageIndex+1,nextPageTop);
             }
-            const grading=paper.querySelector('.grading-wrap');
-            if(grading){
-                const position=relativePosition(grading),gradingPage=Math.max(0,Math.floor(position.top/(pageHeight+pageGap))),pageBottom=(gradingPage+1)*pageHeight+gradingPage*pageGap;
+            for(const block of paper.querySelectorAll('.grading-wrap,.signature-section')){
+                const position=relativePosition(block),gradingPage=Math.max(0,Math.floor(position.top/(pageHeight+pageGap))),pageBottom=(gradingPage+1)*pageHeight+gradingPage*pageGap;
                 if(position.bottom>pageBottom+0.5&&position.top<pageBottom){
                     const nextPageTop=(gradingPage+1)*(pageHeight+pageGap),spacer=document.createElement('div');spacer.className='page-preview-only page-preview-block-break';spacer.setAttribute('aria-hidden','true');
-                    spacer.style.height=`${Math.max(0,nextPageTop+pageTopMargin-position.top)}px`;grading.before(spacer);addMarker(gradingPage+2,nextPageTop);
+                    spacer.style.height=`${Math.max(0,nextPageTop+pageTopMargin-position.top)}px`;block.before(spacer);addMarker(gradingPage+2,nextPageTop);
                 }
             }
         }
@@ -560,6 +582,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         document.addEventListener('input',jadwalkanPenandaHalamanUjian);
         document.addEventListener('change',jadwalkanPenandaHalamanUjian);
         document.addEventListener('DOMContentLoaded',()=>{
+            SheetSignatures.install({root:paper, storageKey:storageKey + '-signatures', onChange:jadwalkanPenandaHalamanUjian});
             jadwalkanPenandaHalamanUjian();
             const watched=paper.querySelector('#examTableBlock')||paper;
             if(window.ResizeObserver)new ResizeObserver(jadwalkanPenandaHalamanUjian).observe(watched);
@@ -639,7 +662,13 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
                 document.querySelectorAll('[data-edit-key]').forEach(el => {
                     const key = el.dataset.editKey;
-                    if (Object.prototype.hasOwnProperty.call(saved.text || {}, key)) el.textContent = saved.text[key];
+                    if (Object.prototype.hasOwnProperty.call(saved.text || {}, key)) {
+                        let text = String(saved.text[key] ?? '');
+                        // Hilangkan isian garis bawaan lama, sambil mempertahankan jawaban yang diketik dosen.
+                        if (key === 'room-label' && /^(?:(?:KELAS\s+)?[A-E]\s*\/\s*)?_+$/i.test(text.trim())) text = '';
+                        if (key === 'time-label' && /^_+$/.test(text.trim())) text = '';
+                        el.textContent = text;
+                    }
                 });
                 ['logoLeftSlot', 'logoRightSlot'].forEach(id => { if (saved.logos && saved.logos[id]) setLogo(id, saved.logos[id]); });
                 Object.entries(saved.positions || {}).forEach(([id, transform]) => { const el = document.getElementById(id); if (el && el.matches('.selectable-element')) el.style.transform = transform; });
