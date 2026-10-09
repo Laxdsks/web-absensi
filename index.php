@@ -176,7 +176,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         };
     </script>
     
-    <script src="assets/app-audio.js" defer></script>
+    <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -472,7 +472,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             </div>
             <div class="form-group" style="padding:12px;border:1px solid var(--card-border);border-radius:12px;background:rgba(0,0,0,.04);">
                 <label>Musik tanpa iklan di pemutar arsip</label>
-                <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin:0 0 8px;">Cari audio pada Internet Archive. Pemutar terpisah menjaga musik tetap berjalan saat halaman ini berpindah, selama jendela pemutar dibiarkan terbuka.</p>
+                <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin:0 0 8px;">Cari audio pada Internet Archive. Tutup tampilan pemutar untuk kembali bekerja; musik tetap berjalan. Ikon ♫ membuka kembali kontrol musik.</p>
                 <button type="button" onclick="bukaPemutarMusik()" class="form-control" style="cursor:pointer;"><i class="fa-solid fa-music"></i> Buka pemutar musik</button>
             </div>
             <button type="button" class="btn-submit" onclick="saveProfileChanges()">Simpan Perubahan Pengaturan <i class="fa-solid fa-floppy-disk"></i></button>

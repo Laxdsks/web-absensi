@@ -165,7 +165,7 @@ if ($stmt) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data & Manajemen Mahasiswa - <?php echo htmlspecialchars($kelas); ?></title>
-    <script src="assets/app-audio.js" defer></script>
+    <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -1371,7 +1371,7 @@ if ($stmt) {
                 const result=await response.json();
                 if (!response.ok || result.status!=='success') throw new Error(result.message || 'Data foto gagal disimpan.');
                 showToast(result.inserted+' mahasiswa ditambahkan; '+result.skipped+' baris dilewati. Daftar akan dimuat ulang.','success');
-                setTimeout(()=>location.reload(),900);
+                setTimeout(()=>window.AbsensiUIAudio ? window.AbsensiUIAudio.reloadApplication() : location.reload(),900);
             } catch (error) { showToast(error.message,'error'); }
             finally { button.disabled=false; }
         }

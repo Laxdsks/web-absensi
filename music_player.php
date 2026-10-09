@@ -13,7 +13,7 @@ $_SESSION['theme'] = $theme;
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Pemutar Musik</title>
-    <script src="assets/app-audio.js" defer></script>
+    <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
     <style>
         *{box-sizing:border-box}body{margin:0;padding:16px;background:#0b1220;color:#f8fafc;font:14px Arial,sans-serif;--panel:#111c30;--border:#334155;--text:#f8fafc;--muted:#cbd5e1}
         html[data-theme="putih"] body{background:#edf2f8;color:#0f172a;--panel:#fff;--border:#cbd5e1;--text:#0f172a;--muted:#475569}
@@ -24,14 +24,21 @@ $_SESSION['theme'] = $theme;
         .search{display:flex;gap:8px}.search input{min-width:0;flex:1;min-height:44px;padding:10px;border:1px solid var(--border);border-radius:9px;background:transparent;color:var(--text)}
         .hint{color:var(--muted);font-size:12px;line-height:1.5;margin:10px 0}.results{display:grid;gap:7px;max-height:40vh;overflow:auto;margin:12px 0;padding:0;list-style:none}.results button{width:100%;display:flex;justify-content:space-between;gap:10px;text-align:left;background:transparent;color:var(--text)}.results small{color:var(--muted);font-weight:400}
         .now{padding:12px;border:1px solid var(--border);border-radius:11px;margin-top:12px}.track-title{font-weight:700;overflow-wrap:anywhere;margin:0 0 8px}.now audio{width:100%;height:40px}.controls{display:flex;align-items:center;gap:10px;margin-top:8px}.controls input{flex:1;min-width:80px}.status{min-height:20px;color:var(--muted);font-size:12px;margin-top:9px}.badge{display:inline-block;padding:4px 7px;border-radius:99px;background:#10b98122;color:#10b981;font-size:11px;font-weight:700}
+        [hidden]{display:none!important}.minimized-controls{display:flex;gap:8px;flex-wrap:wrap}
+        #musicApplicationFrame{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff;z-index:1}
+        body.music-app-mode{padding:0;overflow:hidden}
+        body.music-app-mode #musicView{position:fixed;inset:0;z-index:20;overflow:auto;padding:16px;background:inherit}
+        #musicRestoreButton{position:fixed;right:16px;bottom:18px;z-index:30;width:52px;height:52px;padding:0;border:0;border-radius:50%;background:#2563eb;color:#fff;font:700 25px Arial,sans-serif;box-shadow:0 5px 18px #0006}
         @media(max-width:420px){body{padding:8px}.player{padding:13px}.search{flex-wrap:wrap}.search button{width:100%}}
     </style>
 </head>
 <body>
+<div id="musicApplicationView" hidden><iframe id="musicApplicationFrame" name="absensi_music_standalone_app" title="Halaman aplikasi absensi"></iframe></div>
+<div id="musicView">
 <main class="player">
-    <header><h1>♫ Pemutar Musik</h1><button class="secondary" type="button" onclick="window.close()" title="Tutup pemutar">Tutup</button></header>
+    <header><h1>♫ Pemutar Musik</h1><button class="secondary" type="button" id="closeMusicView" onclick="tutupTampilanMusik()" title="Sembunyikan tampilan pemutar; musik tetap berjalan">Tutup</button></header>
     <span class="badge">Audio arsip langsung · tanpa pemutar iklan</span>
-    <p class="hint">Cari judul lagu atau nama artis. Audio diputar dari Internet Archive; biarkan jendela ini terbuka agar musik tetap lanjut saat membuka halaman lain.</p>
+    <p class="hint">Cari judul lagu atau nama artis. Tombol Tutup menyembunyikan tampilan ini; musik tetap berjalan. Tekan ikon ♫ untuk membuka kontrol musik kembali. Gunakan tombol jeda pada kontrol audio untuk menghentikan sementara lagu.</p>
     <form class="search" id="searchForm"><input id="searchQuery" type="search" placeholder="Contoh: musik piano santai" aria-label="Cari audio"><button type="submit">Cari audio</button></form>
     <div id="status" class="status" role="status">Ketik judul atau artis untuk mencari audio.</div>
     <ul id="results" class="results"></ul>
@@ -41,8 +48,60 @@ $_SESSION['theme'] = $theme;
         <div class="controls"><button type="button" class="secondary" id="muteButton">Senyapkan</button><label for="volume">Volume</label><input id="volume" type="range" min="0" max="100" value="35"></div>
     </section>
 </main>
+</div>
+<section class="player" id="minimizedMusicView" hidden aria-label="Musik di latar belakang">
+    <header><h1>♫ Pemutar disembunyikan</h1></header>
+    <p id="minimizedTrackTitle" class="track-title"></p>
+    <p class="hint">Musik tetap berjalan. Buka kembali pemutar untuk mencari lagu atau mengatur volume.</p>
+    <div class="minimized-controls"><button type="button" onclick="restoreMusicView()">Buka pemutar</button><button class="secondary" type="button" id="minimizedPauseButton">Jeda musik</button></div>
+</section>
+<button type="button" id="musicRestoreButton" onclick="restoreMusicView()" aria-label="Buka kembali pemutar musik" title="Buka kembali pemutar musik" hidden>♫</button>
 <script>
     const audio=document.getElementById('musicAudio'),statusBox=document.getElementById('status'),resultsBox=document.getElementById('results');
+    const musicView=document.getElementById('musicView'),applicationView=document.getElementById('musicApplicationView'),applicationFrame=document.getElementById('musicApplicationFrame');
+    let lastApplicationUrl='';
+    function safeApplicationUrl(value){
+        try{
+            const url=new URL(value,location.href),folder=new URL('.',location.href).pathname;
+            if(url.origin===location.origin&&['','index.php','data_siswa.php','absen.php','ujian.php'].some(page=>url.pathname===folder+page)){
+                url.searchParams.delete('hapus_id');url.searchParams.delete('hapus_semua');
+                return url.href;
+            }
+        }catch(error){}
+        return new URL('index.php?theme='+encodeURIComponent(document.documentElement.dataset.theme||'malam'),location.href).href;
+    }
+    const returnApplicationUrl=safeApplicationUrl(new URLSearchParams(location.search).get('return_url')||document.referrer||'index.php');
+    function showMusicApplication(value=lastApplicationUrl||returnApplicationUrl){
+        const destination=safeApplicationUrl(value);
+        if(!lastApplicationUrl||destination!==lastApplicationUrl){applicationFrame.src=destination;lastApplicationUrl=destination;}
+        applicationView.hidden=false;musicView.hidden=true;
+        document.body.classList.add('music-app-mode');
+        document.getElementById('minimizedMusicView').hidden=true;
+        document.getElementById('musicRestoreButton').hidden=false;
+    }
+    applicationFrame.addEventListener('load',()=>{try{if(applicationFrame.contentWindow.location.href!=='about:blank')lastApplicationUrl=safeApplicationUrl(applicationFrame.contentWindow.location.href);}catch(error){}});
+    function restoreMusicView(){
+        musicView.hidden=false;document.getElementById('minimizedMusicView').hidden=true;
+        document.getElementById('musicRestoreButton').hidden=true;
+    }
+    function minimizeMusicView(){
+        let hasOpener=false;try{hasOpener=Boolean(window.opener&&!window.opener.closed);}catch(error){}
+        if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'')||!hasOpener){showMusicApplication();return;}
+        musicView.hidden=true;document.getElementById('minimizedMusicView').hidden=false;
+        updateMinimizedControls();
+        try{window.opener.focus();}catch(error){}
+    }
+    function tutupTampilanMusik(){
+        if(window.AbsensiUIAudio)window.AbsensiUIAudio.hideMusicPlayer();
+        else minimizeMusicView();
+    }
+    function updateMinimizedControls(){
+        document.getElementById('minimizedTrackTitle').textContent=document.getElementById('trackTitle').textContent;
+        document.getElementById('minimizedPauseButton').textContent=audio.paused?'Putar musik':'Jeda musik';
+    }
+    document.getElementById('minimizedPauseButton').addEventListener('click',async()=>{if(audio.paused){try{await audio.play();}catch(error){restoreMusicView();}}else audio.pause();});
+    audio.addEventListener('play',updateMinimizedControls);audio.addEventListener('pause',updateMinimizedControls);
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!musicView.hidden){event.preventDefault();tutupTampilanMusik();}});
     const MUSIC_KEY='absensi_music_track_v1',MUSIC_SETTINGS_KEY='absensi_music_settings_v1';
     let musicSettings={volume:35,muted:false};
     try{musicSettings={...musicSettings,...JSON.parse(localStorage.getItem(MUSIC_SETTINGS_KEY)||'{}')};}catch(error){}
@@ -85,7 +144,7 @@ $_SESSION['theme'] = $theme;
     async function putarAudio(item){
         audio.src=item.url;document.getElementById('trackTitle').textContent=`${item.title}${item.creator?' — '+item.creator:''}`;
         try{localStorage.setItem(MUSIC_KEY,JSON.stringify(item));}catch(error){}
-        setStatus('Memuat audio…');try{await audio.play();setStatus('Sedang diputar. Jendela ini boleh dibiarkan di latar belakang.');}catch(error){setStatus('Tekan tombol putar pada kontrol audio untuk mulai.');}
+        setStatus('Memuat audio…');try{await audio.play();setStatus('Sedang diputar. Tekan Tutup untuk kembali; musik tetap berjalan.');}catch(error){setStatus('Tekan tombol putar pada kontrol audio untuk mulai.');}
     }
     document.getElementById('searchForm').addEventListener('submit',cariAudio);
     try{const saved=JSON.parse(localStorage.getItem(MUSIC_KEY)||'null');if(saved?.url){audio.src=saved.url;document.getElementById('trackTitle').textContent=`${saved.title||'Audio tersimpan'}${saved.creator?' — '+saved.creator:''}`;}}

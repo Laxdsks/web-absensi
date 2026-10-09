@@ -120,7 +120,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="assets/app-audio.js" defer></script>
+    <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
     <title>Lembar Daftar Hadir & Rekap Nilai - S1 <?php echo htmlspecialchars($kelas_lama); ?> - <?php echo htmlspecialchars($semester_lama); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
