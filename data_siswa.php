@@ -150,7 +150,7 @@ if (isset($_GET['hapus_semua']) && $_GET['hapus_semua'] == '1') {
 // SINKRONISASI BACKEND EXAK DAN LOGIKA S1 AMAN (=)
 $data_siswa = [];
 $q_str = "SELECT id, nim, nama, jk FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY nama ASC";
-$stmt = mysqli_prepare($koneksi, $q_str);
+$stmt = isset($koneksi) && $koneksi instanceof mysqli ? mysqli_prepare($koneksi, $q_str) : false;
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'sssss', $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
     mysqli_stmt_execute($stmt);
@@ -166,8 +166,8 @@ if ($stmt) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data & Manajemen Mahasiswa - <?php echo htmlspecialchars($kelas); ?></title>
     <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="app/vendor/fontawesome/css/all.min.css">
+    <link href="app/vendor/jakarta/400.css" rel="stylesheet"><link href="app/vendor/jakarta/500.css" rel="stylesheet"><link href="app/vendor/jakarta/600.css" rel="stylesheet"><link href="app/vendor/jakarta/700.css" rel="stylesheet">
     <style>
         select option,
         [data-theme="malam"] select option,
@@ -380,7 +380,10 @@ if ($stmt) {
             .modal-container { width: 95%; max-width: 100%; padding: 20px; margin: 10px; }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" defer></script>
+    <script src="app/vendor/tesseract.min.js" defer></script>
+<script src="assets/native-export.js?v=20261010" defer></script>
+    <script src="app/core.js?v=20261010" defer></script>
+    <script src="assets/offline-bridge.js?v=20261010" defer></script>
 </head>
 <body>
     <div class="toast-container" id="toastContainer"></div>
@@ -1279,9 +1282,9 @@ if ($stmt) {
                 const type=jenisBerkasDaftar(file),buffer=await file.arrayBuffer();setOcrStatus('Membaca seluruh isi '+type.toUpperCase()+'…');
                 if(type==='pdf'){
                     if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
-                    const pdfjs=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
-                    pdfjs.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
-                    pdf=await pdfjs.getDocument({data:new Uint8Array(buffer),isEvalSupported:false,cMapUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/cmaps/',cMapPacked:true,standardFontDataUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/standard_fonts/'}).promise;
+                    const pdfjs=await import('./app/vendor/pdf.min.mjs');
+                    pdfjs.GlobalWorkerOptions.workerSrc='app/vendor/pdf.worker.min.mjs';
+                    pdf=await pdfjs.getDocument({data:new Uint8Array(buffer),isEvalSupported:false,cMapUrl:'app/vendor/cmaps/',cMapPacked:true,standardFontDataUrl:'app/vendor/standard_fonts/'}).promise;
                     for(let i=1;i<=pdf.numPages;i++){
                         setOcrStatus('PDF: halaman '+i+' / '+pdf.numPages+'…');const page=await pdf.getPage(i),view=page.getViewport({scale:1});
                         const text=await page.getTextContent(),direct=rowsPdfTeks(text,view);
@@ -1296,17 +1299,17 @@ if ($stmt) {
                         page.cleanup();
                     }
                 }else if(['xls','xlsx','csv'].includes(type)){
-                    const XLSX=await muatPustakaImpor('XLSX','https://cdn.jsdelivr.net/npm/@e965/xlsx@0.20.3/dist/xlsx.full.min.js'),book=XLSX.read(buffer,{type:'array',cellText:true});
+                    const XLSX=await muatPustakaImpor('XLSX','app/vendor/xlsx.full.min.js'),book=XLSX.read(buffer,{type:'array',cellText:true});
                     for(const name of book.SheetNames){setOcrStatus('Membaca lembar Excel: '+name+'…');rows.push(...parseTabelBerkas(XLSX.utils.sheet_to_json(book.Sheets[name],{header:1,raw:false,defval:''}), 'Excel · '+name));}
                 }else if(type==='docx'){
-                    const mammoth=await muatPustakaImpor('mammoth','https://cdn.jsdelivr.net/npm/mammoth@1.13.0/mammoth.browser.min.js'),converted=await mammoth.convertToHtml({arrayBuffer:buffer}),parsed=parseHtmlBerkas(converted.value,'Word · tabel');rows.push(...parsed.rows);
+                    const mammoth=await muatPustakaImpor('mammoth','app/vendor/mammoth.browser.min.js'),converted=await mammoth.convertToHtml({arrayBuffer:buffer}),parsed=parseHtmlBerkas(converted.value,'Word · tabel');rows.push(...parsed.rows);
                     if(!rows.length){const raw=await mammoth.extractRawText({arrayBuffer:buffer});rows.push(...parseTeksWord(raw.value,'Word · teks'));}
                     if(!rows.length){const images=[...parsed.doc.querySelectorAll('img[src^="data:image/"]')];for(let i=0;i<images.length;i++){setOcrStatus('Word: gambar '+(i+1)+' / '+images.length+'…');rows.push(...await ocr(await kanvasGambarBerkas(images[i].getAttribute('src')),'Word gambar '+(i+1)+' · OCR'));}}
                 }else if(type==='doc'){
                     const probe=new TextDecoder().decode(new Uint8Array(buffer,0,Math.min(buffer.byteLength,512)));
                     if(/^\s*(?:<!doctype|<html|<\?xml)/i.test(probe))rows.push(...parseHtmlBerkas(new TextDecoder().decode(buffer),'DOC · tabel').rows);
                     else if(/^\s*{\\rtf/.test(probe))rows.push(...parseTeksWord(teksRtfBerkas(new TextDecoder('windows-1252').decode(buffer)),'DOC · teks'));
-                    else {const XLSX=await muatPustakaImpor('XLSX','https://cdn.jsdelivr.net/npm/@e965/xlsx@0.20.3/dist/xlsx.full.min.js');rows.push(...parseTeksWord(teksDocLama(buffer,XLSX.CFB),'DOC · teks'));}
+                    else {const XLSX=await muatPustakaImpor('XLSX','app/vendor/xlsx.full.min.js');rows.push(...parseTeksWord(teksDocLama(buffer,XLSX.CFB),'DOC · teks'));}
                 }else throw new Error('Pilih foto, PDF, DOC/DOCX, atau XLS/XLSX/CSV.');
                 if(!rows.length)throw new Error('Belum ada mahasiswa yang terbaca. Pastikan tabel memuat judul NIM dan Nama Mahasiswa; untuk scan gunakan gambar yang jelas.');
                 tampilkanHasilOcr(gabungBerkas(rows));
@@ -1314,8 +1317,8 @@ if ($stmt) {
             finally{try{if(worker)await worker.terminate();if(pdf)await pdf.destroy();}finally{button.disabled=false;input.disabled=false;}}
         }
         async function buatWorkerDaftar() {
-            const Tesseract=await muatPustakaImpor('Tesseract','https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
-            return Tesseract.createWorker('eng',1,{workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',langPath:'https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@main',gzip:false},{load_system_dawg:'0',load_freq_dawg:'0'});
+            const Tesseract=await muatPustakaImpor('Tesseract','app/vendor/tesseract.min.js');
+            return Tesseract.createWorker('eng',1,{workerPath:'app/vendor/worker.min.js',corePath:'app/vendor',langPath:'app/vendor',gzip:false},{load_system_dawg:'0',load_freq_dawg:'0'});
         }
         async function pindaiKanvasDaftar(selected,worker,continuation=null) {
                 const prepared=preparasiFotoOcr(selected),canvas=prepared.canvas,grid=prepared.grid;
@@ -1446,5 +1449,5 @@ if ($stmt) {
 </body>
 </html>
 <?php
-mysqli_close($koneksi);
+if (isset($koneksi) && $koneksi instanceof mysqli) mysqli_close($koneksi);
 ?>

@@ -31,6 +31,9 @@ $_SESSION['theme'] = $theme;
         #musicRestoreButton{position:fixed;right:16px;bottom:18px;z-index:30;width:52px;height:52px;padding:0;border:0;border-radius:50%;background:#2563eb;color:#fff;font:700 25px Arial,sans-serif;box-shadow:0 5px 18px #0006}
         @media(max-width:420px){body{padding:8px}.player{padding:13px}.search{flex-wrap:wrap}.search button{width:100%}}
     </style>
+<script src="assets/native-export.js?v=20261010" defer></script>
+    <script src="app/core.js?v=20261010" defer></script>
+    <script src="assets/offline-bridge.js?v=20261010" defer></script>
 </head>
 <body>
 <div id="musicApplicationView" hidden><iframe id="musicApplicationFrame" name="absensi_music_standalone_app" title="Halaman aplikasi absensi"></iframe></div>
@@ -44,7 +47,7 @@ $_SESSION['theme'] = $theme;
     <ul id="results" class="results"></ul>
     <section class="now" aria-label="Kontrol audio">
         <p id="trackTitle" class="track-title">Belum ada audio diputar</p>
-        <audio id="musicAudio" controls preload="none"></audio>
+        <label style="display:block;margin:16px 0">Audio dari perangkat (bisa offline)<input type="file" id="localMusicFile" accept="audio/*" style="display:block;margin-top:8px"></label><audio id="musicAudio" controls preload="none"></audio>
         <div class="controls"><button type="button" class="secondary" id="muteButton">Senyapkan</button><label for="volume">Volume</label><input id="volume" type="range" min="0" max="100" value="35"></div>
     </section>
 </main>
@@ -147,6 +150,9 @@ $_SESSION['theme'] = $theme;
         setStatus('Memuat audio…');try{await audio.play();setStatus('Sedang diputar. Tekan Tutup untuk kembali; musik tetap berjalan.');}catch(error){setStatus('Tekan tombol putar pada kontrol audio untuk mulai.');}
     }
     document.getElementById('searchForm').addEventListener('submit',cariAudio);
+    document.getElementById('localMusicFile').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;if(file.size>100*1024*1024){setStatus('Audio maksimal 100 MB.');return;}if(window.WA)await WA.change(()=>({blob:file,title:file.name}),'local-music');audio.src=URL.createObjectURL(file);document.getElementById('trackTitle').textContent=file.name;try{await audio.play();setStatus('Audio perangkat diputar. Tutup panel tidak menghentikan lagu.');}catch(_){setStatus('Tekan putar untuk mulai.');}});
+    window.addEventListener('DOMContentLoaded',async()=>{if(window.WA){const file=await WA.get('local-music');if(file?.blob){audio.src=URL.createObjectURL(file.blob);document.getElementById('trackTitle').textContent=file.title;}}});
+
     try{const saved=JSON.parse(localStorage.getItem(MUSIC_KEY)||'null');if(saved?.url){audio.src=saved.url;document.getElementById('trackTitle').textContent=`${saved.title||'Audio tersimpan'}${saved.creator?' — '+saved.creator:''}`;}}
     catch(error){}
 </script>

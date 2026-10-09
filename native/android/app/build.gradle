@@ -1,0 +1,27 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'id.webabsensi.app'
+ compileSdk 35
+ defaultConfig { applicationId 'id.webabsensi.app'; minSdk 26; targetSdk 35; versionCode 1; versionName '1.0.0'; buildConfigField 'String','APP_HOST','"datasiswasekolah.42web.io"' }
+ buildFeatures { buildConfig true }
+ flavorDimensions 'role'
+ productFlavors {
+  dosen { dimension 'role'; applicationIdSuffix '.dosen'; resValue 'string','app_name','Absensi Dosen'; buildConfigField 'String','APP_ROLE','"teacher"' }
+  mahasiswa { dimension 'role'; applicationIdSuffix '.mahasiswa'; resValue 'string','app_name','Absen Mahasiswa'; buildConfigField 'String','APP_ROLE','"student"' }
+ }
+ buildTypes { debug { debuggable false }; release { minifyEnabled false } }
+ sourceSets.dosen.assets.srcDirs += [layout.buildDirectory.dir('dosenOfflineAssets')]
+ sourceSets.mahasiswa.assets.srcDirs += [layout.buildDirectory.dir('mahasiswaOfflineAssets')]
+}
+tasks.register('bundleDosenOffline',Copy){
+ into layout.buildDirectory.dir('dosenOfflineAssets')
+ from('../../../app'){into 'app'}
+ from('../../../assets'){into 'assets';exclude 'logo-stkip-yapis-dompu.png'}
+ from('../../../app-sw.js')
+}
+tasks.register('bundleMahasiswaOffline',Copy){
+ into layout.buildDirectory.dir('mahasiswaOfflineAssets')
+ from('../../../app'){into 'app';include 'index.html','core.js','app.js','app.css','icon.svg','icon-*.png','manifest.webmanifest','vendor/qr.js','vendor/scan.js'}
+ from('../../../app-sw.js')
+}
+tasks.configureEach{task->if(task.name in ['preDosenDebugBuild','preDosenReleaseBuild'])task.dependsOn 'bundleDosenOffline';if(task.name in ['preMahasiswaDebugBuild','preMahasiswaReleaseBuild'])task.dependsOn 'bundleMahasiswaOffline'}

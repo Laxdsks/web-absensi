@@ -39,7 +39,7 @@
                 if (source) next[slot.dataset.signatureSlot] = source; else delete next[slot.dataset.signatureSlot];
                 try { localStorage.setItem(storageKey, JSON.stringify(next)); }
                 catch (_) { notify('Gambar belum tersimpan. Penyimpanan browser penuh atau tidak tersedia; pilih gambar lebih kecil.'); return false; }
-                saved = next; render(slot, source); return true;
+                saved = next; render(slot, source); document.dispatchEvent(new Event('sheet-signature-changed')); return true;
             };
             const loadFile = async (slot, file) => {
                 if (!file) return;

@@ -123,9 +123,10 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
     <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
     <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261009">
     <script src="assets/sheet-signatures.js?v=20261009" defer></script>
+    <script src="assets/sheet-spacing.js?v=20261010" defer></script>
     <title>Lembar Daftar Hadir & Rekap Nilai - S1 <?php echo htmlspecialchars($kelas_lama); ?> - <?php echo htmlspecialchars($semester_lama); ?></title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="app/vendor/fontawesome/css/all.min.css">
+    <link href="app/vendor/jakarta/400.css" rel="stylesheet"><link href="app/vendor/jakarta/500.css" rel="stylesheet"><link href="app/vendor/jakarta/600.css" rel="stylesheet"><link href="app/vendor/jakarta/700.css" rel="stylesheet">
     <style>
         :root {
             --global-font-size: 11.333px;
@@ -263,7 +264,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         .summary-title { font-weight: 700; text-align: center; border-bottom: 1px solid #000 !important; margin-bottom: 3px; padding-bottom: 2px; font-size: calc(var(--global-font-size) + 0.5px); }
         .summary-row { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: var(--global-font-size); }
         
-        .signature-section { display: flex; justify-content: space-between; margin-top: 18px; font-size: var(--global-font-size); position: relative; }
+        .signature-section { display: flex; justify-content: space-between; clear:both; gap:20px; margin-top: 28px; font-size: var(--global-font-size); position: relative; }
         .signature-box { width: 210px; text-align: left; font-size: var(--global-font-size); padding: 2px; }
         .signature-space { height: var(--signature-space-height, 72px); }
         
@@ -487,6 +488,9 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         @media (max-width:700px),(hover:none) { .hide-toolbar-inline { display:none !important; } }
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
+<script src="assets/native-export.js?v=20261010" defer></script>
+    <script src="app/core.js?v=20261010" defer></script>
+    <script src="assets/offline-bridge.js?v=20261010" defer></script>
 </head>
 <body>
     <?php if(!empty($pesan_validasi)): ?>
@@ -660,7 +664,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 </div>
                 <div class="meta-column selectable-element" id="metaRightBox" data-type="Blok Kanan (Matakuliah, Dosen, Kelas)" onclick="pilihElemen(event, this)">
                     <div class="meta-row">
-                        <div class="meta-label" contenteditable="true">Matakuliah</div><div class="meta-colon">:</div><div class="meta-val" contenteditable="true">Pengembangan Pembelajaran Interaktif</div>
+                        <div class="meta-label" contenteditable="true">Matakuliah</div><div class="meta-colon">:</div><div class="meta-val" contenteditable="true" data-app-course aria-label="Isi nama mata kuliah"></div>
                     </div>
                     <div class="meta-row">
                         <div class="meta-label" contenteditable="true">Dosen Pengampu</div><div class="meta-colon">:</div><div class="meta-val" contenteditable="true">Tim Dosen Pengampu, M.Pd.</div>
@@ -907,7 +911,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         let historyStack = [];
         let redoStack = [];
         let draftNilaiPerNim = Object.create(null);
-        const absenLayoutSettingsKey = <?php echo json_encode('absen-layout-settings-S1-' . md5($prodi . '|' . $semester . '|' . $kelas)); ?>;
+        const absenLayoutSettingsKey = new URLSearchParams(location.search).get('app')==='1'?'absen-layout-settings-app-'+encodeURIComponent(['prodi','semester','kelas','matkul'].map(k=>new URLSearchParams(location.search).get(k)||'').join('|')):<?php echo json_encode('absen-layout-settings-S1-' . md5($prodi . '|' . $semester . '|' . $kelas)); ?>;
         let absenLayoutSettings = {};
         try { absenLayoutSettings = JSON.parse(localStorage.getItem(absenLayoutSettingsKey) || '{}') || {}; } catch (error) { absenLayoutSettings = {}; }
         function simpanPengaturanLayoutAbsen() {
@@ -1168,6 +1172,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const paper = document.getElementById('paperSheet');
             if (!paper) return;
             bersihkanPratinjauHalamanAbsen();
+            if(window.pastikanJarakTandaTangan)window.pastikanJarakTandaTangan();
             const pageHeight = tinggiHalamanLembarPx();
             const pageGap = 18;
             const pageTopMargin = 8 * 96 / 25.4;
@@ -1290,7 +1295,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             }
         }
 
-        const absenPositionStorageKey = <?php echo json_encode('absen-layout-S1-' . md5($prodi . '|' . $semester . '|' . $kelas)); ?>;
+        const absenPositionStorageKey = new URLSearchParams(location.search).get('app')==='1'?absenLayoutSettingsKey+'-positions':<?php echo json_encode('absen-layout-S1-' . md5($prodi . '|' . $semester . '|' . $kelas)); ?>;
 
         function simpanPosisiLembarAbsen() {
             const posisi = {};
@@ -1873,6 +1878,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         function cetakDokumen() {
             if (isAndroidWebView()) {
                 const bridge = window.Android || window.AndroidInterface;
+                if(typeof bridge?.printDocument==='function'){bridge.printDocument(window.AbsensiNativeExport?.html?.()||document.documentElement.outerHTML,location.href);return;}
                 if (typeof bridge?.printPage === 'function') { bridge.printPage(); return; }
                 if (typeof bridge?.print === 'function') { bridge.print(); return; }
                 tampilkanBantuanAndroid('Cetak dari aplikasi Android', 'Aplikasi ini belum meneruskan perintah cetak ke Android. Buka halaman yang sama di Chrome, lalu pilih Cetak atau Simpan sebagai PDF dari menu cetak.');

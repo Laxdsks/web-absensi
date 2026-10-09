@@ -3,6 +3,7 @@
     const SETTINGS_KEY = 'absensi_ui_audio_settings_v1';
     const PLAYER_KEY = 'absensi_music_player_live_v1';
     const PLAYER_NAME = 'absensi_music_player_window';
+    const APP_ROOT = new URL('../', document.currentScript.src);
     const IS_PLAYER_PAGE = /music_player\.php$/i.test(location.pathname);
     let audioContext = null;
     let channel = null;
@@ -143,7 +144,7 @@
             musicFrame.title = 'Pemutar musik';
             musicFrame.allow = 'autoplay';
             musicFrame.style.cssText = 'width:100%;height:100%;border:0;display:block';
-            const url = new URL('music_player.php', location.href);
+            const url = new URL('music_player.php', APP_ROOT);
             url.searchParams.set('theme', document.documentElement.dataset.theme || 'malam');
             url.searchParams.set('embedded', '1');
             musicFrame.src = url.href;
@@ -196,7 +197,7 @@
         if (host) { host.openMusicPlayer(); return; }
         if (IS_PLAYER_PAGE) { window.restoreMusicView?.(); return; }
         // Android menggunakan panel dalam halaman agar WebView tidak menutup pemutar.
-        if (musicFrame || window.Android || window.AndroidInterface || window.ReactNativeWebView || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '')) {
+        if (/\/app\//.test(location.pathname) || window.AbsensiDesktop || musicFrame || window.Android || window.AndroidInterface || window.ReactNativeWebView || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '')) {
             showEmbeddedMusicPlayer();
             return;
         }
@@ -208,7 +209,7 @@
         }
         const theme = document.documentElement.dataset.theme || 'malam';
         const features = 'popup=yes,width=380,height=680,resizable=yes,scrollbars=yes';
-        const playerUrl = `music_player.php?theme=${encodeURIComponent(theme)}&return_url=${encodeURIComponent(applicationUrl)}`;
+        const playerUrl = `${new URL('music_player.php',APP_ROOT).href}?theme=${encodeURIComponent(theme)}&return_url=${encodeURIComponent(applicationUrl)}`;
         const player = window.open('', PLAYER_NAME, features);
         if (player) {
             try {

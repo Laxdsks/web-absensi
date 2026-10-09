@@ -67,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['aksi'] ?? '') === 'simpan_n
         'bobot' => $bobot,
         'saved_at' => date('Y-m-d H:i:s')
     ];
+    try { wa_db()->begin_transaction(); wa_save_document(['jenjang'=>'S1','prodi'=>$prodi,'semester'=>$semester,'kelas'=>$kelas],wa_text($payload['matkul']??'',180),'grade',$_SESSION['nilai_ujian'][$prodi][(string)(int)$semester][$kelas],null); wa_db()->commit(); } catch(Throwable $error) { wa_db()->rollback(); http_response_code(503); echo json_encode(['status'=>'error','msg'=>'Nilai belum tersimpan permanen. Coba lagi.']); exit; }
     $_SESSION['konteks_siswa'] = ['jenjang' => 'S1', 'kelas' => $kelas, 'prodi' => $prodi, 'semester' => (string)(int)$semester];
     echo json_encode(['status' => 'success', 'jumlah' => count($data_nilai), 'saved_at' => date('d-m-Y H:i')], JSON_UNESCAPED_UNICODE);
     exit;
@@ -111,6 +112,7 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
     }
 }
 $saved_grade = $_SESSION['nilai_ujian'][$prodi][$semester][$kelas] ?? [];
+if(!defined('APP_TEMPLATE_BUILD')){try{$stored=wa_document(['jenjang'=>'S1','prodi'=>$prodi,'semester'=>$semester,'kelas'=>$kelas],wa_text($_GET['matkul']??'',180),'grade');if($stored)$saved_grade=$stored['content'];}catch(Throwable $ignored){}}
 $nilai_by_nim = [];
 foreach (($saved_grade['data_nilai'] ?? []) as $nilai) {
     if (isset($nilai['nim'])) $nilai_by_nim[(string)$nilai['nim']] = $nilai;
@@ -129,8 +131,9 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
     <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
     <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261009">
     <script src="assets/sheet-signatures.js?v=20261009" defer></script>
+    <script src="assets/sheet-spacing.js?v=20261010" defer></script>
     <title>Lembar Ujian - <?php echo $escape($kelas_lama . ' / ' . $semester_lama); ?></title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="app/vendor/fontawesome/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --app-bg:#0b0f19; --panel:rgba(15,23,42,.96); --text:#f8fafc; --muted:#cbd5e1; --border:rgba(255,255,255,.16); --accent:#38bdf8; }
@@ -194,11 +197,11 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .inspector-text { display:flex; flex-direction:column; gap:6px; }
         .inspector-text input { width:100%; border:1px solid var(--border); border-radius:7px; padding:7px; background:var(--panel); color:var(--text); font:12px 'Plus Jakarta Sans',sans-serif; }
         .empty-note { padding:12px; text-align:center; color:#64748b; }
-        .grading-wrap { width:100%; margin-top:12px; break-inside:avoid; page-break-inside:avoid; }
+        .grading-wrap { display:flow-root; width:100%; margin-top:12px; break-inside:avoid; page-break-inside:avoid; }
         .grading-scale { width:320px; max-width:100%; margin:0 0 0 auto; break-inside:avoid; page-break-inside:avoid; }
         .grading-scale table { font-size:calc(8pt * var(--exam-font-scale)); }
         .grading-scale th,.grading-scale td { padding:3px 5px; text-align:center; }
-        .signature-section { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-top:22px; font-size:calc(9pt * var(--exam-font-scale)); break-inside:avoid; page-break-inside:avoid; }
+        .signature-section { display:flex; justify-content:space-between; align-items:flex-start; clear:both; gap:20px; margin-top:28px; font-size:calc(9pt * var(--exam-font-scale)); break-inside:avoid; page-break-inside:avoid; }
         .signature-box { width:230px; max-width:48%; text-align:left; }
         .signature-space { height:72px; }
         .signature-name { display:block; min-height:1.2em; border-bottom:1px solid #111; font-weight:700; }
@@ -267,6 +270,9 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         @media(max-width:700px),(hover:none) { .hide-toolbar-inline { display:none !important; } }
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
     </style>
+<script src="assets/native-export.js?v=20261010" defer></script>
+    <script src="app/core.js?v=20261010" defer></script>
+    <script src="assets/offline-bridge.js?v=20261010" defer></script>
 </head>
 <body>
     <button type="button" class="toolbar-toggle-btn" id="toggleToolbarBtn" onclick="toggleToolbar()" aria-controls="topToolbar">⌃ Menu</button>
@@ -344,7 +350,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 <div class="meta-column selectable-element" id="examMetaLeft" data-type="Informasi ujian kiri" onclick="pilihElemen(event,this)">
                     <div class="meta-row"><span class="meta-label">Semester</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="semester-label"><?php echo $escape($semesterLabel); ?></span></div>
                     <div class="meta-row"><span class="meta-label">Tahun Akademik</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="year-label"><?php echo $escape($tahunAjaran); ?></span></div>
-                    <div class="meta-row"><span class="meta-label">Mata Kuliah</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="course-label">Profesi Kependidikan</span></div>
+                    <div class="meta-row"><span class="meta-label">Mata Kuliah</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="course-label" data-app-course aria-label="Isi nama mata kuliah"></span></div>
                     <div class="meta-row"><span class="meta-label">Dosen Pengampu</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="lecturer-label"></span></div>
                     <div class="meta-row"><span class="meta-label">Jurusan/Prodi</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="prodi-label"><?php echo $escape($prodi); ?></span></div>
                 </div>
@@ -531,7 +537,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             }
         });
 
-        const storageKey = <?php echo json_encode($local_key, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+        const storageKey = new URLSearchParams(location.search).get('app')==='1'?'ujian_-app-'+encodeURIComponent(['prodi','semester','kelas','matkul'].map(k=>new URLSearchParams(location.search).get(k)||'').join('|')):<?php echo json_encode($local_key, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
         const paper = document.getElementById('paperSheet');
         let zoomLevel = 1;
         let selectedElement = null;
@@ -545,6 +551,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         function perbaruiPenandaHalamanUjian() {
             if(!paper)return;
             paper.querySelectorAll('.page-preview-only').forEach(element=>element.remove());
+            if(window.pastikanJarakTandaTangan)window.pastikanJarakTandaTangan();
             const pageHeight=297*96/25.4,pageGap=18,pageTopMargin=8*96/25.4;
             paper.style.setProperty('--preview-page-height',`${pageHeight}px`);
             paper.style.setProperty('--preview-page-gap',`${pageGap}px`);
@@ -598,6 +605,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             const webview=/android/i.test(ua)&&(/\bwv\b|; wv\)/i.test(ua)||!navigator.share);
             if(webview){
                 const bridge=window.Android||window.AndroidInterface;
+                if(typeof bridge?.printDocument==='function'){bridge.printDocument(window.AbsensiNativeExport?.html?.()||document.documentElement.outerHTML,location.href);return;}
                 if(typeof bridge?.printPage==='function'){bridge.printPage();return;}
                 if(typeof bridge?.print==='function'){bridge.print();return;}
                 document.getElementById('bantuanAndroidCetak')?.remove();
@@ -675,7 +683,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             const students=cloneTabelUjian('#examTableBlock table');
             const grading=cloneTabelUjian('.grading-scale table');
             const savedNote=escapeHtmlUjian(paper.querySelector('.saved-note')?.textContent.trim()||'');
-            const body=`${markupHeaderUjian()}<h1 style="margin:6px 0 8px;text-align:center;font: bold 12pt 'Times New Roman',serif;text-decoration:underline">${title}</h1>${markupMetaUjian()}<div style="width:100%;margin:0 0 10px">${students}</div><table style="width:320px;margin:10px 0 0 auto;border-collapse:collapse;table-layout:fixed">${grading}</table>${savedNote?`<p style="text-align:right;font-size:8pt">${savedNote}</p>`:''}<table class="export-signatures" style="width:100%;margin-top:18px;border:0;border-collapse:collapse;table-layout:fixed;page-break-inside:avoid"><tr>${markupTandaTanganUjian('examSupervisorBox')}${markupTandaTanganUjian('examLecturerBox')}</tr></table>`;
+            const body=`${markupHeaderUjian()}<h1 style="margin:6px 0 8px;text-align:center;font: bold 12pt 'Times New Roman',serif;text-decoration:underline">${title}</h1>${markupMetaUjian()}<div style="width:100%;margin:0 0 10px">${students}</div><table style="width:320px;margin:10px 0 0 auto;border-collapse:collapse;table-layout:fixed">${grading}</table>${savedNote?`<p style="text-align:right;font-size:8pt">${savedNote}</p>`:''}<table class="export-signatures" style="width:100%;margin-top:28px;border:0;border-collapse:collapse;table-layout:fixed;page-break-inside:avoid"><tr>${markupTandaTanganUjian('examSupervisorBox')}${markupTandaTanganUjian('examLecturerBox')}</tr></table>`;
             const titleAttr=escapeHtmlUjian(`Lembar Ujian S1 Kelas ${<?php echo json_encode($kelas, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>} Semester ${<?php echo json_encode($semester, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>}`);
             const excel=format==='excel';
             const styles=`@page{size:A4 portrait;margin:10mm 12mm}*{box-sizing:border-box}body{margin:0;color:#111;background:#fff;font:8pt 'Times New Roman',serif}table{border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}.export-header td,.export-meta td,.export-signatures td{border:0!important}.export-meta td{line-height:1.2}.export-signatures{page-break-inside:avoid}.export-signatures img{object-fit:contain}#exportRoot{width:100%;${excel?'':'max-width:186mm;margin:0 auto;'}}`;
@@ -750,6 +758,12 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         function readSavedEdits() {
             try {
                 const saved = JSON.parse(localStorage.getItem(storageKey) || '{}') || {};
+                if (saved.blankCourseVersion !== 1) {
+                    saved.text = saved.text || {};
+                    if (/^(Profesi Kependidikan|Pengembangan Pembelajaran Interaktif)$/.test(String(saved.text['course-label'] || '').trim())) saved.text['course-label'] = '';
+                    saved.blankCourseVersion = 1;
+                    try { localStorage.setItem(storageKey, JSON.stringify(saved)); } catch (error) {}
+                }
                 // Kosongkan dua jawaban lama sekali saja, sesuai format baru.
                 // Jawaban yang kemudian diketik dosen tetap tersimpan.
                 if (saved.blankExamFieldsVersion !== 2) {

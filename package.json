@@ -1,0 +1,30 @@
+{
+  "name": "web-absensi-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aplikasi dosen dan mahasiswa dengan penyimpanan offline dan absensi QR",
+  "scripts": {
+    "vendor": "node scripts/vendor-app.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "windows": "electron-builder --config native/windows/builder.json --win portable --x64",
+    "templates": "node scripts/build-offline.cjs",
+    "check": "node --check app/core.js && node --check app/app.js && node --check app-sw.js && node --check assets/offline-bridge.js"
+  },
+  "dependencies": {
+    "@e965/xlsx": "0.20.3",
+    "@fontsource/plus-jakarta-sans": "^5.2.8",
+    "@fortawesome/fontawesome-free": "^6.4.0",
+    "@tesseract.js-data/eng": "1.0.0",
+    "jsqr": "1.4.0",
+    "mammoth": "1.13.0",
+    "pdfjs-dist": "4.10.38",
+    "qrcode-generator": "1.4.4",
+    "tesseract.js": "5.1.1",
+    "tesseract.js-core": "5.1.1"
+  },
+  "devDependencies": {
+    "electron": "39.2.7",
+    "electron-builder": "26.0.12"
+  },
+  "main": "native/windows/main.cjs"
+}

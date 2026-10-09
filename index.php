@@ -57,6 +57,7 @@ if (isset($_POST['get_login_logs'])) {
 
 // --- API LOGOUT MANDIRI ANTI-404 ---
 if (isset($_POST['action']) && $_POST['action'] === 'logout_system') {
+    try { wa_revoke_current(); } catch (Throwable $ignored) {}
     session_unset();
     session_destroy();
     echo json_encode(['status' => 'success']);
@@ -177,7 +178,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
     </script>
     
     <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="app/vendor/fontawesome/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
@@ -371,6 +372,9 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             .auth-card { padding: 25px 20px; width: 92%; margin: 10px; }
         }
     </style>
+<script src="assets/native-export.js?v=20261010" defer></script>
+    <script src="app/core.js?v=20261010" defer></script>
+    <script src="assets/offline-bridge.js?v=20261010" defer></script>
 </head>
 <body>
     <!-- KANVAS PARTIKEL MELAYANG -->
@@ -586,6 +590,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         function initParticleCanvas() {
             const canvas = document.getElementById('particleCanvas');
             if (!canvas) return;
+            if(window.Android||window.AbsensiDesktop||matchMedia('(prefers-reduced-motion: reduce)').matches||navigator.deviceMemory<=4){canvas.hidden=true;return;}
             const ctx = canvas.getContext('2d');
             let particles = [];
             
@@ -608,6 +613,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             }
             
             function animateParticles() {
+                if(document.hidden||document.body.classList.contains('has-custom-wallpaper')){setTimeout(animateParticles,1000);return;}
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 particles.forEach(p => {
                     p.x += p.speedX;
@@ -1052,5 +1058,6 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             });
         }
     </script>
+<a href="app/" style="position:fixed;bottom:18px;left:18px;z-index:1000;background:#2362ee;color:white;padding:12px 16px;border-radius:10px;text-decoration:none;font:14px sans-serif">Aplikasi offline & Absen QR</a>
 </body>
 </html>

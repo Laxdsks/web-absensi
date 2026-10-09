@@ -14,3 +14,16 @@ exclude:
   - admin_config.json
   - login_logs.json
   - web_status.json
+
+  - app_core.php
+  - app_attendance.php
+  - app_api.php
+  - app_push.php
+  - app
+  - app-sw.js
+  - native
+  - tests
+  - scripts
+  - node_modules
+  - package.json
+  - package-lock.json

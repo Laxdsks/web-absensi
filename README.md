@@ -43,4 +43,10 @@ Di bagian bawah Lembar Absen, klik **+ Tanda tangan / foto** pada blok Kaprodi a
 
 Pilih gambar PNG, JPG, atau WEBP (maksimal 10 MB), atau pilih blok tanda tangan lalu tempel gambar dari clipboard. Klik blok untuk menampilkan tombol **Ganti gambar** dan **Hapus**. Gambar ikut cetak/PDF; tombol unggah tidak dicetak. Lembar Absen juga menyertakan gambar pada ekspor Word. Pengaturan **Jarak tanda tangan** di Inspektor Absen mengatur tinggi ruang gambar.
 
-Gambar tersimpan di browser perangkat, terpisah untuk tiap jenis lembar, prodi, semester, dan kelas. Gambar tidak otomatis tersedia pada perangkat lain dan dapat hilang jika data situs dihapus. Workflow penerbitan turut mengirim `assets/sheet-signatures.js` dan `assets/sheet-signatures.css` bersama file PHP.
+Gambar tersimpan di perangkat, terpisah untuk tiap jenis lembar, prodi, semester, kelas, dan mata kuliah. Dalam aplikasi offline, gambar juga masuk ke dokumen yang disinkronkan saat online. Cadangkan data sebelum menghapus data aplikasi atau browser. Workflow penerbitan turut mengirim `assets/sheet-signatures.js` dan `assets/sheet-signatures.css` bersama file PHP.
+
+## Android, Windows, dan absensi QR offline
+
+Aplikasi dosen dan mahasiswa tersedia dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/latest). Baca [panduan pemasangan dan penggunaan](docs/APLIKASI.md). Versi browser tersedia di [halaman aplikasi](https://datasiswasekolah.42web.io/app/). Mahasiswa tanpa kuota memindai QR dosen lalu menunjukkan QR balasan untuk dipindai dosen sebelum batas waktu. Pendaftaran dan persetujuan pertama memerlukan internet sekali.
+
+Workflow Build Android and Windows applications membangun paket dan menerbitkan installer. `npm ci` memasang dependensi terkunci; `npm run vendor` menyalin pustaka beserta lisensinya, `npm run templates` membangun lembar kosong tanpa data akun/mahasiswa, `npm run check` memeriksa JavaScript, dan `npm test` menguji alur aplikasi pada server lokal. Tes memerlukan Chromium dan Playwright; atur WA_CHROMIUM, WA_PLAYWRIGHT_PATH, serta WA_TEST_URL bila menggunakan lingkungan lokal sendiri. Tes menolak alamat produksi.

@@ -15,24 +15,22 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = (
-    "assets/app-audio.js",
-    "assets/sheet-signatures.css",
-    "assets/sheet-signatures.js",
-    "auth_guard.php",
-    "music_player.php",
-    "data_siswa.php",
-    "absen.php",
-    "ujian.php",
-    "index.php",
+    "app_core.php", "app_attendance.php", "app_push.php",
+    "assets/app-audio.js", "assets/sheet-signatures.css", "assets/sheet-signatures.js", "assets/sheet-spacing.js", "assets/offline-bridge.js", "assets/native-export.js",
+    "auth_guard.php", "app_api.php", "music_player.php", "data_siswa.php", "absen.php", "ujian.php", "index.php", "app-sw.js",
 )
+APP_FILES = tuple(str(p.relative_to(ROOT)) for p in sorted((ROOT / "app").rglob("*")) if p.is_file() and (p.parent.name == "licenses" or p.suffix in {".html", ".js", ".mjs", ".css", ".json", ".webmanifest", ".png", ".svg", ".wasm", ".traineddata", ".bcmap", ".pfb", ".ttf", ".woff", ".woff2", ".LICENSE", ".md", ".txt"}))
+
 
 
 def local_files():
     result = []
-    for name in FILES:
+    for name in FILES + APP_FILES:
         path = ROOT / name
         if not path.is_file() or path.is_symlink():
             raise ValueError(f"Application file is missing or is a symlink: {name}")
+        if path.stat().st_size > 10 * 1024 * 1024:
+            raise ValueError("Hosting file exceeds 10 MiB: " + name)
         result.append((name, path, hashlib.sha256(path.read_bytes()).hexdigest()))
     return result
 
@@ -153,9 +151,21 @@ def publish(files):
             verify_existing_account(client, account, existing)
         if "assets" not in existing:
             client.mkd("assets")
+        directories = {"assets"}
         tag = uuid.uuid4().hex[:12]
         for name, path, digest in files:
             remote = PurePosixPath(name)
+            for parent in reversed(remote.parents):
+                directory_name = str(parent)
+                if directory_name == "." or directory_name in directories:
+                    continue
+                try:
+                    client.mkd(directory_name)
+                except ftplib.error_perm:
+                    # Verify an existing directory; never accept a failed mkdir silently.
+                    client.cwd(directory_name)
+                    client.cwd("/" + directory.strip("/"))
+                directories.add(directory_name)
             temporary = str(remote.with_name(f".{remote.stem}.deploy-{tag}{remote.suffix}"))
             staged.append((temporary, name, digest))
             with path.open("rb") as source:
