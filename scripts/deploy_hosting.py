@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath
 import re
 import ssl
 import sys
+import time
 import uuid
 
 
@@ -102,10 +103,33 @@ def verify_existing_account(client, settings, existing):
     print("Existing application directory and database account verified.", flush=True)
 
 
-def remote_digest(client, name):
+def remote_file_info(client, name):
     digest = hashlib.sha256()
-    client.retrbinary("RETR " + name, digest.update)
-    return digest.hexdigest()
+    length = 0
+
+    def collect(block):
+        nonlocal length
+        length += len(block)
+        digest.update(block)
+
+    client.retrbinary("RETR " + name, collect)
+    return digest.hexdigest(), length
+
+
+def remote_digest(client, name):
+    return remote_file_info(client, name)[0]
+
+
+def verify_upload(client, temporary, name, path, digest):
+    # Verify the downloaded bytes; some hosting servers report stale SIZE
+    # metadata immediately after STOR. Allow a short persistence delay.
+    for delay in (0, 1, 2):
+        if delay:
+            time.sleep(delay)
+        uploaded_digest, uploaded_length = remote_file_info(client, temporary)
+        if uploaded_length == path.stat().st_size and uploaded_digest == digest:
+            return
+    raise ValueError(f"Upload verification failed: {name}; expected {path.stat().st_size} bytes, received {uploaded_length} bytes; checksum match: {uploaded_digest == digest}. Existing application files were retained.")
 
 
 def publish(files):
@@ -135,8 +159,7 @@ def publish(files):
             staged.append((temporary, name, digest))
             with path.open("rb") as source:
                 client.storbinary("STOR " + temporary, source)
-            if client.size(temporary) != path.stat().st_size or remote_digest(client, temporary) != digest:
-                raise ValueError(f"Upload verification failed: {name}. Existing application files were retained.")
+            verify_upload(client, temporary, name, path, digest)
             print(f"Staged and verified: {name}", flush=True)
         # All uploads are complete before any current application file is replaced.
         # Install shared assets and helpers before the pages that use them.
