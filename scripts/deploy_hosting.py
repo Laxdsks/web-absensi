@@ -120,16 +120,18 @@ def remote_digest(client, name):
     return remote_file_info(client, name)[0]
 
 
-def verify_upload(client, temporary, name, path, digest):
+def verify_upload(client, temporary, name, path, digest, installed=False):
     # Verify the downloaded bytes; some hosting servers report stale SIZE
     # metadata immediately after STOR. Allow a short persistence delay.
-    for delay in (0, 1, 2):
+    for delay in (0, 1, 2, 4):
         if delay:
             time.sleep(delay)
         uploaded_digest, uploaded_length = remote_file_info(client, temporary)
         if uploaded_length == path.stat().st_size and uploaded_digest == digest:
             return
-    raise ValueError(f"Upload verification failed: {name}; expected {path.stat().st_size} bytes, received {uploaded_length} bytes; checksum match: {uploaded_digest == digest}. Existing application files were retained.")
+    action = "Installed file" if installed else "Upload"
+    preservation = "" if installed else " Existing application files were retained."
+    raise ValueError(f"{action} verification failed: {name}; expected {path.stat().st_size} bytes, received {uploaded_length} bytes; checksum match: {uploaded_digest == digest}.{preservation}")
 
 
 def publish(files):
@@ -166,8 +168,7 @@ def publish(files):
         for temporary, name, digest in staged:
             client.rename(temporary, name)
             installed.append(name)
-            if remote_digest(client, name) != digest:
-                raise ValueError(f"Installed file verification failed: {name}")
+            verify_upload(client, name, name, ROOT / name, digest, installed=True)
             print(f"Installed and verified: {name}", flush=True)
         print("Hosting now contains the application files from this GitHub revision.", flush=True)
     except Exception:
