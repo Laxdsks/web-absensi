@@ -35,4 +35,5 @@ jobs:
           FTP_DIRECTORY: ${{ secrets.FTP_DIRECTORY }}
           FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftps' }}
           FTP_PORT: ${{ vars.FTP_PORT || '21' }}
+          FTP_USE_INFINITYFREE_ACCOUNT: 'true'
         run: python3 scripts/deploy_hosting.py
