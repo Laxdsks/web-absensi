@@ -1,5 +1,7 @@
 <?php
 session_start();
+require_once __DIR__ . '/auth_guard.php';
+app_require_authenticated_user();
 $allowedThemes = ['malam', 'putih', 'samudra', 'senja'];
 $theme = (string)($_GET['theme'] ?? ($_SESSION['theme'] ?? 'malam'));
 if (!in_array($theme, $allowedThemes, true)) $theme = 'malam';

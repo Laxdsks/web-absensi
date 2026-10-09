@@ -1,5 +1,7 @@
 <?php
 session_start();
+require_once __DIR__ . '/auth_guard.php';
+app_require_authenticated_user();
 // Pastikan file koneksi ada
 if (file_exists('koneksi.php')) {
     include 'koneksi.php';
@@ -26,17 +28,6 @@ if (!in_array($theme, $allowed_themes, true)) {
 // ==============================================================================
 // ISOLASI PRIVASI SISTEM STANDALONE (Diperbarui dengan Pelonggaran & strtolower)
 // ==============================================================================
-$current_user_id = isset($_SESSION['id_user']) ? trim($_SESSION['id_user']) : (isset($_SESSION['user_id']) ? trim($_SESSION['user_id']) : '');
-$current_username = isset($_SESSION['nama_user']) ? trim($_SESSION['nama_user']) : (isset($_SESSION['username']) ? trim($_SESSION['username']) : '');
-$current_role = isset($_SESSION['role']) ? trim($_SESSION['role']) : '';
-$check_name = strtolower($current_username);
-$check_role = strtolower($current_role);
-
-$is_privat = ($check_name === 'm.fadillah' || $check_name === 'fall' || $check_name === 'zen' || $check_role === 'administrator utama' || $check_role === 'dosen' || !empty($_SESSION['id_user']));
-if (!$is_privat && !empty($current_username)) {
-    die("<div style='padding:20px; font-family:sans-serif; text-align:center;'><h3>Akses Ditolak</h3><p>Aplikasi ini adalah Sistem Privat Standalone. Hanya akun Administrator Utama (M.Fadillah / Fall) dan Dosen (Zen) yang memiliki otorisasi mengakses lembar kerja ini.</p></div>");
-}
-
 // Inisialisasi parameter dengan sanitasi aman
 $jenjang = 'S1';
 $saved_context = $_SESSION['konteks_siswa'] ?? [];
@@ -192,7 +183,10 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             touch-action: manipulation;
         }
         .paper-sheet {
-            background: white;
+            background-color: transparent;
+            background-image: repeating-linear-gradient(to bottom, #fff 0, #fff var(--preview-page-height, 1122.52px), transparent var(--preview-page-height, 1122.52px), transparent calc(var(--preview-page-height, 1122.52px) + var(--preview-page-gap, 18px)));
+            background-repeat: repeat-y;
+            background-size: 100% calc(var(--preview-page-height, 1122.52px) + var(--preview-page-gap, 18px));
             color: black;
             width: 210mm;
             min-height: 297mm;
@@ -210,6 +204,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         
         .page-preview-marker { position:absolute; left:0; right:0; height:0; border-top:2px dashed #2563eb; pointer-events:none; z-index:50; display:flex; justify-content:flex-end; padding-right:8px; }
         .page-preview-marker span { transform:translateY(-50%); padding:3px 8px; border:1px solid #2563eb; border-radius:5px; background:#dbeafe; color:#1e3a8a; font:700 11px Arial,sans-serif; box-shadow:0 1px 4px #0003; }
+        #tbodySiswa tr.page-preview-break, #tbodySiswa tr.page-preview-break > td { border:0 !important; padding:0 !important; background:transparent !important; line-height:0 !important; font-size:0 !important; }
+        #tbodySiswa tr.page-preview-header th { background:#f1f5f9 !important; }
         .font-size-control { display:inline-flex; align-items:center; gap:4px; color:inherit; font-size:11px; white-space:nowrap; }
         .font-size-control input { width:64px; min-height:30px; padding:3px 5px; border:1px solid #64748b; border-radius:5px; background:#0f172a; color:#fff; font-size:12px; }
         
@@ -442,8 +438,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             body.cetak-rekap #tabelRekapNilai { min-width: 0; table-layout: fixed; font-size: 7pt !important; }
             body.cetak-rekap #tabelRekapNilai th, body.cetak-rekap #tabelRekapNilai td { padding: 2px !important; font-size: 7pt !important; }
             .workspace-container, .kontainer-kertas { transform: none !important; margin: 0; padding: 0; overflow: visible !important; }
-            .paper-sheet { box-shadow: none !important; border-radius: 0 !important; width: 100% !important; min-height: auto !important; height: auto !important; max-height: none !important; overflow: visible !important; padding: var(--global-padding-sheet) !important; font-size: var(--global-font-size) !important; }
-            .page-preview-marker, .btn-hapus-logo { display: none !important; }
+            .paper-sheet { background:#fff !important; background-image:none !important; box-shadow: none !important; border-radius: 0 !important; width: 100% !important; min-height: auto !important; height: auto !important; max-height: none !important; overflow: visible !important; padding: var(--global-padding-sheet) !important; font-size: var(--global-font-size) !important; }
+            .page-preview-marker, .page-preview-only, .btn-hapus-logo { display: none !important; }
             
             .header-divider-line { border-bottom: 3px solid #000 !important; }
             .summary-box { border: 1px solid #000 !important; }
@@ -679,8 +675,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     <thead>
                         <tr>
                             <th rowspan="3" style="width: 24px;" contenteditable="true">NO</th>
-                            <th rowspan="3" style="width: 105px; min-width: 105px;" contenteditable="true" id="thLabelId"><?php echo $label_id; ?></th>
-                            <th rowspan="3" style="width: 180px; min-width: 165px;" contenteditable="true">NAMA MAHASISWA</th>
+                            <th rowspan="3" style="width: 120px; min-width: 120px;" contenteditable="true" id="thLabelId"><?php echo $label_id; ?></th>
+                            <th rowspan="3" style="width: 190px; min-width: 190px;" contenteditable="true">NAMA MAHASISWA</th>
                             <th rowspan="3" style="width: 24px;" contenteditable="true">L/P</th>
                             <th colspan="16" id="headerPertemuan" contenteditable="true">TANGGAL / BULAN</th>
                             <th rowspan="3" style="width: 30px;" contenteditable="true">KET</th>
@@ -973,8 +969,14 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         } catch (error) {}
         sinkronkanKontrolSpasiParagraf();
 
+        function htmlKertasTanpaPratinjau() {
+            const clone = document.getElementById('paperSheet').cloneNode(true);
+            clone.querySelectorAll('.page-preview-only').forEach(element => element.remove());
+            return clone.innerHTML;
+        }
+
         function simpanStateUndo() {
-            const paperHtml = document.getElementById('paperSheet').innerHTML;
+            const paperHtml = htmlKertasTanpaPratinjau();
             historyStack.push(paperHtml);
             if(historyStack.length > 30) historyStack.shift();
             redoStack = [];
@@ -985,11 +987,13 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 showCustomModal('Undo', 'Tidak ada riwayat undo tersisa.');
                 return;
             }
-            const currentHtml = document.getElementById('paperSheet').innerHTML;
+            const currentHtml = htmlKertasTanpaPratinjau();
             redoStack.push(currentHtml);
             const prevHtml = historyStack.pop();
             document.getElementById('paperSheet').innerHTML = prevHtml;
             inisialisasiEventEditable();
+            inisialisasiInputAbsensi();
+            jadwalkanPenandaHalaman();
             showCustomModal('Undo', 'Perubahan sebelumnya berhasil dibatalkan.');
         }
 
@@ -998,11 +1002,13 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 showCustomModal('Redo', 'Tidak ada riwayat redo tersisa.');
                 return;
             }
-            const currentHtml = document.getElementById('paperSheet').innerHTML;
+            const currentHtml = htmlKertasTanpaPratinjau();
             historyStack.push(currentHtml);
             const nextHtml = redoStack.pop();
             document.getElementById('paperSheet').innerHTML = nextHtml;
             inisialisasiEventEditable();
+            inisialisasiInputAbsensi();
+            jadwalkanPenandaHalaman();
             showCustomModal('Redo', 'Perubahan berhasil dikembalikan (redo).');
         }
 
@@ -1101,25 +1107,97 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         }
 
         function tinggiHalamanLembarPx() {
-            const paper = document.getElementById('paperSheet');
-            const mm = parseFloat(paper.style.minHeight) || 297;
-            return mm * 96 / 25.4;
+            return 297 * 96 / 25.4;
+        }
+
+        function barisDataAbsen() {
+            return Array.from(document.querySelectorAll('#tbodySiswa > tr:not(.page-preview-only)'));
+        }
+
+        function bersihkanPratinjauHalamanAbsen() {
+            document.querySelectorAll('#paperSheet .page-preview-only').forEach(element => element.remove());
+        }
+
+        function posisiDalamKertasAbsen(element, paper) {
+            const paperRect = paper.getBoundingClientRect();
+            const scale = paper.offsetWidth ? paperRect.width / paper.offsetWidth : 1;
+            const rect = element.getBoundingClientRect();
+            return { top: (rect.top - paperRect.top) / scale, bottom: (rect.bottom - paperRect.top) / scale };
+        }
+
+        function tambahPenandaHalamanAbsen(paper, pageNumber, pageTop) {
+            const marker = document.createElement('div');
+            marker.className = 'page-preview-marker page-preview-only';
+            marker.style.top = `${pageTop + 8}px`;
+            const label = document.createElement('span');
+            label.textContent = `HALAMAN ${pageNumber} DIMULAI ↓`;
+            marker.appendChild(label);
+            paper.appendChild(marker);
+        }
+
+        function sisipkanKepalaUlangAbsen(table, beforeRow) {
+            const headerRows = Array.from(table.tHead?.rows || []);
+            for (const headerRow of headerRows) {
+                const clone = headerRow.cloneNode(true);
+                clone.classList.add('page-preview-only', 'page-preview-header');
+                clone.removeAttribute('id');
+                clone.querySelectorAll('[id]').forEach(element => element.removeAttribute('id'));
+                clone.querySelectorAll('[contenteditable]').forEach(element => element.removeAttribute('contenteditable'));
+                beforeRow.before(clone);
+            }
+        }
+
+        function sisipkanPemisahBarisAbsen(beforeRow, height, columnCount) {
+            const separator = document.createElement('tr');
+            separator.className = 'page-preview-only page-preview-break';
+            separator.setAttribute('aria-hidden', 'true');
+            const cell = document.createElement('td');
+            cell.colSpan = columnCount;
+            cell.style.height = `${Math.max(0, height)}px`;
+            separator.appendChild(cell);
+            beforeRow.before(separator);
         }
 
         function perbaruiPenandaHalaman() {
             const paper = document.getElementById('paperSheet');
             if (!paper) return;
-            paper.querySelectorAll('.page-preview-marker').forEach(marker => marker.remove());
-            const tinggi = tinggiHalamanLembarPx();
-            const jumlahHalaman = Math.max(1, Math.ceil(paper.scrollHeight / tinggi));
-            for (let halaman = 2; halaman <= jumlahHalaman; halaman++) {
-                const marker = document.createElement('div');
-                marker.className = 'page-preview-marker';
-                marker.style.top = `${(halaman - 1) * tinggi}px`;
-                const label = document.createElement('span');
-                label.textContent = `HALAMAN ${halaman} DIMULAI ↓`;
-                marker.appendChild(label);
-                paper.appendChild(marker);
+            bersihkanPratinjauHalamanAbsen();
+            const pageHeight = tinggiHalamanLembarPx();
+            const pageGap = 18;
+            const pageTopMargin = 8 * 96 / 25.4;
+            paper.style.setProperty('--preview-page-height', `${pageHeight}px`);
+            paper.style.setProperty('--preview-page-gap', `${pageGap}px`);
+
+            const table = document.getElementById('tabelAbsen');
+            const rows = barisDataAbsen();
+            const columnCount = Array.from(table?.tHead?.rows?.[0]?.cells || []).reduce((count, cell) => count + (cell.colSpan || 1), 0);
+            let pageIndex = 0;
+            for (const row of rows) {
+                const position = posisiDalamKertasAbsen(row, paper);
+                const pageBottom = (pageIndex + 1) * pageHeight + pageIndex * pageGap;
+                if (position.bottom <= pageBottom + 0.5) continue;
+                const nextPageTop = (pageIndex + 1) * (pageHeight + pageGap);
+                const separatorHeight = nextPageTop + pageTopMargin - position.top;
+                sisipkanPemisahBarisAbsen(row, separatorHeight, columnCount);
+                sisipkanKepalaUlangAbsen(table, row);
+                pageIndex++;
+                tambahPenandaHalamanAbsen(paper, pageIndex + 1, nextPageTop);
+            }
+
+            const signature = paper.querySelector('.signature-section');
+            if (signature) {
+                const position = posisiDalamKertasAbsen(signature, paper);
+                const signaturePage = Math.max(0, Math.floor(position.top / (pageHeight + pageGap)));
+                const pageBottom = (signaturePage + 1) * pageHeight + signaturePage * pageGap;
+                if (position.bottom > pageBottom + 0.5 && position.top < pageBottom) {
+                    const nextPageTop = (signaturePage + 1) * (pageHeight + pageGap);
+                    const spacer = document.createElement('div');
+                    spacer.className = 'page-preview-only page-preview-block-break';
+                    spacer.setAttribute('aria-hidden', 'true');
+                    spacer.style.height = `${Math.max(0, nextPageTop + pageTopMargin - position.top)}px`;
+                    signature.before(spacer);
+                    tambahPenandaHalamanAbsen(paper, signaturePage + 2, nextPageTop);
+                }
             }
         }
 
@@ -1311,11 +1389,10 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         function tambahSiswa() {
             simpanStateUndo();
             const tbody = document.getElementById('tbodySiswa');
-            const rowCount = tbody.rows.length + 1;
+            const rowCount = barisDataAbsen().length + 1;
             const tr = document.createElement('tr');
             
             let html = `<td class="row-no">${rowCount}</td>`;
-            html += `<td><input type="text" value=""></td>`;
             html += `<td><input type="text" value=""></td>`;
             html += `<td style="text-align: left; padding-left: 3px;"><input type="text" value="" style="text-align: left;"></td>`;
             html += `<td style="text-align: center;"><input type="text" value="L"></td>`;
@@ -1327,21 +1404,24 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             tr.innerHTML = html;
             tbody.appendChild(tr);
             perbaruiNomorUrut();
+            jadwalkanPenandaHalaman();
         }
 
         function hapusSiswa() {
             simpanStateUndo();
             const tbody = document.getElementById('tbodySiswa');
-            if(tbody.rows.length > 1) {
-                tbody.deleteRow(tbody.rows.length - 1);
+            const rows = barisDataAbsen();
+            if(rows.length > 1) {
+                rows[rows.length - 1].remove();
                 perbaruiNomorUrut();
+                jadwalkanPenandaHalaman();
             } else {
                 showCustomModal('Perhatian', 'Baris minimum tersisa 1.');
             }
         }
 
         function perbaruiNomorUrut() {
-            const rows = document.querySelectorAll('#tbodySiswa tr');
+            const rows = barisDataAbsen();
             rows.forEach((r, idx) => {
                 const noCell = r.querySelector('.row-no');
                 if(noCell) noCell.innerText = idx + 1;
@@ -1365,7 +1445,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 const cells = Array.from(input.closest('tr').querySelectorAll('.attendance-cell'));
                 const currentIndex = cells.indexOf(input);
                 const row = input.closest('tr');
-                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const rows = barisDataAbsen();
                 const currentRow = rows.indexOf(row);
 
                 if(event.key === 'Enter' || event.key === 'ArrowRight') {
@@ -1411,7 +1491,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             numberCell.textContent = String(colspan);
             numberHeader.appendChild(numberCell);
             
-            const rows = document.querySelectorAll('#tbodySiswa tr');
+            const rows = barisDataAbsen();
             rows.forEach(r => {
                 // Sisipkan sebelum kolom ket terakhir
                 const refCell = r.cells[r.cells.length - 1];
@@ -1437,7 +1517,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const numberHeader = document.getElementById('numberHeaderPertemuan');
             if(numberHeader.lastElementChild) numberHeader.removeChild(numberHeader.lastElementChild);
             
-            const rows = document.querySelectorAll('#tbodySiswa tr');
+            const rows = barisDataAbsen();
             rows.forEach(r => {
                 if(r.cells.length > colspan + 6) {
                     r.removeChild(r.cells[r.cells.length - 2]);
@@ -1452,7 +1532,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const tbodyRekap = document.getElementById('tbodyRekapNilai');
             tbodyRekap.innerHTML = '';
             const totalPertemuan = parseInt(document.getElementById('headerPertemuan').getAttribute('colspan') || '16', 10);
-            const rows = document.querySelectorAll('#tbodySiswa tr');
+            const rows = barisDataAbsen();
             rows.forEach((r, idx) => {
                 const no = r.querySelector('.row-no') ? r.querySelector('.row-no').innerText : (idx + 1);
                 const nim = r.cells[1]?.querySelector('input')?.value.trim() || '';
@@ -1797,7 +1877,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 
         function cloneUntukEkspor(element) {
             const clone = element.cloneNode(true);
-            clone.querySelectorAll('button, input[type="file"], .btn-hapus-logo, .page-preview-marker').forEach(el => el.remove());
+            clone.querySelectorAll('button, input[type="file"], .btn-hapus-logo, .page-preview-marker, .page-preview-only').forEach(el => el.remove());
             clone.querySelectorAll('input').forEach(input => {
                 const value = document.createElement('span');
                 value.textContent = input.value || '';

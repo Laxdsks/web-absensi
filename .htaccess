@@ -1,0 +1,10 @@
+Options -Indexes
+
+<FilesMatch "^(auth_guard\.php|koneksi\.php|admin_config\.json|login_logs\.json|web_status\.json)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule "(^|/)\.(git|env)(/|$)" - [F,L]
+</IfModule>

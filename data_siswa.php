@@ -1,5 +1,8 @@
 <?php
 session_start();
+$isStudentImportRequest = (string)($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa';
+require_once __DIR__ . '/auth_guard.php';
+app_require_authenticated_user($isStudentImportRequest);
 require_once 'koneksi.php';
 if (!isset($koneksi) && isset($conn)) { $koneksi = $conn; }
 

@@ -1,5 +1,8 @@
 <?php
 session_start();
+$isGradeSubmission = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && (string)($_GET['aksi'] ?? '') === 'simpan_nilai';
+require_once __DIR__ . '/auth_guard.php';
+app_require_authenticated_user($isGradeSubmission);
 require_once 'koneksi.php';
 if (!isset($koneksi) && isset($conn)) { $koneksi = $conn; }
 
@@ -138,9 +141,11 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .toolbar .primary { background:#2563eb; color:#fff; border-color:#2563eb; }
         .zoom-label { min-width:54px; text-align:center; font-size:12px; color:var(--muted); }
         .workspace { width:100%; overflow:auto; padding:12px 4px 32px; -webkit-overflow-scrolling:touch; }
-        .paper { width:210mm; min-height:297mm; margin:0 auto; padding:13mm 12mm 14mm; background:#fff; color:#111; box-shadow:0 18px 50px #0007; transform-origin:top center; font-family:'Times New Roman',serif; --exam-font-scale:1; position:relative; overflow:visible; }
+        .paper { width:210mm; min-height:297mm; margin:0 auto; padding:13mm 12mm 14mm; background-color:transparent; background-image:repeating-linear-gradient(to bottom,#fff 0,#fff var(--preview-page-height,1122.52px),transparent var(--preview-page-height,1122.52px),transparent calc(var(--preview-page-height,1122.52px) + var(--preview-page-gap,18px))); background-repeat:repeat-y; background-size:100% calc(var(--preview-page-height,1122.52px) + var(--preview-page-gap,18px)); color:#111; box-shadow:0 18px 50px #0007; transform-origin:top center; font-family:'Times New Roman',serif; --exam-font-scale:1; position:relative; overflow:visible; }
         .page-preview-marker { position:absolute; left:0; right:0; height:0; border-top:2px dashed #2563eb; pointer-events:none; z-index:50; display:flex; justify-content:flex-end; padding-right:8px; }
         .page-preview-marker span { transform:translateY(-50%); padding:3px 8px; border:1px solid #2563eb; border-radius:5px; background:#dbeafe; color:#1e3a8a; font:700 11px Arial,sans-serif; box-shadow:0 1px 4px #0003; }
+        #examTableBlock tr.page-preview-break, #examTableBlock tr.page-preview-break > td { border:0 !important; padding:0 !important; background:transparent !important; line-height:0 !important; font-size:0 !important; }
+        #examTableBlock tr.page-preview-header th { background:#e2e8f0 !important; }
         .font-size-control { display:inline-flex; align-items:center; gap:4px; font:600 12px 'Plus Jakarta Sans',sans-serif; white-space:nowrap; }
         .font-size-control input { width:64px; min-height:34px; padding:3px 5px; border:1px solid var(--border); border-radius:7px; background:var(--panel); color:var(--text); font:600 12px 'Plus Jakarta Sans',sans-serif; }
         .sheet-header { display:grid; grid-template-columns:72px 1fr 72px; gap:8px; align-items:center; padding-bottom:7px; border-bottom:4px double #111; }
@@ -166,6 +171,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .table-wrap { width:100%; }
         table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:calc(9pt * var(--exam-font-scale)); }
         th,td { border:1px solid #111; padding:3px 4px; vertical-align:middle; overflow-wrap:anywhere; }
+        #examTableBlock tbody tr:not(.page-preview-only) td:nth-child(2), #examTableBlock tbody tr:not(.page-preview-only) td:nth-child(3) { padding:2px 7px; text-align:left; white-space:nowrap; }
         th { text-align:center; font-weight:700; }
         td.center { text-align:center; }
         td.name { text-transform:uppercase; }
@@ -202,8 +208,8 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             .toolbar,.inspector-panel,.inspector-toggle,.logo-slot input,.logo-remove,.saved-note { display:none !important; }
             .selectable-element.selected { outline:none !important; }
             .workspace { overflow:visible; padding:0; }
-            .paper { width:210mm; min-height:0 !important; height:auto !important; margin:0; padding:3mm 12mm 14mm; transform:none !important; zoom:1 !important; overflow:visible !important; box-shadow:none; }
-            .page-preview-marker { display:none !important; }
+            .paper { width:210mm; min-height:0 !important; height:auto !important; margin:0; padding:3mm 12mm 14mm; transform:none !important; zoom:1 !important; overflow:visible !important; box-shadow:none; background:#fff !important; background-image:none !important; }
+            .page-preview-marker,.page-preview-only { display:none !important; }
             thead { display:table-header-group; }
             tr { break-inside:avoid; page-break-inside:avoid; }
             .table-wrap,.grading-wrap,.grading-scale { overflow:visible !important; break-inside:auto; page-break-inside:auto; }
@@ -341,7 +347,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
 
             <div class="table-wrap selectable-element" id="examTableBlock" data-type="Tabel mahasiswa dan nilai" onclick="pilihElemen(event,this)">
                 <table aria-label="Daftar hadir ujian dan nilai mahasiswa">
-                    <colgroup><col style="width:7%"><col style="width:19%"><col style="width:36%"><col style="width:12%"><col style="width:9%"><col style="width:8%"><col style="width:9%"></colgroup>
+                    <colgroup><col style="width:5%"><col style="width:15%"><col style="width:27%"><col style="width:15%"><col style="width:9%"><col style="width:8%"><col style="width:21%"></colgroup>
                     <thead><tr><th>No.<br>Urut</th><th>NIM</th><th>Nama Mahasiswa</th><th>Skor</th><th colspan="2">Nilai<br><small>Huruf &nbsp; | &nbsp; Mutu</small></th><th>KET</th></tr></thead>
                     <tbody>
                     <?php if ($data_siswa): foreach ($data_siswa as $i => $siswa):
@@ -510,14 +516,43 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         }
         function perbaruiPenandaHalamanUjian() {
             if(!paper)return;
-            paper.querySelectorAll('.page-preview-marker').forEach(marker=>marker.remove());
-            const pageHeight=297*96/25.4;
-            const pages=Math.max(1,Math.ceil(paper.scrollHeight/pageHeight));
-            for(let page=2;page<=pages;page++){
-                const marker=document.createElement('div');marker.className='page-preview-marker';
-                marker.style.top=`${(page-1)*pageHeight}px`;
-                const label=document.createElement('span');label.textContent=`HALAMAN ${page} DIMULAI ↓`;
-                marker.appendChild(label);paper.appendChild(marker);
+            paper.querySelectorAll('.page-preview-only').forEach(element=>element.remove());
+            const pageHeight=297*96/25.4,pageGap=18,pageTopMargin=8*96/25.4;
+            paper.style.setProperty('--preview-page-height',`${pageHeight}px`);
+            paper.style.setProperty('--preview-page-gap',`${pageGap}px`);
+            const table=paper.querySelector('#examTableBlock table'),tbody=table?.tBodies?.[0];
+            const rows=Array.from(tbody?.rows||[]).filter(row=>!row.classList.contains('page-preview-only'));
+            const columnCount=Array.from(table?.tHead?.rows?.[0]?.cells||[]).reduce((count,cell)=>count+(cell.colSpan||1),0);
+            const relativePosition=element=>{
+                const paperRect=paper.getBoundingClientRect(),scale=paper.offsetWidth?paperRect.width/paper.offsetWidth:1,rect=element.getBoundingClientRect();
+                return {top:(rect.top-paperRect.top)/scale,bottom:(rect.bottom-paperRect.top)/scale};
+            };
+            const addMarker=(number,top)=>{
+                const marker=document.createElement('div');marker.className='page-preview-marker page-preview-only';marker.style.top=`${top+8}px`;
+                const label=document.createElement('span');label.textContent=`HALAMAN ${number} DIMULAI ↓`;marker.appendChild(label);paper.appendChild(marker);
+            };
+            let pageIndex=0;
+            for(const row of rows){
+                const position=relativePosition(row),pageBottom=(pageIndex+1)*pageHeight+pageIndex*pageGap;
+                if(position.bottom<=pageBottom+0.5)continue;
+                const nextPageTop=(pageIndex+1)*(pageHeight+pageGap),separator=document.createElement('tr');
+                separator.className='page-preview-only page-preview-break';separator.setAttribute('aria-hidden','true');
+                const cell=document.createElement('td');cell.colSpan=columnCount;cell.style.height=`${Math.max(0,nextPageTop+pageTopMargin-position.top)}px`;separator.appendChild(cell);row.before(separator);
+                for(const headerRow of Array.from(table.tHead?.rows||[])){
+                    const clone=headerRow.cloneNode(true);clone.classList.add('page-preview-only','page-preview-header');clone.removeAttribute('id');
+                    clone.querySelectorAll('[id]').forEach(element=>element.removeAttribute('id'));
+                    clone.querySelectorAll('[contenteditable]').forEach(element=>element.removeAttribute('contenteditable'));
+                    row.before(clone);
+                }
+                pageIndex++;addMarker(pageIndex+1,nextPageTop);
+            }
+            const grading=paper.querySelector('.grading-wrap');
+            if(grading){
+                const position=relativePosition(grading),gradingPage=Math.max(0,Math.floor(position.top/(pageHeight+pageGap))),pageBottom=(gradingPage+1)*pageHeight+gradingPage*pageGap;
+                if(position.bottom>pageBottom+0.5&&position.top<pageBottom){
+                    const nextPageTop=(gradingPage+1)*(pageHeight+pageGap),spacer=document.createElement('div');spacer.className='page-preview-only page-preview-block-break';spacer.setAttribute('aria-hidden','true');
+                    spacer.style.height=`${Math.max(0,nextPageTop+pageTopMargin-position.top)}px`;grading.before(spacer);addMarker(gradingPage+2,nextPageTop);
+                }
             }
         }
         function jadwalkanPenandaHalamanUjian(){requestAnimationFrame(perbaruiPenandaHalamanUjian);}

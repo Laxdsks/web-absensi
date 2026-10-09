@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/auth_guard.php';
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -16,13 +17,7 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
     $conn = null;
 }
 
-// --- KONFIGURASI STATUS WEB & LOG LOGIN ---
-$statusFile = 'web_status.json';
-if (!file_exists($statusFile)) {
-    file_put_contents($statusFile, json_encode(['access' => 'private']));
-}
-$webStatusData = json_decode(file_get_contents($statusFile), true);
-$currentWebStatus = $webStatusData['access'] ?? 'private';
+// --- LOG LOGIN ---
 $logFile = 'login_logs.json';
 $configFile = 'admin_config.json';
 
@@ -42,6 +37,7 @@ if (file_exists($configFile)) {
 
 // --- API PENGATURAN TEMA KE SESSION ---
 if (isset($_POST['set_theme_session'])) {
+    app_require_authenticated_user(true);
     $allowedThemes = ['malam', 'putih', 'samudra', 'senja'];
     $requestedTheme = trim((string)($_POST['theme_name'] ?? 'malam'));
     if (in_array($requestedTheme, $allowedThemes, true)) {
@@ -51,16 +47,9 @@ if (isset($_POST['set_theme_session'])) {
     exit;
 }
 
-// --- API UBAH STATUS WEB (PRIVAT/PUBLIK) ---
-if (isset($_POST['toggle_web_status'])) {
-    $newStatus = $_POST['new_status'];
-    file_put_contents($statusFile, json_encode(['access' => $newStatus]));
-    echo json_encode(['status' => 'success', 'new' => $newStatus]);
-    exit;
-}
-
 // --- API AMBIL RIWAYAT LOGIN ---
 if (isset($_POST['get_login_logs'])) {
+    app_require_authenticated_user(true);
     $logs = file_exists($logFile) ? json_decode(file_get_contents($logFile), true) : [];
     echo json_encode(array_reverse($logs));
     exit;
@@ -76,6 +65,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'logout_system') {
 
 // --- API SUNTING PROFIL KUSTOM DINAMIS ---
 if (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
+    app_require_authenticated_user(true, true);
     $newName = trim($_POST['admin_name'] ?? '');
     $newRole = trim($_POST['admin_role'] ?? '');
     $newAvatar = $_POST['admin_avatar'] ?? '';
@@ -104,8 +94,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
     $date = date('Y-m-d H:i:s');
     
-    $webStatusDataCurrent = json_decode(file_get_contents($statusFile), true);
-    $webStatus = $webStatusDataCurrent['access'] ?? 'private';
     $login_success = false;
     $role_assigned = '';
     $id_assigned = '';
@@ -125,6 +113,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
     }
     
     if ($login_success) {
+        session_regenerate_id(true);
         // Ikat Murni ke Session Format Teks/String
         $_SESSION['id_user'] = (string)$id_assigned;
         $_SESSION['nama_user'] = (string)$name_assigned;
@@ -144,22 +133,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
         echo json_encode(['status' => 'success', 'msg' => 'Autentikasi Berhasil!', 'user' => $name_assigned, 'role' => $role_assigned]);
         exit;
     } else {
-        if ($webStatus === 'public') {
-            if ($user !== '') {
-                $_SESSION['id_user'] = 'guest_' . time();
-                $_SESSION['nama_user'] = (string)$user;
-                $_SESSION['role'] = 'Publik';
-                echo json_encode(['status' => 'success', 'msg' => 'Masuk sebagai Tamu Publik', 'user' => $user]);
-                exit;
-            }
-        }
         echo json_encode(['status' => 'error', 'msg' => 'Kredensial Salah atau Akses Ditolak!']);
         exit;
     }
 }
 
 // Cek apakah user sudah login
-$is_logged_in = isset($_SESSION['id_user']) && isset($_SESSION['nama_user']);
+$is_logged_in = app_session_user_is_authenticated();
 $allowedThemes = ['malam', 'putih', 'samudra', 'senja'];
 $active_theme = $_SESSION['theme'] ?? 'malam';
 if (!in_array($active_theme, $allowedThemes, true)) $active_theme = 'malam';
@@ -349,21 +329,6 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         .menu-item:hover { background: rgba(255,255,255,0.08); border-color: var(--card-border); transform: translateX(-4px); }
         .menu-item i { width: 20px; text-align: center; color: var(--primary); font-size: 16px; flex-shrink: 0; }
         
-        /* Modul Dosen Khusus */
-        .menu-item.modul-dosen { background: linear-gradient(45deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1)); border-color: rgba(16,185,129,0.3); }
-        .menu-item.modul-dosen:hover { border-color: #10b981; transform: translateX(-4px); }
-        .menu-item.modul-dosen i { color: #10b981; }
-        
-        .toggle-container { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--card-border); margin-bottom: 8px; }
-        .toggle-label { font-size: 13px; color: var(--text-main); display: flex; align-items: center; gap: 12px; }
-        .toggle-label i { color: #f59e0b; width: 20px; text-align: center; }
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ef4444; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #10b981; }
-        input:checked + .slider:before { transform: translateX(20px); }
-        
         .log-box { background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); border-radius: 12px; padding: 10px; max-height: 150px; overflow-y: auto; margin-top: 10px; }
         .log-item { font-size: 11px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted); display:flex; justify-content:space-between; align-items:center;}
         .log-item:last-child { border-bottom: none; }
@@ -426,8 +391,8 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
     <div id="authOverlay">
         <div class="auth-card">
             <div style="margin-bottom: 25px;">
-                <h2 style="font-size: 22px; margin-bottom: 5px; color: var(--primary);"><i class="fa-solid fa-lock"></i> Autentikasi Privat</h2>
-                <p style="font-size: 12px; color: var(--text-muted);">Sistem Standalone Eksklusif (Hanya Akses Dosen & Admin)</p>
+                <h2 style="font-size: 22px; margin-bottom: 5px; color: var(--primary);"><i class="fa-solid fa-lock"></i> Masuk ke Sistem</h2>
+                <p style="font-size: 12px; color: var(--text-muted);">Gunakan akun administrator atau dosen yang terdaftar.</p>
             </div>
             
             <div id="formLoginAuth">
@@ -514,16 +479,6 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         </div>
     </div>
     
-    <!-- MODAL MODUL KERJA PENGARAH -->
-    <div class="custom-modal" id="featureModal">
-        <div class="modal-content" style="text-align: center;">
-            <div style="font-size: 40px; color: #10b981; margin-bottom: 15px;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-            <h3 id="modalFeatureTitle" style="font-size: 18px; margin-bottom: 10px; color: var(--text-main);">Modul Asisten AI</h3>
-            <p id="modalFeatureDesc" style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">Maaf, fitur premium Asisten AI Pengajar ini masih dalam tahap pengembangan atau akan segera hadir!</p>
-            <button type="button" class="btn-submit" onclick="closeFeatureModal()" style="background: #10b981;">Mengerti & Tutup</button>
-        </div>
-    </div>
-    
     <!-- WIDGET PROFIL KIRI BAWAH (STATIS ESTETIK) -->
     <div class="admin-widget" id="adminWidget" title="Profil Pengguna Aktif">
         <img id="widgetAvatarImg" src="<?php echo htmlspecialchars($globalConfig['admin_avatar']); ?>" class="admin-avatar-small" alt="Avatar">
@@ -537,7 +492,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
     <div class="top-nav">
         <button class="user-profile-btn" onclick="openProfileModal()" title="Buka Menu Pengaturan">
             <img id="topNavAvatarImg" src="<?php echo htmlspecialchars($globalConfig['admin_avatar']); ?>" style="width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--primary);" alt="Avatar">
-            <span id="currentUserNameText"><?php echo $_SESSION['nama_user'] ?? $globalConfig['admin_name']; ?></span>
+            <span id="currentUserNameText"><?php echo htmlspecialchars((string)($_SESSION['nama_user'] ?? $globalConfig['admin_name']), ENT_QUOTES, 'UTF-8'); ?></span>
             <i class="fa-solid fa-gear" style="margin-left: 5px;"></i>
         </button>
         <button class="user-profile-btn" onclick="toggleSidebar()" title="Pusat Kendali">
@@ -545,7 +500,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         </button>
     </div>
     
-    <!-- SIDEBAR PENGATURAN & MODUL DOSEN -->
+    <!-- SIDEBAR PENGATURAN -->
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -553,28 +508,6 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             <button class="close-sidebar" onclick="closeSidebar()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div id="sidebarMenuList">
-            
-            <!-- TOGGLE STATUS WEB -->
-            <div class="menu-section-title">Keamanan Akses Web</div>
-            <div class="toggle-container">
-                <div class="toggle-label"><i class="fa-solid fa-earth-asia"></i> Akses Publik</div>
-                <label class="switch">
-                    <input type="checkbox" id="webStatusToggle" onchange="toggleWebStatus()" <?php echo $currentWebStatus === 'public' ? 'checked' : ''; ?>>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="menu-section-title">Modul Kerja Pengajar</div>
-            <div class="menu-item modul-dosen" onclick="showFeatureModal('Generator Kuis & Evaluasi')">
-                <i class="fa-solid fa-clipboard-question"></i> Generator Kuis & Evaluasi
-            </div>
-            
-            <div class="menu-item modul-dosen" onclick="showFeatureModal('Manajemen Tugas & Proyek')">
-                <i class="fa-solid fa-folder-tree"></i> Manajemen Tugas & Proyek
-            </div>
-            
-            <div class="menu-item modul-dosen" onclick="showFeatureModal('Kalender & Pengingat Agenda')">
-                <i class="fa-solid fa-calendar-check"></i> Kalender & Pengingat Agenda
-            </div>
             
             <!-- LOG LOGIN HISTORI -->
             <div class="menu-section-title">Riwayat Login Sukses</div>
@@ -1046,16 +979,6 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             });
         }
         
-        function showFeatureModal(featureName) {
-            document.getElementById('modalFeatureTitle').innerText = featureName;
-            document.getElementById('featureModal').classList.add('active');
-            closeSidebar();
-        }
-        
-        function closeFeatureModal() {
-            document.getElementById('featureModal').classList.remove('active');
-        }
-        
         function toggleSidebar() {
             document.getElementById('sidebar').classList.add('active');
             document.getElementById('overlay').classList.add('active');
@@ -1100,20 +1023,6 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                 if(data.status === 'success') {
                     showToast('Tema berhasil diperbarui!', 'success');
                 }
-            });
-        }
-        
-        function toggleWebStatus() {
-            const cb = document.getElementById('webStatusToggle');
-            const status = cb.checked ? 'public' : 'private';
-            
-            const formData = new FormData();
-            formData.append('toggle_web_status', '1');
-            formData.append('new_status', status);
-            fetch('index.php', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                showToast(`Sistem dialihkan ke Mode ${data.new.toUpperCase()}`, 'success');
             });
         }
         
