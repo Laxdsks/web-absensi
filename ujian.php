@@ -3,6 +3,7 @@ session_start();
 $isGradeSubmission = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && (string)($_GET['aksi'] ?? '') === 'simpan_nilai';
 require_once __DIR__ . '/auth_guard.php';
 app_require_authenticated_user($isGradeSubmission);
+header('Cache-Control: private, no-store, max-age=0');
 require_once 'koneksi.php';
 if (!isset($koneksi) && isset($conn)) { $koneksi = $conn; }
 
@@ -124,6 +125,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="app-build" content="exam-20261009-blank-fields-v2">
     <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
     <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261009">
     <script src="assets/sheet-signatures.js?v=20261009" defer></script>
@@ -166,8 +168,9 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .meta { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:4px 22px; margin-bottom:9px; font-size:calc(10pt * var(--exam-font-scale)); }
         .meta-column { min-width:0; display:grid; grid-template-columns:max-content 9px minmax(0,1fr); gap:4px 0; align-content:start; align-items:baseline; }
         .meta-row { display:contents; }
-        .meta-label { font-weight:700; text-transform:uppercase; white-space:nowrap; padding-right:4px; }
+        .meta-label { font-weight:700; text-transform:uppercase; white-space:nowrap !important; min-width:max-content; overflow-wrap:normal; word-break:normal; padding-right:4px; }
         .meta-value { min-width:0; min-height:13px; overflow-wrap:break-word; }
+        .meta-value[data-edit-key="room-label"],.meta-value[data-edit-key="time-label"] { border:0 !important; box-shadow:none !important; }
         [contenteditable="true"] { outline:none; cursor:text; }
         [contenteditable="true"]:hover,[contenteditable="true"]:focus { box-shadow:inset 0 -1px #2563eb; background:#dbeafe44; }
         .table-wrap { width:100%; }
@@ -344,8 +347,8 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                     <div class="meta-row"><span class="meta-label">Jurusan/Prodi</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="prodi-label"><?php echo $escape($prodi); ?></span></div>
                 </div>
                 <div class="meta-column selectable-element" id="examMetaRight" data-type="Informasi ujian kanan" onclick="pilihElemen(event,this)">
-                    <div class="meta-row"><span class="meta-label">Kelas/Ruangan</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="room-label"></span></div>
-                    <div class="meta-row"><span class="meta-label">Jam/Waktu</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="time-label"></span></div>
+                    <div class="meta-row"><span class="meta-label">Kelas/Ruangan</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="room-label" aria-label="Isi kelas atau ruangan ujian"></span></div>
+                    <div class="meta-row"><span class="meta-label">Jam/Waktu</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="time-label" aria-label="Isi jam atau waktu ujian"></span></div>
                     <div class="meta-row"><span class="meta-label">Jumlah Mahasiswa</span><span>:</span><span class="meta-value"><?php echo count($data_siswa); ?></span></div>
                     <div class="meta-row"><span class="meta-label">Mahasiswa Hadir</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="present-count">0</span></div>
                     <div class="meta-row"><span class="meta-label">Tidak Hadir</span><span>:</span><span class="meta-value" contenteditable="true" data-edit-key="absent-count">0</span></div>
@@ -659,7 +662,16 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
 
         function readSavedEdits() {
             try {
-                const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                const saved = JSON.parse(localStorage.getItem(storageKey) || '{}') || {};
+                // Kosongkan dua jawaban lama sekali saja, sesuai format baru.
+                // Jawaban yang kemudian diketik dosen tetap tersimpan.
+                if (saved.blankExamFieldsVersion !== 2) {
+                    saved.text = saved.text || {};
+                    saved.text['room-label'] = '';
+                    saved.text['time-label'] = '';
+                    saved.blankExamFieldsVersion = 2;
+                    try { localStorage.setItem(storageKey, JSON.stringify(saved)); } catch (error) {}
+                }
                 document.querySelectorAll('[data-edit-key]').forEach(el => {
                     const key = el.dataset.editKey;
                     if (Object.prototype.hasOwnProperty.call(saved.text || {}, key)) {
