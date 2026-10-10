@@ -861,7 +861,6 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         }
         
         function processAuthPrivate() {
-            if (window.WATeacher) { void window.WATeacher.login(); return; }
             const user = document.getElementById('authLogName').value;
             const pass = document.getElementById('authLogPass').value;
             
@@ -878,8 +877,9 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                 body: formData
             })
             .then(res => res.json())
-            .then(data => {
+            .then(async data => {
                 if (data.status === 'success') {
+                    await window.WATeacher?.prepare();
                     showToast(data.msg, 'success');
                     document.getElementById('currentUserNameText').innerText = data.user;
                     document.getElementById('activeUserForm').value = data.user;
@@ -908,6 +908,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                         setTimeout(() => {
                             document.getElementById('authOverlay').style.display = 'none';
                             loadLoginLogs();
+                            if(window.WATeacher) location.reload();
                         }, 800);
                         
                     }, 3800);

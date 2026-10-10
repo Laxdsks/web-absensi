@@ -169,10 +169,7 @@
     } finally {rendering=false;}
   }
   if(!sheet) {
-    window.WATeacher={login:async()=>run(async()=>{
-      const fields={username:document.getElementById('authLogName').value,password:document.getElementById('authLogPass').value};
-      await WA.login('teacher',fields);location.reload();
-    })};
+    window.WATeacher={prepare:async()=>{await WA.bootstrap();void WA.prepareOffline();}};
     const originalOnload=window.onload;
     window.onload=async event=>{
       const state=await WA.get();
