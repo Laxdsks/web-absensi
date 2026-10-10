@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  for(const file of ['app/app.js','app/core.js','app-sw.js','app/templates/absen.html','app/templates/ujian.html','assets/offline-bridge.js','native/windows/main.cjs']){
   assert.deepEqual(asar.extractFile(archive,path.normalize(file)),fs.readFileSync(path.join(root,file)),`Outdated Windows asset: ${file}`);
  }
- const pkg=JSON.parse(asar.extractFile(archive,'package.json').toString());assert.equal(pkg.version,'1.0.1');
- const exe=path.join(root,'dist/windows/Absensi-Dosen-Windows-1.0.1.exe'),handle=fs.openSync(exe,'r'),magic=Buffer.alloc(2);fs.readSync(handle,magic,0,2,0);fs.closeSync(handle);assert.equal(magic.toString(),'MZ');
- console.log('Windows 1.0.1 executable and bundled offline assets verified.');
+ const pkg=JSON.parse(asar.extractFile(archive,'package.json').toString());assert.equal(pkg.version,'1.0.2');
+ const exe=path.join(root,'dist/windows/Absensi-Dosen-Windows-1.0.2.exe'),handle=fs.openSync(exe,'r'),magic=Buffer.alloc(2);fs.readSync(handle,magic,0,2,0);fs.closeSync(handle);assert.equal(magic.toString(),'MZ');
+ console.log('Windows 1.0.2 executable and bundled offline assets verified.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;});

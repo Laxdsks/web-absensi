@@ -4,11 +4,11 @@ on:
     branches: [main]
   push:
     branches: [main]
-    paths: ['native/**','app/**','assets/**','package.json','package-lock.json','app-sw.js','.github/workflows/build-apps.yml']
+    paths: ['native/**','app/**','assets/**','package.json','package-lock.json','app-sw.js','scripts/*android*.py','scripts/verify-apk-upgrade.py','.github/workflows/build-apps.yml']
   workflow_dispatch:
 concurrency:
   group: application-installers-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     outputs:
-      release_ready: ${{ steps.signing.outputs.release_ready }}
+      release_ready: ${{ steps.release_apks.outputs.ready }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-java@v4
@@ -44,9 +44,9 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('release_ready=' + ('true' if all(supplied) else 'false') + '\n')
           if not any(supplied):
-              print('::warning title=Android 2 release withheld::Reusable Android 2 signing secrets are not configured. Code and assets will be checked, but test APKs will not be published. Existing Android apps and their data remain separate.')
+              print('::warning title=Android 2 signing setup needed::Reusable signing secrets are not configured. Test APKs will not be published. The initial signed APKs can be used only if their source fingerprint still matches; later builds require ANDROID_V2 secrets.')
               with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
-                  output.write('Android 2: build validation only. Configure the four ANDROID_V2 signing secrets from the private signing backup before public APK release. Windows can be released independently.\n')
+                  output.write('Android 2: new code is built for validation. The initial signed APKs are available only for unchanged input fingerprints; their installation is tested before release. Configure the four ANDROID_V2 signing secrets for future APK builds.\n')
               raise SystemExit(0)
           path = Path(os.environ['RUNNER_TEMP']) / 'absensi-v2.keystore'
           with path.open('xb') as output:
@@ -71,21 +71,46 @@ jobs:
         run: |
           signers=("$ANDROID_HOME"/build-tools/*/apksigner)
           python3 scripts/verify-apk-upgrade.py "${signers[-1]}" --contents-only
+      - name: Resolve signed release APKs
+        id: release_apks
+        env:
+          HAS_SIGNING_KEY: ${{ steps.signing.outputs.release_ready }}
+        run: python3 scripts/load_android_bootstrap.py
       - name: Verify the new signing certificate and separate Android identities
-        if: steps.signing.outputs.release_ready == 'true'
+        if: steps.release_apks.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download aplikasi-1.0.0 --pattern '*.apk' --dir previous-installers
           signers=("$ANDROID_HOME"/build-tools/*/apksigner)
           python3 scripts/verify-apk-upgrade.py "${signers[-1]}"
+      - name: Enable emulator hardware acceleration
+        if: steps.release_apks.outputs.ready == 'true'
+        run: sudo chmod a+rw /dev/kvm
+      - name: Test separate installation, retained private data and app launch
+        if: steps.release_apks.outputs.ready == 'true'
+        uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-snapshot -gpu swiftshader_indirect -no-boot-anim -camera-back none -camera-front none -memory 1536 -cores 2 -skin 480x800
+          script: python3 scripts/test-android-install.py
       - name: Keep APK installers
-        if: steps.signing.outputs.release_ready == 'true'
+        if: steps.release_apks.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: Android-Absensi-Dosen-dan-Mahasiswa
           path: installers/*.apk
           if-no-files-found: error
+      - name: Keep emulator verification results
+        if: always() && steps.release_apks.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-2-installation-test
+          path: tests/results/android/
+          if-no-files-found: warn
       - name: Remove temporary Android signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/absensi-v2.keystore"
@@ -121,6 +146,7 @@ jobs:
         with:
           path: installers
           merge-multiple: true
+          pattern: '*-Absensi-Dosen*'
       - name: Publish application installers
         env:
           GH_TOKEN: ${{ github.token }}
@@ -138,8 +164,11 @@ jobs:
               for path in files:
                   output.write(hashlib.sha256(path.read_bytes()).hexdigest() + '  ' + path.name + '\n')
           PY
+          shopt -s nullglob
+          release_files=(installers/*.apk installers/*.exe installers/SHA256SUMS.txt)
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" installers/* --clobber
+            gh release upload "$tag" "${release_files[@]}" --clobber
+            gh release edit "$tag" --notes-file docs/APLIKASI.md
           else
-            gh release create "$tag" installers/* --target "$GITHUB_SHA" --title "Aplikasi Absensi $version" --notes-file docs/APLIKASI.md
+            gh release create "$tag" "${release_files[@]}" --target "$GITHUB_SHA" --title "Aplikasi Absensi $version" --notes-file docs/APLIKASI.md
           fi

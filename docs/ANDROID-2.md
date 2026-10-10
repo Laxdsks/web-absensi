@@ -2,7 +2,7 @@
 
 APK dosen memakai ID `id.webabsensi.parallel2026.dosen` dan nama **Absensi Dosen 2**. APK mahasiswa memakai ID `id.webabsensi.parallel2026.mahasiswa` dan nama **Absen Mahasiswa 2**. Keduanya berbeda dari APK 1.0.0 (`id.webabsensi.app.dosen` dan `id.webabsensi.app.mahasiswa`). Memasang Android 2 tidak memperbarui, mencopot, atau menghapus data aplikasi lama.
 
-Versi awal Android 2 adalah **1.0.1**, versionCode **2**. Kunci baru dibuat khusus untuk Android 2 dan disimpan di luar repository. Hanya fingerprint sertifikat publik yang dicatat di `native/android/signing-certificate.sha256`; file ini bukan kunci rahasia.
+Versi awal Android 2 adalah **1.0.2**, versionCode **3**. Kunci baru dibuat khusus untuk Android 2 dan disimpan di luar repository. Hanya fingerprint sertifikat publik yang dicatat di `native/android/signing-certificate.sha256`; file ini bukan kunci rahasia.
 
 ## Mulai menggunakan
 

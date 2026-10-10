@@ -33,7 +33,7 @@ for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
         if new_cert != [expected_cert]:
             raise RuntimeError('APK was not signed by the reusable Android 2 identity: ' + name)
     expected_package = 'id.webabsensi.parallel2026.' + ('dosen' if name.startswith('Absensi-Dosen') else 'mahasiswa')
-    if new_package[0] != expected_package or new_package[2] != '1.0.1':
+    if new_package[0] != expected_package or new_package[2] != '1.0.2':
         raise RuntimeError('APK version was not advanced: ' + name)
     paths = ['app/index.html', 'app/app.js', 'app/core.js', 'app-sw.js', 'app/vendor/qr.js', 'app/vendor/scan.js']
     if name.startswith('Absensi-Dosen'):
@@ -45,4 +45,4 @@ for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
     if contents_only:
         print(name + ': Android 2 identity, build and offline assets verified only; release signing NOT checked.')
     else:
-        print(name + ': reusable Android 2 certificate verified; package differs from the original APK; version 1.0.1 and offline assets verified.')
+        print(name + ': reusable Android 2 certificate verified; package differs from the original APK; version 1.0.2 and offline assets verified.')
