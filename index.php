@@ -375,6 +375,10 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
 <script src="assets/native-export.js?v=20261010" defer></script>
     <script src="app/core.js?v=20261010" defer></script>
     <script src="assets/offline-bridge.js?v=20261010" defer></script>
+    <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-integrated-1">
+    <script src="app/vendor/qr.js" defer></script>
+    <script src="app/vendor/scan.js" defer></script>
+    <script src="assets/teacher-tools.js?v=20261010-integrated-1" defer></script>
 </head>
 <body>
     <!-- KANVAS PARTIKEL MELAYANG -->
@@ -512,6 +516,10 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             <button class="close-sidebar" onclick="closeSidebar()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div id="sidebarMenuList">
+<div id="teacherTools" class="teacher-tools" data-page="index" hidden>
+    <h2>Akun mahasiswa & sinkronisasi</h2><span id="toolConnection"></span><button type="button" id="sync">Sinkronkan</button>
+    <p id="toolNotice" role="status" aria-live="polite"></p><div id="toolBody"></div>
+</div>
             
             <!-- LOG LOGIN HISTORI -->
             <div class="menu-section-title">Riwayat Login Sukses</div>
@@ -869,8 +877,9 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                 body: formData
             })
             .then(res => res.json())
-            .then(data => {
+            .then(async data => {
                 if (data.status === 'success') {
+                    await window.WATeacher?.prepare();
                     showToast(data.msg, 'success');
                     document.getElementById('currentUserNameText').innerText = data.user;
                     document.getElementById('activeUserForm').value = data.user;
@@ -899,6 +908,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                         setTimeout(() => {
                             document.getElementById('authOverlay').style.display = 'none';
                             loadLoginLogs();
+                            if(window.WATeacher) location.reload();
                         }, 800);
                         
                     }, 3800);
@@ -1058,6 +1068,5 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             });
         }
     </script>
-<a href="app/" style="position:fixed;bottom:18px;left:18px;z-index:1000;background:#2362ee;color:white;padding:12px 16px;border-radius:10px;text-decoration:none;font:14px sans-serif">Aplikasi offline & Absen QR</a>
 </body>
 </html>

@@ -17,7 +17,7 @@ import struct
 ROOT = Path(__file__).resolve().parents[1]
 FILES = (
     "app/.htaccess", "app_core.php", "app_attendance.php", "app_push.php",
-    "assets/app-audio.js", "assets/sheet-signatures.css", "assets/sheet-signatures.js", "assets/sheet-spacing.js", "assets/offline-bridge.js", "assets/native-export.js",
+    "assets/teacher-tools.js", "assets/teacher-tools.css", "assets/app-audio.js", "assets/sheet-signatures.css", "assets/sheet-signatures.js", "assets/sheet-spacing.js", "assets/offline-bridge.js", "assets/native-export.js",
     "auth_guard.php", "app_api.php", "music_player.php", "data_siswa.php", "absen.php", "ujian.php", "index.php", "app-sw.js",
 )
 APP_FILES = tuple(str(p.relative_to(ROOT)) for p in sorted((ROOT / "app").rglob("*")) if p.is_file() and (p.parent.name == "licenses" or p.suffix in {".html", ".js", ".mjs", ".css", ".json", ".webmanifest", ".png", ".svg", ".wasm", ".traineddata", ".bcmap", ".pfb", ".ttf", ".woff", ".woff2", ".LICENSE", ".md", ".txt"}))
