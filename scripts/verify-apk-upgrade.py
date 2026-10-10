@@ -11,7 +11,7 @@ signer = Path(sys.argv[1])
 
 def details(path):
     verified = subprocess.check_output([str(signer), 'verify', '--print-certs', str(path)], text=True)
-    certificates = re.findall(r'Signer #\d+ certificate SHA-256 digest: (\w+)', verified)
+    certificates = re.findall(r'certificate SHA-256 digest: ([0-9a-fA-F]{64})', verified)
     if not certificates:
         raise RuntimeError('APK signing certificate is missing')
     badging = subprocess.check_output([str(signer.with_name('aapt')), 'dump', 'badging', str(path)], text=True)
