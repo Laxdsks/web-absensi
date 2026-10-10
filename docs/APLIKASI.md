@@ -68,6 +68,6 @@ Status sinkronisasi besar kini disembunyikan secara awal. Ikon **?** di tepi set
 
 ## Pembaruan 1.0.7
 
-Kode lembar lama yang tertahan cache tidak lagi dipakai sesudah membuka halaman versi baru. Penghapusan satu kelas tersimpan sekaligus pada perangkat dan ditunggu sebelum berpindah halaman atau menutup aplikasi. Nama yang sudah dihapus tidak dipulihkan dari lembar tersimpan pada absen, rekap, maupun ujian. Data kelas lain, catatan kehadiran, nilai, dan draf yang masih berlaku tetap disimpan.
+Kode lembar lama yang tertahan cache tidak lagi dipakai sesudah membuka halaman versi baru. Perintah penghapusan dicatat segera pada perangkat, lalu seluruh kelas dihapus dalam satu transaksi. Jika aplikasi tertutup saat proses berjalan, penghapusan diselesaikan saat dibuka kembali; berpindah halaman menunggu transaksi selesai. Nama yang sudah dihapus tidak dipulihkan dari lembar tersimpan pada absen, rekap, maupun ujian. Data kelas lain, catatan kehadiran, nilai, dan draf yang masih berlaku tetap disimpan.
 
 Perbarui paket dengan memasang versi baru menggunakan identitas aplikasi yang sama, lalu tutup dan buka kembali aplikasi. Jangan hapus data aplikasi atau mencopot aplikasi lama. Website tetap memakai alamat serta desain asli.
