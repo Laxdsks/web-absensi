@@ -122,7 +122,7 @@ def main():
     if b'Aplikasi offline & Absen QR' in original:
         raise RuntimeError("The obsolete second-dashboard link is still published.")
     print("Original teacher homepage retained; obsolete second-dashboard link removed.", flush=True)
-    for path in ("app/app.js", "app/core.js", "app/qr-files.js", "app/guide.js", "app/guide.css", "app/app.css", "app-sw.js", "assets/offline-bridge.js", "assets/teacher-tools.js", "assets/teacher-tools.css"):
+    for path in ("app/app.js", "app/core.js", "app/qr-files.js", "app/guide.js", "app/guide.css", "assets/sheet-fit.js", "assets/sheet-fit.css", "app/app.css", "app-sw.js", "assets/offline-bridge.js", "assets/teacher-tools.js", "assets/teacher-tools.css"):
         deployed, _ = request(path + "?verify=" + expected)
         if hashlib.sha256(deployed).digest() != hashlib.sha256((ROOT / path).read_bytes()).digest():
             raise RuntimeError("Deployed client file does not match the tested revision: " + path)
