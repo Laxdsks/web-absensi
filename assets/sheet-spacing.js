@@ -13,4 +13,6 @@
     };
     document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(window.pastikanJarakTandaTangan));
     window.addEventListener('beforeprint',window.pastikanJarakTandaTangan);
+    matchMedia('print').addEventListener('change',()=>requestAnimationFrame(window.pastikanJarakTandaTangan));
+    document.fonts?.ready.then(()=>requestAnimationFrame(window.pastikanJarakTandaTangan));
 })();

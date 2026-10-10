@@ -1,6 +1,6 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261010-integrated-1';
+const WA_BUILD = '20261010-reliable-4';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_db(): mysqli {
@@ -128,12 +128,19 @@ function wa_roster(array $ctx): array {
     return wa_rows("SELECT id,nim,nama,jk,jenjang,prodi,semester,kelas FROM siswa WHERE jenjang='S1' AND prodi=? AND semester IN (?,?) AND kelas IN (?,?) ORDER BY nama,id",[$ctx['prodi'],$ctx['semester'],'Semester '.$ctx['semester'],$ctx['kelas'],'Kelas '.$ctx['kelas']]);
 }
 function wa_finalize(): void {
-    $sessions=wa_rows('SELECT id,scope,slot,roster,deadline FROM wa_sessions WHERE finalized=0 AND deadline<=?',[wa_now()]);
-    foreach ($sessions as $session) {
-        foreach (json_decode($session['roster'],true)??[] as $nim) wa_query("INSERT IGNORE INTO wa_marks(scope,slot,nim,mark,session_id,reason,source,review_status,recorded_at) VALUES(?,?,?,'A',?,'Batas waktu absen telah berakhir.','automatic','final',?)",[$session['scope'],$session['slot'],$nim,$session['id'],$session['deadline']]);
-        wa_query('UPDATE wa_sessions SET finalized=1 WHERE id=?',[$session['id']]);
+    foreach(wa_rows('SELECT id FROM wa_sessions WHERE finalized=0 AND deadline<=?',[wa_now()]) as $candidate){
+        wa_db()->begin_transaction();
+        try{
+            $session=wa_one('SELECT id,scope,slot,roster,deadline,finalized FROM wa_sessions WHERE id=? FOR UPDATE',[$candidate['id']]);
+            if($session&&!$session['finalized']&&(int)$session['deadline']<=wa_now()){
+                foreach(json_decode($session['roster'],true)??[] as $nim)wa_query("INSERT INTO wa_marks(scope,slot,nim,mark,session_id,reason,source,review_status,recorded_at) VALUES(?,?,?,'A',?,'Batas waktu absen telah berakhir.','automatic','final',?) ON DUPLICATE KEY UPDATE session_id=IF(mark='',VALUES(session_id),session_id),reason=IF(mark='',VALUES(reason),reason),source=IF(mark='',VALUES(source),source),review_status=IF(mark='',VALUES(review_status),review_status),recorded_at=IF(mark='',VALUES(recorded_at),recorded_at),revision=IF(mark='',revision+1,revision),mark=IF(mark='',VALUES(mark),mark)",[$session['scope'],$session['slot'],$nim,$session['id'],$session['deadline']]);
+                wa_query('UPDATE wa_sessions SET finalized=1 WHERE id=?',[$session['id']]);
+            }
+            wa_db()->commit();
+        }catch(Throwable $error){wa_db()->rollback();throw $error;}
     }
 }
+
 function wa_document(array $ctx, string $course, string $kind): ?array { $row=wa_one('SELECT * FROM wa_documents WHERE scope=? AND kind=?',[wa_scope($ctx,$course),$kind]); if($row)$row['content']=json_decode($row['content'],true); return $row; }
 function wa_save_document(array $ctx, string $course, string $kind, array $content, ?int $expected): array {
     if (!in_array($kind,['grade','attendance-layout','exam-layout','attendance-sheet','exam-sheet'],true) || strlen(wa_json($content))>3000000) throw new InvalidArgumentException('Dokumen tidak valid atau terlalu besar.');
@@ -158,7 +165,7 @@ function wa_snapshot(array $device): array {
         $roster=[]; $documents=[]; $registrations=[]; $sessions=[]; $marks=[];
         if($account['approved']) {
             $sessions=array_values(array_filter(wa_rows('SELECT * FROM wa_sessions WHERE ends>=?',[wa_now()-7*86400000]),static function($r)use($ctx){return wa_ctx_key(json_decode($r['ctx'],true))===wa_ctx_key($ctx);}));
-            foreach($sessions as $session) $marks=array_merge($marks,wa_rows('SELECT * FROM wa_marks WHERE scope=? AND nim=?',[$session['scope'],$account['nim']]));
+            $seen=[];foreach($sessions as $session){if(isset($seen[$session['scope']]))continue;$seen[$session['scope']]=true;$marks=array_merge($marks,wa_rows('SELECT * FROM wa_marks WHERE scope=? AND nim=?',[$session['scope'],$account['nim']]));}
         }
     }
     foreach($roster as &$row) { $row['semester']=preg_replace('/^Semester\s+/i','',$row['semester']); $row['kelas']=preg_replace('/^Kelas\s+/i','',$row['kelas']); $row['nim']=strtoupper($row['nim']); } unset($row);

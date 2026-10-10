@@ -1,1 +1,23 @@
-{"appId":"id.webabsensi.dosen","productName":"Absensi Dosen","artifactName":"Absensi-Dosen-Windows-${version}.exe","directories":{"output":"dist/windows"},"files":["native/windows/*.cjs","app/**","assets/*.js","assets/*.css","app-sw.js","package.json"],"win":{"target":["portable"],"signAndEditExecutable":false},"asar":true}
+{
+  "appId": "id.webabsensi.dosen",
+  "productName": "Presen Desk",
+  "artifactName": "Absensi-Dosen-Windows-${version}.exe",
+  "directories": {
+    "output": "dist/windows"
+  },
+  "files": [
+    "native/windows/*.cjs",
+    "app/**",
+    "assets/*.js",
+    "assets/*.css",
+    "app-sw.js",
+    "package.json"
+  ],
+  "win": {
+    "target": [
+      "portable"
+    ],
+    "signAndEditExecutable": false
+  },
+  "asar": true
+}

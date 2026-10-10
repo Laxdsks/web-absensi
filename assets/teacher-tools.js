@@ -6,7 +6,7 @@
   const $ = selector => host.querySelector(selector);
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const sheet = host.dataset.page === 'absen', params = new URLSearchParams(location.search);
-  let sessionQR = null, stream = null, scanTimer, renderKey = '', rendering = false;
+  let sessionQR = null, sessionCode = '', stream = null, scanTimer, renderKey = '', rendering = false;
   const notify = text => { $('#toolNotice').textContent = text; if(host.hidden) window.showToast?.(escape(text),'error'); };
   async function run(fn, button) {
     if (button) button.disabled = true;
@@ -38,7 +38,7 @@
     if (session.teacher_id !== state.profile.device) throw Error('Tampilkan QR dari perangkat pembuat sesi.');
     sessionQR = session;
     const qr = qrcode(0, 'M');
-    qr.addData(WA.qr('session', state.profile.certificate, 'challenge', session.challenge)); qr.make();
+    sessionCode=WA.qr('session', state.profile.certificate, 'challenge', session.challenge);qr.addData(sessionCode); qr.make();
     $('#codeTitle').textContent = session.matkul + ' · pertemuan ' + session.slot;
     $('#codeImage').innerHTML = qr.createSvgTag({cellSize:4, margin:6, scalable:true});
     $('#codeDialog').showModal(); clock();
@@ -81,14 +81,14 @@
   }
   function initialize(state) {
     host.hidden = false;
-    const body = sheet ? `<form id="sessionForm"><label>Mata kuliah<input name="matkul" maxlength="180" required></label><div class="tool-grid"><label>Pertemuan<input name="slot" type="number" min="1" max="16" value="1" required></label><label>Durasi (menit)<input name="minutes" type="number" min="1" max="1440" placeholder="Misalnya 10" required></label></div><p>QR berlaku untuk kelas pada lembar ini. Sesudah waktu habis, mahasiswa yang belum tercatat mendapat A.</p><button id="startSession" type="submit">Mulai Absen / reset QR</button><button id="scanReply" type="button">Pindai QR mahasiswa</button><div id="sessionList"></div></form>` : '';
+    const body = sheet ? `<form id="sessionForm"><label>Mata kuliah<input name="matkul" maxlength="180" required></label><div class="tool-grid"><label>Pertemuan<input name="slot" type="number" min="1" max="16" value="1" required></label><label>Durasi (menit)<input name="minutes" type="number" min="1" max="1440" placeholder="Misalnya 10" required></label></div><p>QR berlaku untuk kelas pada lembar ini. 1. Cocokkan kelas dan mata kuliah. 2. Isi pertemuan dan durasi. 3. Mulai lalu bagikan QR. Kolom tetap kosong selama waktu berjalan; A otomatis muncul sesudah tenggat. Untuk mahasiswa offline, pindai QR balasannya sebelum tenggat.</p><button id="startSession" type="submit">Mulai Absen / reset QR</button><button id="scanReply" type="button">Pindai QR mahasiswa</button><div id="sessionList"></div></form>` : '';
     $('#toolBody').innerHTML = body + '<div id="toolResults"></div>' + (!sheet ? `<details><summary>Cadangan perangkat</summary><button id="backup" type="button">Simpan cadangan</button><label>Pulihkan cadangan JSON<input id="restore" type="file" accept="application/json,.json"></label><p>Sinkronkan data pada aplikasi lama sebelum beralih. Cadangan tidak menyertakan akses login atau kunci QR.</p></details>` : '');
     if (sheet) {
       const form = $('#sessionForm');
       form.elements.matkul.value = params.get('matkul') || '';
       form.elements.slot.value = state.selection?.slot || 1;
       if(params.get('qrMinutes')) form.elements.minutes.value=params.get('qrMinutes');
-      form.onchange = () => { renderKey = ''; void render(); };
+      const draftKey='wa-qr-settings-'+state.profile.device+'-'+encodeURIComponent(JSON.stringify(context(state))),draft=JSON.parse(localStorage.getItem(draftKey)||'null');if(draft){form.elements.slot.value=draft.slot||1;form.elements.minutes.value=draft.minutes||'';}form.oninput=()=>localStorage.setItem(draftKey,JSON.stringify(Object.fromEntries(new FormData(form))));form.onchange = () => { renderKey = ''; void render(); };
       form.onsubmit = event => {
         event.preventDefault();
         void run(async () => {
@@ -96,11 +96,8 @@
           const s = await WA.get(), c = context(s), values = Object.fromEntries(new FormData(form));
           const name = values.matkul.trim();
           const displayed = document.querySelector('[data-app-course]');
-          if (displayed && displayed.textContent.trim() !== name) {
-            const url = new URL(location.href); url.searchParams.set('matkul',name); url.searchParams.set('qr','1');url.searchParams.set('qrMinutes',values.minutes);
-            await WA.change(old => ({...old,selection:{...c,matkul:name,slot:Number(values.slot)}}));
-            location.assign(url.href); return;
-          }
+          if(displayed && displayed.textContent.trim()!==name) await window.WASetSheetCourse(name);
+          await window.WAFlush?.();
           const session = await WA.startSession(c,name,Number(values.slot),Number(values.minutes));
           await showQR(session); notify('Absen dimulai. Kehadiran dicatat pada tabel asli di lembar ini.');
         }, $('#startSession'));
@@ -109,24 +106,12 @@
       $('#stopScan').onclick = stopScan;
       $('#scanner').addEventListener('close',stopScan);
       $('#readText').onclick = () => void run(() => receive($('#qrText').value.trim()));
-      $('#qrImage').onchange = event => void run(async () => {
-        const file = event.target.files[0]; if (!file) return;
-        if (file.size > 12000000) throw Error('Pilih foto QR di bawah 12 MB.');
-        const img = await createImageBitmap(file), canvas = $('#scanCanvas'); canvas.width=img.width; canvas.height=img.height;
-        const ctx = canvas.getContext('2d',{willReadFrequently:true}); ctx.drawImage(img,0,0);
-        const pixels=ctx.getImageData(0,0,canvas.width,canvas.height), qr=jsQR(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'}); img.close();
-        if (!qr) throw Error('QR belum terbaca. Gunakan foto lebih jelas.'); await receive(qr.data);
-      });
+      $('#qrImage').onchange = event => void run(async () => {const file=event.target.files[0];event.target.value='';if(file)await receive(await WAQRFiles.read(file));});
       $('#closeCode').onclick = () => $('#codeDialog').close();
       $('#shareCode').onclick = () => void run(async () => {
-        const svg=$('#codeImage svg'), url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}));
-        try {
-          const img = new Image(); await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url;});
-          const canvas = document.createElement('canvas'); canvas.width=canvas.height=1000; canvas.getContext('2d').drawImage(img,0,0,1000,1000);
-          const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png')), file=new File([png],'absensi-qr.png',{type:'image/png'});
-          if (navigator.canShare?.({files:[file]})) await navigator.share({files:[file],title:$('#codeTitle').textContent});
-          else await download(png,'absensi-qr.png');
-        } finally { URL.revokeObjectURL(url); }
+        const png=await WAQRFiles.png(sessionCode), file=new File([png],'absensi-qr.png',{type:'image/png'});
+        if (navigator.canShare?.({files:[file]})) await navigator.share({files:[file],title:$('#codeTitle').textContent});
+        else await download(png,'absensi-qr.png');
       });
     } else {
       $('#backup').onclick = () => void run(async () => download(new Blob([JSON.stringify({type:'web-absensi-backup',version:1,snapshot:(await WA.get()).snapshot},null,2)],{type:'application/json'}),'absensi-cadangan-'+WA.day()+'.json'));
@@ -161,8 +146,8 @@
         host.querySelectorAll('[data-session]').forEach(button=>button.onclick=()=>void run(()=>showQR(sessions.find(x=>x.id===button.dataset.session))));
       }
       const registrations=state.snapshot.registrations.filter(x=>!x.approved), pending=marks.filter(x=>['S','I'].includes(x.mark));
-      $('#toolResults').innerHTML=(!sheet?`<details><summary>Persetujuan akun mahasiswa (${registrations.length})</summary>${registrations.map(x=>{const match=state.snapshot.roster.find(r=>WA.sameCtx(r,x.ctx)&&r.nim===x.nim);return `<div class="tool-card"><b>${escape(x.nama)} · ${escape(x.nim)}</b><p>${escape(x.ctx.prodi)} · semester ${escape(x.ctx.semester)} · kelas ${escape(x.ctx.kelas)}</p><p>${match?'Nama pada daftar: '+escape(match.nama):'NIM belum ada pada daftar. Persetujuan menambahkan mahasiswa ini.'}</p><button type="button" data-approve="${x.id}">Setujui setelah dicocokkan</button></div>`;}).join('')||'<p>Belum ada pendaftaran menunggu.</p>'}</details>`:`<details><summary>Keterangan sakit & izin (${pending.length})</summary>${pending.map(x=>`<div class="tool-card"><b>${escape(x.nim)} · ${x.mark} · pertemuan ${x.slot}</b><p>${escape(x.reason)}</p><p>${x.location?`Lokasi: ${x.location.lat.toFixed(5)}, ${x.location.lon.toFixed(5)} · akurasi ±${Math.round(x.location.accuracy)} m`:'Lokasi tidak disertakan.'}</p><span>Status: ${escape(x.review_status)}</span><button type="button" data-review="${escape(x.nim)}:${x.slot}" data-status="accepted">Tandai sudah ditinjau</button><button type="button" data-review="${escape(x.nim)}:${x.slot}" data-status="rejected">Ubah menjadi A</button></div>`).join('')||'<p>Belum ada keterangan S/I.</p>'}</details>`)+`<details><summary>Perubahan belum tersinkron (${state.outbox.length})</summary>${state.outbox.filter(x=>x.problem).map(x=>`<div class="tool-card"><p>${escape(x.problem.message||'Ada perubahan pada perangkat lain.')}</p><button type="button" data-resolve="${x.id}" data-keep="1">Kirim salinan perangkat ini</button><button type="button" data-resolve="${x.id}" data-keep="0">Gunakan data server</button></div>`).join('')||'<p>Perubahan tersimpan di perangkat sampai server menerima sinkronisasi.</p>'}</details>`;
-      host.querySelectorAll('[data-approve]').forEach(button=>button.onclick=()=>void run(()=>WA.queue({type:'approve',account:button.dataset.approve}),button));
+      $('#toolResults').innerHTML=(`<details open><summary>Persetujuan akun mahasiswa (${registrations.length})</summary>${registrations.map(x=>{const match=state.snapshot.roster.find(r=>WA.sameCtx(r,x.ctx)&&r.nim===x.nim);return `<div class="tool-card"><b>${escape(x.nama)} · ${escape(x.nim)}</b><p>${escape(x.ctx.prodi)} · semester ${escape(x.ctx.semester)} · kelas ${escape(x.ctx.kelas)}</p><p>${match?'Nama pada daftar: '+escape(match.nama):'NIM belum ada pada daftar. Persetujuan menambahkan mahasiswa ini.'}</p><button type="button" data-approve="${x.id}">Setujui setelah dicocokkan</button></div>`;}).join('')||'<p>Belum ada pendaftaran menunggu.</p>'}</details>`+(sheet?`<details><summary>Keterangan sakit & izin (${pending.length})</summary>${pending.map(x=>`<div class="tool-card"><b>${escape(x.nim)} · ${x.mark} · pertemuan ${x.slot}</b><p>${escape(x.reason)}</p><p>${x.location?`Lokasi: ${x.location.lat.toFixed(5)}, ${x.location.lon.toFixed(5)} · akurasi ±${Math.round(x.location.accuracy)} m`:'Lokasi tidak disertakan.'}</p><span>Status: ${escape(x.review_status)}</span><button type="button" data-review="${escape(x.nim)}:${x.slot}" data-status="accepted">Tandai sudah ditinjau</button><button type="button" data-review="${escape(x.nim)}:${x.slot}" data-status="rejected">Ubah menjadi A</button></div>`).join('')||'<p>Belum ada keterangan S/I.</p>'}</details>`:''))+`<details><summary>Perubahan belum tersinkron (${state.outbox.length})</summary>${state.outbox.filter(x=>x.problem).map(x=>`<div class="tool-card"><p>${escape(x.problem.message||'Ada perubahan pada perangkat lain.')}</p><button type="button" data-resolve="${x.id}" data-keep="1">Kirim salinan perangkat ini</button><button type="button" data-resolve="${x.id}" data-keep="0">Gunakan data server</button></div>`).join('')||'<p>Perubahan tersimpan di perangkat sampai server menerima sinkronisasi.</p>'}</details>`;
+      host.querySelectorAll('[data-approve]').forEach(button=>button.onclick=()=>void run(async()=>{const op=await WA.queue({type:'approve',account:button.dataset.approve});await WA.sync();const current=await WA.get(),pending=current.outbox.find(x=>x.id===op.id);notify(pending?pending.problem?.message||'Persetujuan tersimpan di perangkat. Sambungkan internet lalu tekan Sinkronkan.':'Akun disetujui. Mahasiswa akan menerima hasil saat tersambung internet.');},button));
       host.querySelectorAll('[data-review]').forEach(button=>button.onclick=()=>void run(async()=>{const[nim,slot]=button.dataset.review.split(':'),mark=marks.find(x=>x.nim===nim&&x.slot===Number(slot)); await WA.queue({type:'review',ctx:c,matkul:course(),nim,slot:Number(slot),mark:button.dataset.status==='rejected'?'A':mark.mark,reason:mark.reason,review_status:button.dataset.status,baseRevision:mark.revision});},button));
       host.querySelectorAll('[data-resolve]').forEach(button=>button.onclick=()=>void run(()=>WA.resolve(button.dataset.resolve,button.dataset.keep==='1'),button));
       clock();
@@ -186,9 +171,9 @@
       if(!$('#toolResults')){notify('Tunggu data lembar selesai dimuat, lalu coba lagi.');return;}
       const displayed=document.querySelector('[data-app-course]');
       if(displayed) $('#sessionForm').elements.matkul.value=displayed.textContent.trim();
-      renderKey='';void render();document.getElementById('attendanceQRPanel').showModal();
+      renderKey='';void render();document.body.classList.add('wa-qr-open');document.getElementById('attendanceQRPanel').hidden=false;document.getElementById('attendanceQRPanel').scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('openAttendanceQR').setAttribute('aria-expanded','true');
     };
-    document.getElementById('closeAttendanceQR').onclick=()=>document.getElementById('attendanceQRPanel').close();
+    document.getElementById('closeAttendanceQR').onclick=()=>{document.body.classList.remove('wa-qr-open');document.getElementById('attendanceQRPanel').hidden=true;document.getElementById('openAttendanceQR').setAttribute('aria-expanded','false');};
   }
   let state=await WA.get();
   if(!state.profile&&navigator.onLine) {try {await WA.bootstrap();state=await WA.get();} catch (_) {}}
@@ -197,8 +182,8 @@
   await render();
   if(state.profile?.role==='teacher') {void WA.prepareOffline();void WA.sync();}
   setInterval(()=>{clock();void WA.get().then(state=>{
-    if(state.profile?.role==='teacher'&&state.snapshot.sessions.some(session=>session.deadline<=WA.now(state)&&session.roster.some(nim=>!state.snapshot.marks.some(mark=>mark.scope===session.scope&&mark.slot===session.slot&&mark.nim===nim)))) void WA.finalize();
+    if(state.profile?.role==='teacher'&&state.snapshot.sessions.some(session=>session.deadline<=WA.now(state)&&session.roster.some(nim=>!state.snapshot.marks.some(mark=>mark.scope===session.scope&&mark.slot===session.slot&&mark.nim===nim&&!!mark.mark)))) void WA.finalize();
   });},1000);
   setInterval(()=>void WA.sync(),5000);
-  if(sheet&&params.get('qr')==='1') document.getElementById('attendanceQRPanel').showModal();
+  if(sheet&&params.get('qr')==='1') document.getElementById('openAttendanceQR').click();
 })();

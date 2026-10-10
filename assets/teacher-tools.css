@@ -8,3 +8,7 @@
 .teacher-tools dialog,dialog.teacher-tools{border:1px solid var(--card-border,#64748b);border-radius:14px;background:var(--sidebar-bg,var(--ui-panel,#0f172a));color:var(--text-main,var(--ui-text,#e2e8f0));width:min(600px,calc(100vw - 28px));max-height:90dvh;padding:18px;box-sizing:border-box;overflow:auto}
 .teacher-tools dialog::backdrop,dialog.teacher-tools::backdrop{background:#0009}.teacher-tools video{width:100%;max-height:40vh;background:#000}.teacher-tools #codeImage svg{width:100%;max-width:420px;height:auto;background:white}.teacher-tools [role=status]{min-height:20px}
 @media print{.teacher-tools,#attendanceQRPanel,#openAttendanceQR{display:none!important}}
+
+#attendanceQRPanel{margin:10px auto;padding:14px 18px;border:1px solid var(--card-border,#64748b);border-radius:10px;background:var(--sidebar-bg,var(--ui-panel,#0f172a));width:min(900px,calc(100% - 28px));box-sizing:border-box;scroll-margin-top:12px}#attendanceQRPanel[hidden]{display:none!important}
+
+body.wa-qr-open{padding-top:12px}body.wa-qr-open .top-toolbar{position:relative;top:auto;left:auto;transform:none;margin:0 auto}body.wa-qr-open .inspector-panel,body.wa-qr-open .inspector-toggle-btn,body.wa-qr-open .toolbar-toggle-btn{display:none!important}
