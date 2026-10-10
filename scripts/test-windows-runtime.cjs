@@ -12,8 +12,8 @@ async function connect(){
     }catch(_){}await pause(500);
   }throw Error('Packaged desktop app did not expose its test debugging port.');
 }
-function command(method,params={}){return new Promise((resolve,reject)=>{const id=++next,timer=setTimeout(()=>{pending.delete(id);reject(Error('Desktop command timed out: '+method));},20000);pending.set(id,{resolve,reject,timer});socket.send(JSON.stringify({id,method,params}));});}
-async function evaluate(expression){const result=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(result.exceptionDetails)throw Error(result.exceptionDetails.text+' '+(result.exceptionDetails.exception?.description||''));return result.result?.value;}
+function command(method,params={},timeout=20000){return new Promise((resolve,reject)=>{const id=++next,timer=setTimeout(()=>{pending.delete(id);reject(Error('Desktop command timed out: '+method));},timeout);pending.set(id,{resolve,reject,timer});socket.send(JSON.stringify({id,method,params}));});}
+async function evaluate(expression,timeout=20000){const result=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true},timeout);if(result.exceptionDetails)throw Error(result.exceptionDetails.text+' '+(result.exceptionDetails.exception?.description||''));return result.result?.value;}
 async function wait(expression){const until=Date.now()+30000;while(Date.now()<until){try{if(await evaluate(expression))return;}catch(_){}await pause(200);}throw Error('Desktop UI did not reach the expected state.');}
 async function launch(){
   // A deliberately unavailable local proxy simulates disconnection for Chromium and net.fetch.
@@ -22,7 +22,8 @@ async function launch(){
 }
 async function close(){
   const exited=new Promise(resolve=>child.once('exit',resolve));
-  await Promise.race([evaluate('window.close()'),exited]);await Promise.race([exited,pause(20000).then(()=>{throw Error('Desktop app failed to close after saving.');})]);socket.close();
+  const requested=evaluate('window.close()').catch(error=>{if(!/Desktop target closed/.test(error.message))throw error;});
+  await Promise.race([requested,exited]);await Promise.race([exited,pause(20000).then(()=>{throw Error('Desktop app failed to close after saving.');})]);socket.close();
 }
 (async()=>{
   assert(fs.existsSync(executable));await launch();await wait("document.body.innerText.toLowerCase().includes('masuk ke sistem')");
@@ -33,5 +34,14 @@ async function close(){
   // Close before the debounce expires; the native close handler must flush the draft.
   await close();await launch();await command('Page.navigate',{url});await wait("window.WASheetReady===true&&document.querySelector('.attendance-cell')?.value==='.'");
   assert.equal(await evaluate("(async()=>{const s=await WA.get();return s.outbox.some(o=>o.type==='mark'&&o.mark==='.')})()"),true);
+  await command('Page.navigate',{url:'https://datasiswasekolah.42web.io/data_siswa.php?prodi=Pendidikan%20Teknologi%20Informasi&semester=1&kelas=A'});await wait("window.WASheetReady===true&&typeof buatWorkerDaftar==='function'");
+  const photo=require('../tests/fixtures/attendance-photo.cjs'),result=await evaluate('('+photo.toString()+')()',180000);assert.equal(result.rows.length,21,JSON.stringify(result));assert.deepEqual(result.rows.map(r=>r.nim),Array.from({length:21},(_,i)=>'C722202401'+String(i+1).padStart(3,'0')));assert(result.rows.every(r=>r.nama));assert(result.enabled);
+  console.log('Presen Desk: real JPEG import reads all 21 prefixed NIMs in the offline packaged desktop app.');
+  await command('Page.navigate',{url});await wait("window.WASheetReady===true&&!!document.querySelector('.attendance-cell')");
+  await evaluate("(async()=>{const el=document.querySelector('.attendance-cell');el.dispatchEvent(new Event('input',{bubbles:true}));await WAFlush();})()");
+  await command('Page.navigate',{url:'https://datasiswasekolah.42web.io/data_siswa.php?prodi=Pendidikan%20Teknologi%20Informasi&semester=1&kelas=A'});await wait("window.WASheetReady===true&&document.querySelector('#tabelSiswa .student-row')");
+  await evaluate("window.confirm=()=>true;document.querySelector('#tabelSiswa .btn-danger').click()");await wait("(async()=>!(await WA.get()).snapshot.roster.length)()");await close();await launch();await command('Page.navigate',{url});await wait("window.WASheetReady===true");assert.equal(await evaluate("document.querySelectorAll('#tbodySiswa .nim-input').length"),0);assert.equal(await evaluate("bukaRekapNilai();document.querySelectorAll('#tbodyRekapNilai tr').length"),0);
+  await command('Page.navigate',{url:'https://datasiswasekolah.42web.io/ujian.php?prodi=Pendidikan%20Teknologi%20Informasi&semester=1&kelas=A&matkul=CI-offline'});await wait("window.WASheetReady===true");assert.equal(await evaluate("document.querySelectorAll('#examTableBlock tbody tr').length"),0);
+  console.log('Presen Desk: offline roster deletion survives native restart; saved attendance, recap and exam do not restore the removed student.');
   await close();console.log('Presen Desk: packaged Windows app launches offline; immediate native close retains attendance across restart.');
 })().catch(error=>{if(child&&!child.killed)child.kill();if(socket)socket.close();console.error(error.message);process.exitCode=1;});

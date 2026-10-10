@@ -82,7 +82,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download aplikasi-1.0.0 --pattern '*.apk' --dir previous-installers
-          gh release download aplikasi-1.0.4 --pattern '*.apk' --dir previous-v2-installers
+          gh release download aplikasi-1.0.5 --pattern '*.apk' --dir previous-v2-installers
           signers=("$ANDROID_HOME"/build-tools/*/apksigner)
           python3 scripts/verify-apk-upgrade.py "${signers[-1]}"
       - name: Enable emulator hardware acceleration
@@ -129,7 +129,7 @@ jobs:
       - run: npm run windows
       - name: Verify bundled Windows application
         run: node scripts/verify-windows-bundle.cjs
-      - name: Test packaged Windows launch and persistence across closing
+      - name: Test packaged Windows offline launch, persistence and real JPEG OCR
         run: node scripts/test-windows-runtime.cjs
       - name: Keep Windows installer
         uses: actions/upload-artifact@v4
