@@ -1,5 +1,5 @@
 'use strict';
-const BUILD='20261010-offline-qr-1',PUBLIC='wa-public-'+BUILD,PRIVATE='wa-private-'+BUILD;
+const BUILD='20261010-offline-qr-2',PUBLIC='wa-public-'+BUILD,PRIVATE='wa-private-'+BUILD;
 const root=new URL('./',self.location),url=path=>new URL(path,root).href;
 const staticFiles=['app/','app/index.html','app/core.js','app/app.js','app/app.css','app/icon.svg','app/icon-192.png','app/icon-512.png','app/manifest.webmanifest','assets/app-audio.js','assets/sheet-signatures.css','assets/sheet-signatures.js','assets/sheet-spacing.js','assets/offline-bridge.js','assets/native-export.js','app/templates/index.html','app/templates/data_siswa.html','app/templates/absen.html','app/templates/ujian.html','app/templates/music_player.html'];
 async function state(){return new Promise(resolve=>{const r=indexedDB.open('web-absensi-offline',1);r.onupgradeneeded=()=>r.result.createObjectStore('records');r.onsuccess=()=>{const d=r.result,q=d.transaction('records').objectStore('records').get('state');q.onsuccess=()=>{resolve(q.result);d.close();};q.onerror=()=>resolve(null);};r.onerror=()=>resolve(null);});}
