@@ -106,7 +106,7 @@ function wa_operation(array $device,array $op): array {
         $nim=wa_nim($op['nim']??'');
         $matches=array_values(array_filter(wa_roster($ctx),static function($s)use($nim){return strtoupper($s['nim'])===$nim;}));
         $old=$matches[0]??null;
-        if(isset($op['base'])&&($old['nama']??null)!==($op['base']['nama']??null))return ['status'=>'conflict','remote'=>$old,'message'=>'Identitas mahasiswa telah diedit pada perangkat lain.'];
+        if(isset($op['base'])&&!($type==='student-delete'&&!$old)&&($old['nama']??null)!==($op['base']['nama']??null))return ['status'=>'conflict','remote'=>$old,'message'=>'Identitas mahasiswa telah diedit pada perangkat lain.'];
         if($type==='student-delete') { if($old)wa_query('DELETE FROM siswa WHERE id=?',[$old['id']]); wa_audit($device,'delete-student',$nim,['ctx'=>$ctx]); return ['status'=>'success']; }
         $name=wa_text($op['nama']??''); $jk=wa_text($op['jk']??'',1);
         if($name===''||!in_array($jk,['L','P'],true))throw new InvalidArgumentException('Lengkapi nama dan L/P.');

@@ -1,6 +1,6 @@
 # Aplikasi Absensi 1.0.5
 
-Tersedia tiga paket **1.0.5** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.5): **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.5.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
+Tersedia tiga paket **1.0.5** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.6): **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.6.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
 
 APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
 
@@ -39,7 +39,13 @@ Musik dari berkas audio lokal dapat diputar offline. Menutup panel musik menyemb
 
 Paket dibuat dan alur utama diuji melalui browser serta build Android/Windows. Penggunaan kamera, notifikasi latar belakang, dialog cetak dan penyimpanan pada perangkat Android/Windows fisik perlu diuji pada perangkat yang dipakai dosen dan mahasiswa. SHA256SUMS.txt menyertakan checksum unduhan.
 
-## Pembaruan 1.0.5
+## Pembaruan 1.0.6
+
+Impor foto pada Presen Desk memakai alamat lengkap untuk worker, mesin dan bahasa OCR; pengenalan Electron tidak lagi menyebabkan impor berhenti dengan pesan **undefined**. JPEG lembar berkepala, 21 mahasiswa dan 16 kolom pertemuan diuji lewat impor foto. Jika pembaca gagal dimuat, pesan jelas muncul dan percobaan ulang tersedia. Hasil OCR tetap ditinjau sebelum disimpan.
+
+Lembar absen memeriksa NIM pada tabel tersimpan terhadap daftar mahasiswa terbaru. Mahasiswa yang dihapus tidak dikembalikan dari salinan lembar lama, termasuk rekap nilai. Hapus satuan, hapus semua kelas dan Hapus Permanen memakai antrean yang sama saat online/offline; halaman absen, ujian dan daftar yang sudah terbuka ikut diperbarui. Penghapusan tidak mengubah kelas lain atau pengaturan lembar. Pembaruan tidak menjalankan penghapusan data apa pun; hanya tindakan hapus yang dikonfirmasi pengguna yang diproses. Sinkronkan atau cadangkan perubahan offline sebelum memperbarui aplikasi.
+
+### Perbaikan tampilan yang tetap disertakan
 
 Lembar absensi, ujian dan rekap mempertahankan desain asli. Teks tabel diberi jarak dari garis; NIM/nama serta isian mata kuliah, ruang dan waktu dibuat satu baris dengan ukuran teks mengikuti lebar kolom. Rekap layar memakai kolom yang cukup lebar dan dapat digeser. Ekspor Word/Excel menyesuaikan ukuran teks terhadap lebar kertas/kolom, tanpa memotong isi atau mengubah nilai. Panduan **?** menunjukkan urutan penggunaan dan tombol pada halaman yang sedang dibuka.
 

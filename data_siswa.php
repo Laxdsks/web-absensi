@@ -1100,7 +1100,7 @@ if ($stmt) {
             if(window[name])return Promise.resolve(window[name]);
             if(!importLibraryPromises[name])importLibraryPromises[name]=new Promise((resolve,reject)=>{
                 const script=document.createElement('script');script.src=url;
-                script.onload=()=>window[name]?resolve(window[name]):reject(new Error('Pustaka '+name+' tidak tersedia.'));
+                script.onload=()=>{if(window[name])resolve(window[name]);else{delete importLibraryPromises[name];script.remove();reject(new Error('Pustaka pembaca berkas belum tersedia. Coba lagi.'));}};
                 script.onerror=()=>{delete importLibraryPromises[name];script.remove();reject(new Error('Pustaka pembaca berkas gagal dimuat. Periksa internet lalu coba lagi.'));};
                 document.head.appendChild(script);
             });return importLibraryPromises[name];
@@ -1317,12 +1317,22 @@ if ($stmt) {
                 }else throw new Error('Pilih foto, PDF, DOC/DOCX, atau XLS/XLSX/CSV.');
                 if(!rows.length)throw new Error('Belum ada mahasiswa yang terbaca. Pastikan tabel memuat judul NIM dan Nama Mahasiswa; untuk scan gunakan gambar yang jelas.');
                 tampilkanHasilOcr(gabungBerkas(rows));
-            }catch(error){const message=error.name==='PasswordException'?'PDF terkunci dengan kata sandi. Unggah salinan yang tidak terkunci.':error.message;setOcrStatus(message);showToast(message,'error');}
+            }catch(error){const message=pesanGagalImpor(error);setOcrStatus(message);showToast(message,'error');}
             finally{try{if(worker)await worker.terminate();if(pdf)await pdf.destroy();}finally{button.disabled=false;input.disabled=false;}}
         }
         async function buatWorkerDaftar() {
             const Tesseract=await muatPustakaImpor('Tesseract','app/vendor/tesseract.min.js');
-            return Tesseract.createWorker('eng',1,{workerPath:'app/vendor/worker.min.js',corePath:'app/vendor',langPath:'app/vendor',gzip:false},{load_system_dawg:'0',load_freq_dawg:'0'});
+            // Tesseract detects Electron through its user agent and skips its
+            // browser URL resolver. Blob workers cannot import relative URLs.
+            const vendor=new URL('app/vendor/',document.baseURI);
+            return Tesseract.createWorker('eng',1,{workerPath:new URL('worker.min.js',vendor).href,corePath:vendor.href,langPath:vendor.href,gzip:false,errorHandler:()=>{}},{load_system_dawg:'0',load_freq_dawg:'0'});
+        }
+        function pesanGagalImpor(error) {
+            if(error?.name==='PasswordException')return 'PDF terkunci dengan kata sandi. Unggah salinan yang tidak terkunci.';
+            const message=typeof error==='string'?error:error?.message;
+            if(typeof message!=='string'||!message.trim()||message==='undefined')return 'Berkas belum berhasil dibaca. Coba lagi atau pilih foto yang lebih jelas.';
+            if(/importScripts|fetch|network|load.*(?:core|language|traineddata)|WebAssembly|worker/i.test(message))return 'Mesin pembaca foto belum berhasil dimuat. Coba lagi; jika memakai browser, sambungkan internet agar pembaca foto tersedia.';
+            return message;
         }
         async function pindaiKanvasDaftar(selected,worker,continuation=null) {
                 const prepared=preparasiFotoOcr(selected),canvas=prepared.canvas,grid=prepared.grid;
@@ -1421,7 +1431,7 @@ if ($stmt) {
                 const rows=await pindaiKanvasDaftar(selected,worker);
                 if(!rows.length)throw new Error('Belum ada baris mahasiswa yang terbaca. Pilih area tabel NIM dan nama pada pratinjau, luruskan foto, lalu Baca Semua Baris kembali.');
                 tampilkanHasilOcr(rows);
-            } catch(error){setOcrStatus(error.message);showToast(error.message,'error');}
+            } catch(error){const message=pesanGagalImpor(error);setOcrStatus(message);showToast(message,'error');}
             finally {try{if(worker)await worker.terminate();}finally{button.disabled=false;controls.forEach(control=>control.disabled=false);}}
         }
 
