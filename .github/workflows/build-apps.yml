@@ -1,11 +1,13 @@
 name: Build Android and Windows applications
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths: ['native/**','app/**','assets/**','package.json','package-lock.json','app-sw.js','.github/workflows/build-apps.yml']
   workflow_dispatch:
 concurrency:
-  group: application-installers
+  group: application-installers-${{ github.ref }}
   cancel-in-progress: false
 permissions:
   contents: read
@@ -13,6 +15,8 @@ jobs:
   android:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    outputs:
+      release_ready: ${{ steps.signing.outputs.release_ready }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-java@v4
@@ -22,25 +26,69 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Keep the Android install signing identity between builds
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: absensi-android-install-key-v1
+      - name: Load the existing Android installation signing identity
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          required = ('KEYSTORE_BASE64', 'KEYSTORE_PASSWORD', 'KEY_ALIAS', 'KEY_PASSWORD')
+          supplied = [bool(os.environ.get(key)) for key in required]
+          if any(supplied) and not all(supplied):
+              raise SystemExit('Android signing secrets are incomplete; all four original signing settings are required.')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('release_ready=' + ('true' if all(supplied) else 'false') + '\n')
+          if not any(supplied):
+              print('::warning title=Android release withheld::Original APK 1.0.0 signing key is unavailable. Android code and assets will be checked, but no replacement APK will be uploaded or published. Keep the existing installation and its data.')
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
+                  output.write('Android: build validation only. APK publication is blocked by the missing original 1.0.0 signing key. Windows can be released independently.\n')
+              raise SystemExit(0)
+          path = Path(os.environ['RUNNER_TEMP']) / 'absensi-install.keystore'
+          with path.open('xb') as output:
+              os.chmod(path, 0o600)
+              output.write(base64.b64decode(os.environ['KEYSTORE_BASE64'], validate=True))
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('WA_ANDROID_KEYSTORE_PATH=' + str(path) + '\n')
+          PY
       - name: Build teacher and student Android apps
         working-directory: native/android
+        env:
+          WA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          WA_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          WA_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle assembleDosenDebug assembleMahasiswaDebug --no-daemon
       - name: Name APK installers
         run: |
           mkdir -p installers
           cp native/android/app/build/outputs/apk/dosen/debug/*.apk installers/Absensi-Dosen-Android.apk
           cp native/android/app/build/outputs/apk/mahasiswa/debug/*.apk installers/Absen-Mahasiswa-Android.apk
+      - name: Verify Android build and offline assets (not an upgrade check)
+        run: |
+          signers=("$ANDROID_HOME"/build-tools/*/apksigner)
+          python3 scripts/verify-apk-upgrade.py "${signers[-1]}" --contents-only
+      - name: Verify compatibility with the existing Android installation
+        if: steps.signing.outputs.release_ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download aplikasi-1.0.0 --pattern '*.apk' --dir previous-installers
+          signers=("$ANDROID_HOME"/build-tools/*/apksigner)
+          python3 scripts/verify-apk-upgrade.py "${signers[-1]}"
       - name: Keep APK installers
+        if: steps.signing.outputs.release_ready == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: Android-Absensi-Dosen-dan-Mahasiswa
           path: installers/*.apk
           if-no-files-found: error
+      - name: Remove temporary Android signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/absensi-install.keystore"
   windows:
     runs-on: windows-latest
     timeout-minutes: 25
@@ -51,7 +99,10 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npm run check
       - run: npm run windows
+      - name: Verify bundled Windows application
+        run: node scripts/verify-windows-bundle.cjs
       - name: Keep Windows installer
         uses: actions/upload-artifact@v4
         with:
@@ -59,6 +110,7 @@ jobs:
           path: dist/windows/*.exe
           if-no-files-found: error
   release:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: [android, windows]
     runs-on: ubuntu-24.04
     permissions:
@@ -75,7 +127,17 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           tag="aplikasi-$version"
-          sha256sum installers/* > installers/SHA256SUMS.txt
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          root = Path('installers')
+          files = sorted([*root.glob('*.apk'), *root.glob('*.exe')])
+          if not any(path.suffix == '.exe' for path in files):
+              raise SystemExit('Verified Windows installer is missing')
+          with (root / 'SHA256SUMS.txt').open('w') as output:
+              for path in files:
+                  output.write(hashlib.sha256(path.read_bytes()).hexdigest() + '  ' + path.name + '\n')
+          PY
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" installers/* --clobber
           else

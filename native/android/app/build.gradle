@@ -2,14 +2,30 @@ plugins { id 'com.android.application' }
 android {
  namespace 'id.webabsensi.app'
  compileSdk 35
- defaultConfig { applicationId 'id.webabsensi.app'; minSdk 26; targetSdk 35; versionCode 1; versionName '1.0.0'; buildConfigField 'String','APP_HOST','"datasiswasekolah.42web.io"' }
+ defaultConfig { applicationId 'id.webabsensi.app'; minSdk 26; targetSdk 35; versionCode 2; versionName '1.0.1'; buildConfigField 'String','APP_HOST','"datasiswasekolah.42web.io"' }
  buildFeatures { buildConfig true }
+ signingConfigs {
+  if (System.getenv('WA_ANDROID_KEYSTORE_PATH')) {
+   existingInstall {
+    storeFile file(System.getenv('WA_ANDROID_KEYSTORE_PATH'))
+    storePassword System.getenv('WA_ANDROID_KEYSTORE_PASSWORD')
+    keyAlias System.getenv('WA_ANDROID_KEY_ALIAS')
+    keyPassword System.getenv('WA_ANDROID_KEY_PASSWORD')
+   }
+  }
+ }
  flavorDimensions 'role'
  productFlavors {
   dosen { dimension 'role'; applicationIdSuffix '.dosen'; resValue 'string','app_name','Absensi Dosen'; buildConfigField 'String','APP_ROLE','"teacher"' }
   mahasiswa { dimension 'role'; applicationIdSuffix '.mahasiswa'; resValue 'string','app_name','Absen Mahasiswa'; buildConfigField 'String','APP_ROLE','"student"' }
  }
- buildTypes { debug { debuggable false }; release { minifyEnabled false } }
+ buildTypes {
+  debug {
+   debuggable false
+   if (System.getenv('WA_ANDROID_KEYSTORE_PATH')) signingConfig signingConfigs.existingInstall
+  }
+  release { minifyEnabled false }
+ }
  sourceSets.dosen.assets.srcDirs += [layout.buildDirectory.dir('dosenOfflineAssets')]
  sourceSets.mahasiswa.assets.srcDirs += [layout.buildDirectory.dir('mahasiswaOfflineAssets')]
 }

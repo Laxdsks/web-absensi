@@ -10,6 +10,7 @@ on:
       - 'app/**'
       - 'app-sw.js'
       - 'scripts/deploy_hosting.py'
+      - 'scripts/verify_hosting.py'
       - '.github/workflows/deploy-hosting.yml'
   workflow_dispatch:
 
@@ -29,6 +30,8 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Check deployment manifest
         run: python3 scripts/deploy_hosting.py --dry-run
+      - name: Record existing data identities before deployment
+        run: python3 scripts/verify_hosting.py --record-baseline "$RUNNER_TEMP/attendance-baseline.json"
       - name: Install application files on existing PHP hosting
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
@@ -40,4 +43,7 @@ jobs:
           FTP_USE_INFINITYFREE_ACCOUNT: 'true'
         run: python3 scripts/deploy_hosting.py
       - name: Verify application and teacher access on live hosting
-        run: python3 scripts/verify_hosting.py
+        run: python3 scripts/verify_hosting.py --preserve-baseline "$RUNNER_TEMP/attendance-baseline.json"
+      - name: Remove temporary verification baseline
+        if: always()
+        run: rm -f "$RUNNER_TEMP/attendance-baseline.json"
