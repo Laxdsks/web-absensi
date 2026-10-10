@@ -1,6 +1,8 @@
 # Aplikasi Absensi 1.0.1
 
-Unduh **Absensi-Dosen-Android.apk** untuk dosen, **Absen-Mahasiswa-Android.apk** untuk mahasiswa, atau **Absensi-Dosen-Windows-1.0.1.exe** untuk Windows. Pilih paket dari halaman [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/latest). APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
+Website dan Windows diperbarui ke **1.0.1**. Unduh **Absensi-Dosen-Windows-1.0.1.exe** dari halaman [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/latest). APK Android terakhir tetap **1.0.0**: [Absensi Dosen](https://github.com/Laxdsks/web-absensi/releases/download/aplikasi-1.0.0/Absensi-Dosen-Android.apk) dan [Absen Mahasiswa](https://github.com/Laxdsks/web-absensi/releases/download/aplikasi-1.0.0/Absen-Mahasiswa-Android.apk). APK 1.0.1 belum diterbitkan karena kunci penandatanganan asli 1.0.0 tidak tersedia; jangan menghapus instalasi lama. Perbaikan pengingat Android saat aplikasi berjalan di latar belakang belum tersedia dalam APK 1.0.0. Versi browser sudah memuat perbaikan terbaru.
+
+APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
 
 ## Awal penggunaan
 
@@ -41,4 +43,6 @@ Paket dibuat dan alur utama diuji melalui browser serta build Android/Windows. P
 
 Pengingat dan hitung mundur berhenti ketika dosen mengisi absensi manual, termasuk saat catatan dibuat sebelum sesi QR dibuka. Notifikasi Android menggunakan ID sesi yang sama agar dapat ditutup setelah absensi diterima.
 
-Pasang APK baru sebagai pembaruan pada aplikasi lama, tanpa menghapus aplikasi atau datanya. Pembaruan APK hanya diterbitkan setelah sertifikatnya cocok dengan APK 1.0.0; pembuat rilis harus menyediakan kunci penandatanganan asli melalui GitHub Secrets. Windows tetap memakai penyimpanan pengguna Absensi Dosen. Sinkronkan perubahan offline atau buat cadangan sebelum memperbarui perangkat.
+Windows tetap memakai penyimpanan pengguna Absensi Dosen. Sinkronkan perubahan offline atau buat cadangan sebelum memperbarui perangkat.
+
+Build Android tetap diperiksa, tetapi APK baru hanya diterbitkan setelah sertifikatnya cocok dengan APK 1.0.0. Pembuat rilis harus menyediakan **kunci asli**, bukan kunci pengganti, melalui Repository Secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, dan `ANDROID_KEY_PASSWORD`. Kunci baru tidak dapat memperbarui instalasi lama. Setelah tersedia, APK harus dipasang sebagai pembaruan tanpa menghapus aplikasi atau datanya. Windows dapat diterbitkan secara terpisah selama kunci Android belum tersedia.

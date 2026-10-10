@@ -23,11 +23,16 @@ def details(path):
 for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
     previous = root / 'previous-installers' / name
     current = root / 'installers' / name
-    old_cert, old_package = details(previous)
     new_cert, new_package = details(current)
-    if old_cert != new_cert or old_package[0] != new_package[0]:
-        raise RuntimeError('APK cannot update the existing installation: ' + name)
-    if int(new_package[1]) <= int(old_package[1]) or new_package[2] != '1.0.1':
+    contents_only = '--contents-only' in sys.argv[2:]
+    if not contents_only:
+        old_cert, old_package = details(previous)
+        if old_cert != new_cert or old_package[0] != new_package[0]:
+            raise RuntimeError('APK cannot update the existing installation: ' + name)
+        if int(new_package[1]) <= int(old_package[1]):
+            raise RuntimeError('APK version code was not advanced: ' + name)
+    expected_package = 'id.webabsensi.app.' + ('dosen' if name.startswith('Absensi-Dosen') else 'mahasiswa')
+    if new_package[0] != expected_package or new_package[2] != '1.0.1':
         raise RuntimeError('APK version was not advanced: ' + name)
     paths = ['app/index.html', 'app/app.js', 'app/core.js', 'app-sw.js', 'app/vendor/qr.js', 'app/vendor/scan.js']
     if name.startswith('Absensi-Dosen'):
@@ -36,4 +41,7 @@ for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
         for path in paths:
             if hashlib.sha256(apk.read('assets/' + path)).digest() != hashlib.sha256((root / path).read_bytes()).digest():
                 raise RuntimeError('APK contains an outdated asset: ' + path)
-    print(name + ': signature and package identity retained; version 1.0.1 and offline assets verified.')
+    if contents_only:
+        print(name + ': build and offline assets verified only; installation upgrade compatibility NOT checked.')
+    else:
+        print(name + ': signature and package identity retained; version 1.0.1 and offline assets verified.')
