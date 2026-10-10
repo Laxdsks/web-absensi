@@ -6,5 +6,9 @@ native/android/app/build/
 native/android/build/
 *.jks
 *.keystore
+*.p12
+*.pfx
+installers/
+previous-installers/
 scripts/__pycache__/
 tests/results/

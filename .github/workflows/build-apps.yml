@@ -26,13 +26,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Load the existing Android installation signing identity
+      - name: Load the reusable Android 2 signing identity
         id: signing
         env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_V2_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_V2_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_V2_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_V2_KEY_PASSWORD }}
         run: |
           python3 - <<'PY'
           import base64, os
@@ -44,11 +44,11 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('release_ready=' + ('true' if all(supplied) else 'false') + '\n')
           if not any(supplied):
-              print('::warning title=Android release withheld::Original APK 1.0.0 signing key is unavailable. Android code and assets will be checked, but no replacement APK will be uploaded or published. Keep the existing installation and its data.')
+              print('::warning title=Android 2 release withheld::Reusable Android 2 signing secrets are not configured. Code and assets will be checked, but test APKs will not be published. Existing Android apps and their data remain separate.')
               with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
-                  output.write('Android: build validation only. APK publication is blocked by the missing original 1.0.0 signing key. Windows can be released independently.\n')
+                  output.write('Android 2: build validation only. Configure the four ANDROID_V2 signing secrets from the private signing backup before public APK release. Windows can be released independently.\n')
               raise SystemExit(0)
-          path = Path(os.environ['RUNNER_TEMP']) / 'absensi-install.keystore'
+          path = Path(os.environ['RUNNER_TEMP']) / 'absensi-v2.keystore'
           with path.open('xb') as output:
               os.chmod(path, 0o600)
               output.write(base64.b64decode(os.environ['KEYSTORE_BASE64'], validate=True))
@@ -58,9 +58,9 @@ jobs:
       - name: Build teacher and student Android apps
         working-directory: native/android
         env:
-          WA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          WA_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          WA_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          WA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_V2_KEYSTORE_PASSWORD }}
+          WA_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_V2_KEY_ALIAS }}
+          WA_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_V2_KEY_PASSWORD }}
         run: gradle assembleDosenDebug assembleMahasiswaDebug --no-daemon
       - name: Name APK installers
         run: |
@@ -71,7 +71,7 @@ jobs:
         run: |
           signers=("$ANDROID_HOME"/build-tools/*/apksigner)
           python3 scripts/verify-apk-upgrade.py "${signers[-1]}" --contents-only
-      - name: Verify compatibility with the existing Android installation
+      - name: Verify the new signing certificate and separate Android identities
         if: steps.signing.outputs.release_ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -88,7 +88,7 @@ jobs:
           if-no-files-found: error
       - name: Remove temporary Android signing key
         if: always()
-        run: rm -f "$RUNNER_TEMP/absensi-install.keystore"
+        run: rm -f "$RUNNER_TEMP/absensi-v2.keystore"
   windows:
     runs-on: windows-latest
     timeout-minutes: 25
