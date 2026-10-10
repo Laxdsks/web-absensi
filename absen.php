@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_hapus_permanen']
 
 // PENARIKAN DATA MENGGUNAKAN OPERATOR EKSAK (=) SESUAI INSTRUKSI
 if (isset($koneksi) && $koneksi) {
-    $query = "SELECT nim, nama, jk FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY nama ASC";
+    $query = "SELECT nim, nama, jk FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY id ASC";
     $stmt  = mysqli_prepare($koneksi, $query);
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, "sssss", $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
@@ -496,6 +496,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
     <script src="app/vendor/scan.js" defer></script>
     <script src="app/qr-files.js" defer></script>
     <script src="assets/teacher-tools.js?v=20261010-reliable-4" defer></script>
+<link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 </head>
 <body>
 

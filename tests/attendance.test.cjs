@@ -65,7 +65,7 @@ test('teacher approval, QR boundaries, offline receipts, persistence, sync, shee
   await waitFor(sp,id=>!document.querySelector('[data-active-session="'+id+'"]'),x.id);
   const qr=await page.evaluate(async x=>WA.qr('session',(await WA.get()).profile.certificate,'challenge',x.challenge),x);
   await sp.locator('#scanSession').click();await sp.locator('#qrText').fill(qr);await sp.locator('#readText').click();
-  await sp.locator('#studentSession').getByText('Absen diterima.',{exact:false}).waitFor();assert.equal(await sp.locator('#replyForm').count(),0);
+  await sp.locator('#scanner').waitFor({state:'hidden'});await sp.locator('#studentSession').getByText('Absen diterima.',{exact:false}).waitFor();assert.equal(await sp.locator('#replyForm').count(),0);
  });
  await t.test('QR attendance removes only its own countdown and reply form',async()=>{
   const x=await page.evaluate(async({ctx,course})=>WA.startSession(ctx,course,4,2),{ctx,course});await drained(page);
@@ -74,7 +74,7 @@ test('teacher approval, QR boundaries, offline receipts, persistence, sync, shee
   const qr=await page.evaluate(async x=>WA.qr('session',(await WA.get()).profile.certificate,'challenge',x.challenge),x);
   await sp.locator('#scanSession').click();await sp.locator('#qrText').fill(qr);await sp.locator('#readText').click();await sp.locator('#replyForm button').click();
   await waitFor(sp,id=>!document.querySelector('[data-active-session="'+id+'"]'),x.id);
-  await sp.locator('#studentSession').getByText('Absen diterima.',{exact:false}).waitFor();assert.equal(await sp.locator('#replyForm').count(),0);
+  await sp.locator('#scanner').waitFor({state:'hidden'});await sp.locator('#studentSession').getByText('Absen diterima.',{exact:false}).waitFor();assert.equal(await sp.locator('#replyForm').count(),0);
   assert.equal(await sp.locator('[data-active-session="'+other.id+'"] .sessionClock').count(),1);
   const mark=(await sp.evaluate(()=>WA.get())).snapshot.marks.find(m=>m.session_id===x.id&&m.nim===fixture.nim);assert.equal(mark.mark,'.');
  });

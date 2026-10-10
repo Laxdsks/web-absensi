@@ -1,14 +1,14 @@
 # Android 2: pemasangan berdampingan
 
-APK dosen memakai ID `id.webabsensi.parallel2026.dosen` dan nama **Absensi Dosen 2**. APK mahasiswa memakai ID `id.webabsensi.parallel2026.mahasiswa` dan nama **Absen Mahasiswa 2**. Keduanya berbeda dari APK 1.0.0 (`id.webabsensi.app.dosen` dan `id.webabsensi.app.mahasiswa`). Memasang Android 2 tidak memperbarui, mencopot, atau menghapus data aplikasi lama.
+APK dosen memakai ID `id.webabsensi.parallel2026.dosen` dan nama **Presen Pro**. APK mahasiswa memakai ID `id.webabsensi.parallel2026.mahasiswa` dan nama **Presen Go**. Keduanya berbeda dari APK 1.0.0 (`id.webabsensi.app.dosen` dan `id.webabsensi.app.mahasiswa`). Memasang Android 2 tidak memperbarui, mencopot, atau menghapus data aplikasi lama.
 
-Versi awal Android 2 adalah **1.0.3**, versionCode **3**. Kunci baru dibuat khusus untuk Android 2 dan disimpan di luar repository. Hanya fingerprint sertifikat publik yang dicatat di `native/android/signing-certificate.sha256`; file ini bukan kunci rahasia.
+Versi awal Android 2 adalah **1.0.2**, versionCode **3**. Kunci baru dibuat khusus untuk Android 2 dan disimpan di luar repository. Hanya fingerprint sertifikat publik yang dicatat di `native/android/signing-certificate.sha256`; file ini bukan kunci rahasia.
 
 ## Mulai menggunakan
 
-Jika belum pernah memasang APK lama, langsung pasang APK Android 2 untuk peran Anda. Izinkan pemasangan dari sumber unduhan tersebut, buka **Absensi Dosen 2** atau **Absen Mahasiswa 2**, lalu login saat online. Dosen menggunakan akun website yang sama. Mahasiswa yang sudah terdaftar memakai NIM dan PIN lama, bukan membuat pendaftaran duplikat. Android 2 memakai hosting dan database yang sama; data server tidak disalin atau diganti oleh pemasangan APK.
+Jika belum pernah memasang APK lama, langsung pasang APK Android 2 untuk peran Anda. Izinkan pemasangan dari sumber unduhan tersebut, buka **Presen Pro** atau **Presen Go**, lalu login saat online. Dosen menggunakan akun website yang sama. Mahasiswa yang sudah terdaftar memakai NIM dan PIN lama, bukan membuat pendaftaran duplikat. Android 2 memakai hosting dan database yang sama; data server tidak disalin atau diganti oleh pemasangan APK.
 
-Gunakan Android 8 atau lebih baru dengan Android System WebView yang diperbarui. Nama **2** membedakan ikon baru dan lama. Jangan menghapus aplikasi lama untuk memasang Android 2.
+Gunakan Android 8 atau lebih baru dengan Android System WebView yang diperbarui. Nama **Presen Pro** dan **Presen Go** membedakan ikon baru dari aplikasi lama. Jangan menghapus aplikasi lama untuk memasang Android 2.
 
 ## Data lama dan batas pemindahan
 

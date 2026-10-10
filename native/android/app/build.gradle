@@ -37,7 +37,7 @@ tasks.register('bundleDosenOffline',Copy){
 }
 tasks.register('bundleMahasiswaOffline',Copy){
  into layout.buildDirectory.dir('mahasiswaOfflineAssets')
- from('../../../app'){into 'app';include 'index.html','core.js','app.js','qr-files.js','app.css','icon.svg','icon-*.png','manifest.webmanifest','vendor/qr.js','vendor/scan.js'}
+ from('../../../app'){into 'app';include 'index.html','core.js','app.js','qr-files.js','app.css','guide.js','guide.css','guide-images/student-*.png','icon.svg','icon-*.png','manifest.webmanifest','vendor/qr.js','vendor/scan.js'}
  from('../../../app-sw.js')
 }
 tasks.configureEach{task->if(task.name in ['preDosenDebugBuild','preDosenReleaseBuild'])task.dependsOn 'bundleDosenOffline';if(task.name in ['preMahasiswaDebugBuild','preMahasiswaReleaseBuild'])task.dependsOn 'bundleMahasiswaOffline'}

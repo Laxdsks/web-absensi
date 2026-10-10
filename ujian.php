@@ -101,7 +101,7 @@ $data_siswa = [];
 $kelas_lama = 'Kelas ' . $kelas;
 $semester_lama = 'Semester ' . $semester;
 if (isset($koneksi) && $koneksi instanceof mysqli) {
-    $sql = "SELECT nim, nama FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY nama ASC";
+    $sql = "SELECT nim, nama FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY id ASC";
     $stmt = mysqli_prepare($koneksi, $sql);
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'sssss', $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
@@ -273,6 +273,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
 <script src="assets/native-export.js?v=20261010" defer></script>
     <script src="app/core.js?v=20261010" defer></script>
     <script src="assets/offline-bridge.js?v=20261010" defer></script>
+<link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 </head>
 <body>
     <button type="button" class="toolbar-toggle-btn" id="toggleToolbarBtn" onclick="toggleToolbar()" aria-controls="topToolbar">⌃ Menu</button>

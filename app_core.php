@@ -1,6 +1,6 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261010-reliable-4';
+const WA_BUILD = '20261010-guided-4';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_db(): mysqli {
@@ -125,7 +125,7 @@ function wa_teacher(array $device): void { if ($device['role']!=='teacher' || !i
 function wa_approved_student(array $device): array { if ($device['role']!=='student') throw new DomainException('Gunakan akun mahasiswa.'); $account=wa_one('SELECT * FROM wa_accounts WHERE id=?',[$device['account_id']]); if (!$account || !$account['approved']) throw new DomainException('Pendaftaran menunggu persetujuan dosen.'); return $account; }
 function wa_roster(array $ctx): array {
     $ctx=wa_ctx($ctx);
-    return wa_rows("SELECT id,nim,nama,jk,jenjang,prodi,semester,kelas FROM siswa WHERE jenjang='S1' AND prodi=? AND semester IN (?,?) AND kelas IN (?,?) ORDER BY nama,id",[$ctx['prodi'],$ctx['semester'],'Semester '.$ctx['semester'],$ctx['kelas'],'Kelas '.$ctx['kelas']]);
+    return wa_rows("SELECT id,nim,nama,jk,jenjang,prodi,semester,kelas FROM siswa WHERE jenjang='S1' AND prodi=? AND semester IN (?,?) AND kelas IN (?,?) ORDER BY id",[$ctx['prodi'],$ctx['semester'],'Semester '.$ctx['semester'],$ctx['kelas'],'Kelas '.$ctx['kelas']]);
 }
 function wa_finalize(): void {
     foreach(wa_rows('SELECT id FROM wa_sessions WHERE finalized=0 AND deadline<=?',[wa_now()]) as $candidate){
@@ -155,7 +155,7 @@ function wa_snapshot(array $device): array {
     wa_finalize();
     $profile=wa_profile($device);
     if($device['role']==='teacher') {
-        $roster=wa_rows("SELECT id,nim,nama,jk,jenjang,prodi,semester,kelas FROM siswa WHERE jenjang='S1' ORDER BY prodi,semester,kelas,nama,id");
+        $roster=wa_rows("SELECT id,nim,nama,jk,jenjang,prodi,semester,kelas FROM siswa WHERE jenjang='S1' ORDER BY prodi,semester,kelas,id");
         $sessions=wa_rows('SELECT * FROM wa_sessions ORDER BY starts');
         $marks=wa_rows('SELECT * FROM wa_marks ORDER BY recorded_at');
         $documents=wa_rows('SELECT * FROM wa_documents');
