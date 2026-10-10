@@ -116,7 +116,13 @@ def main():
     if not mime.get_content_type() in {"application/javascript", "text/javascript"}:
         raise RuntimeError("PDF modules have the wrong hosting content type.")
     print("Application entry page and PDF module content type verified.", flush=True)
-    for path in ("app/app.js", "app/core.js", "app-sw.js", "assets/offline-bridge.js"):
+    original, _ = request("index.php")
+    if b'id="displayAppTitle"' not in original or b'id="prodi"' not in original or b'id="teacherTools"' not in original:
+        raise RuntimeError("The original teacher homepage or its integrated tools are missing.")
+    if b'Aplikasi offline & Absen QR' in original:
+        raise RuntimeError("The obsolete second-dashboard link is still published.")
+    print("Original teacher homepage retained; obsolete second-dashboard link removed.", flush=True)
+    for path in ("app/app.js", "app/core.js", "app-sw.js", "assets/offline-bridge.js", "assets/teacher-tools.js", "assets/teacher-tools.css"):
         deployed, _ = request(path + "?verify=" + expected)
         if hashlib.sha256(deployed).digest() != hashlib.sha256((ROOT / path).read_bytes()).digest():
             raise RuntimeError("Deployed client file does not match the tested revision: " + path)
@@ -126,6 +132,10 @@ def main():
     try:
         login_teacher()
         ctx = urllib.parse.urlencode({"jenjang": "S1", "prodi": "Pendidikan Teknologi Informasi", "semester": "1", "kelas": "A"})
+        attendance = request("absen.php?" + ctx)[0]
+        if not all(marker in attendance for marker in (b'id="paperSheet"', b'id="tabelAbsen"', b'id="openAttendanceQR"')):
+            raise RuntimeError("Original attendance sheet or its integrated QR controls are missing.")
+        print("QR controls published inside the original attendance sheet.", flush=True)
         exam = request("ujian.php?" + ctx)[0].decode()
         for key in ("room-label", "time-label", "course-label"):
             if not re.search(r'<span[^>]*data-edit-key="' + key + r'"[^>]*>\s*</span>', exam):

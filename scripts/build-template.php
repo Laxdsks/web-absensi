@@ -10,4 +10,5 @@ session_start();$_SESSION=['id_user'=>'admin_01','nama_user'=>'Dosen','role'=>'A
 $_GET=['jenjang'=>'S1','prodi'=>'Pendidikan Teknologi Informasi','semester'=>'1','kelas'=>'A','theme'=>'putih'];
 ob_start();require $root.'/'.$page.'.php';$html=ob_get_clean();
 if(!str_contains($html,'<html'))exit(3);
+if($page==='index')$html=preg_replace('/isLoggedIn: (?:true|false)/','isLoggedIn: false',$html);
 file_put_contents($root.'/app/templates/'.$page.'.html',$html);

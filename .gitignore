@@ -10,5 +10,6 @@ native/android/build/
 *.pfx
 installers/
 previous-installers/
+previous-v2-installers/
 scripts/__pycache__/
 tests/results/

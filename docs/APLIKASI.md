@@ -1,6 +1,6 @@
-# Aplikasi Absensi 1.0.2
+# Aplikasi Absensi 1.0.3
 
-Tersedia tiga paket **1.0.2** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.2): **Absensi-Dosen-Android.apk** (ikon **Absensi Dosen 2**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.2.exe**, dan **Absen-Mahasiswa-Android.apk** (ikon **Absen Mahasiswa 2**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
+Tersedia tiga paket **1.0.3** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.3): **Absensi-Dosen-Android.apk** (ikon **Absensi Dosen 2**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.3.exe**, dan **Absen-Mahasiswa-Android.apk** (ikon **Absen Mahasiswa 2**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
 
 APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
 
@@ -8,7 +8,7 @@ APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portabl
 
 Dosen masuk dengan akun pengelola/dosen yang sudah digunakan di website. Mahasiswa mendaftar nama, NIM lengkap termasuk awalan C, PIN, prodi, semester, dan kelas. Dosen mencocokkan identitas dengan daftar mahasiswa lalu menyetujui sekali. Mahasiswa menyinkronkan persetujuan saat masih online. Login dan data perangkat bertahan setelah aplikasi ditutup; **Keluar akun** menghapus akses lokal dan meminta login lagi. Jangan keluar sebelum perubahan offline tersinkron atau dicadangkan.
 
-Untuk versi browser, buka [aplikasi](https://datasiswasekolah.42web.io/app/) saat online, pasang melalui menu browser, lalu tunggu **Siap offline**. Paket dosen menyertakan pustaka PDF, Word, Excel dan OCR; paket mahasiswa hanya membawa kebutuhan absensi. Mesin konversi dimuat saat dibutuhkan. Ekspor Word/Excel melalui dialog penyimpanan, cetak/PDF melalui dialog cetak sistem. Hasil OCR tetap perlu dibandingkan dengan dokumen asli; NIM kosong atau hasil meragukan harus dikoreksi sebelum disimpan.
+Android dosen dan Windows membuka [website asli](https://datasiswasekolah.42web.io/index.php). Desain, navigasi, tabel, lembar ujian dan pengaturan asli dipertahankan. Di **Lembar Absen**, tekan **Absensi QR** untuk membuka sesi atau memindai balasan. Di **Pusat Kendali** halaman utama, buka persetujuan akun mahasiswa, sinkronisasi dan cadangan. Halaman lama `/app/` mengarahkan dosen ke website asli; [halaman mahasiswa](https://datasiswasekolah.42web.io/app/?role=student) tetap khusus untuk mengirim absensi. Paket dosen menyertakan pustaka PDF, Word, Excel dan OCR; paket mahasiswa hanya membawa kebutuhan absensi. Mesin konversi dimuat saat dibutuhkan. Ekspor Word/Excel melalui dialog penyimpanan, cetak/PDF melalui dialog cetak sistem. Hasil OCR tetap perlu dibandingkan dengan dokumen asli; NIM kosong atau hasil meragukan harus dikoreksi sebelum disimpan.
 
 ## Membuka absensi
 
@@ -39,7 +39,7 @@ Musik dari berkas audio lokal dapat diputar offline. Menutup panel musik menyemb
 
 Paket dibuat dan alur utama diuji melalui browser serta build Android/Windows. Penggunaan kamera, notifikasi latar belakang, dialog cetak dan penyimpanan pada perangkat Android/Windows fisik perlu diuji pada perangkat yang dipakai dosen dan mahasiswa. SHA256SUMS.txt menyertakan checksum unduhan.
 
-## Pembaruan 1.0.2
+## Pembaruan 1.0.3
 
 Pengingat dan hitung mundur berhenti ketika dosen mengisi absensi manual, termasuk saat catatan dibuat sebelum sesi QR dibuka. Notifikasi Android menggunakan ID sesi yang sama agar dapat ditutup setelah absensi diterima.
 

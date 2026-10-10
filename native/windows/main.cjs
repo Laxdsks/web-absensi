@@ -11,6 +11,6 @@ app.whenReady().then(async()=>{
  session.defaultSession.on('will-download',(event,item)=>{const name=path.basename(item.getFilename());const file=dialog.showSaveDialogSync(main,{defaultPath:name});if(file)item.setSavePath(file);else item.cancel();});
  ipcMain.handle('save-file',async(event,{name,mime,data})=>{if(!trusted(event)||typeof data!=='string'||data.length>75000000||!/^data:[^,]*;base64,/.test(data))return false;const result=await dialog.showSaveDialog(main,{defaultPath:path.basename(name||'dokumen')});if(result.canceled)return false;fs.writeFileSync(result.filePath,Buffer.from(data.slice(data.indexOf(',')+1),'base64'));return true;});
  ipcMain.handle('print-document',async(event,{html,base})=>{if(!trusted(event)||typeof html!=='string'||html.length>20000000)return false;const win=new BrowserWindow({show:false,webPreferences:{javascript:false,nodeIntegration:false,contextIsolation:true,sandbox:true}});const safeBase='https://'+HOST+'/';await win.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(html.replace('<head>','<head><base href="'+safeBase+'">')));win.webContents.print({printBackground:true},()=>win.destroy());return true;});
- await main.loadURL('https://'+HOST+'/app/?role=teacher');
+ await main.loadURL('https://'+HOST+'/index.php');
 });
 app.on('window-all-closed',()=>app.quit());

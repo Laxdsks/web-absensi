@@ -374,8 +374,17 @@
 <script src="assets/native-export.js?v=20261010" defer></script>
     <script src="app/core.js?v=20261010" defer></script>
     <script src="assets/offline-bridge.js?v=20261010" defer></script>
+    <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-integrated-1">
+    <script src="app/vendor/qr.js" defer></script>
+    <script src="app/vendor/scan.js" defer></script>
+    <script src="assets/teacher-tools.js?v=20261010-integrated-1" defer></script>
 </head>
 <body>
+<dialog id="attendanceQRPanel" class="teacher-tools"><button type="button" id="closeAttendanceQR">Kembali ke lembar</button><div id="teacherTools" class="teacher-tools" data-page="absen" hidden>
+    <h2>Absensi QR</h2><span id="toolConnection"></span><button type="button" id="sync">Sinkronkan</button>
+    <p id="toolNotice" role="status" aria-live="polite"></p><div id="toolBody"></div>
+<dialog id="scanner"><h2>Pindai QR mahasiswa</h2><video playsinline muted id="camera"></video><canvas id="scanCanvas" hidden></canvas><label>Pilih foto QR<input id="qrImage" type="file" accept="image/*"></label><label>Atau tempel kode<textarea id="qrText"></textarea></label><button type="button" id="readText">Baca kode</button><button type="button" id="stopScan">Tutup</button></dialog>
+    <dialog id="codeDialog"><h2 id="codeTitle"></h2><div id="codeImage"></div><p id="countdown"></p><button type="button" id="shareCode">Bagikan QR</button><button type="button" id="closeCode">Tutup</button></dialog></div></dialog>
             <script>
             document.addEventListener('DOMContentLoaded', function() {
                 showCustomModal('Pemberitahuan Sistem', 'Perhatian: Untuk memastikan sinkronisasi data yang tepat, pastikan Anda menekan tombol hijau \'Lembar Absen\' dari halaman Data Siswa.');
@@ -451,6 +460,7 @@
                 <i class="fa-solid fa-file-invoice"></i> Lembar Ujian
             </a>
             <button onclick="mulaiTurInteraktif()" class="btn btn-primary" id="tourBtnGuide" title="Buka Panduan & Tur Interaktif"><i class="fa-solid fa-circle-question"></i> Panduan</button>
+            <button type="button" id="openAttendanceQR" class="btn btn-primary"><i class="fa-solid fa-qrcode"></i> Absensi QR</button>
             <button onclick="bukaRekapNilai()" class="btn btn-success" id="tourBtnRekap" title="Buka Kalkulasi Otomatis Rekapitulasi Nilai Akhir"><i class="fa-solid fa-calculator"></i> Rekap Nilai</button>
             <button onclick="tambahSiswa()" class="btn btn-success" id="tourBtnTambah" title="Sisipkan satu baris siswa/mahasiswa baru di bagian paling bawah"><i class="fa-solid fa-user-plus"></i> Sisip Baris</button>
             <button onclick="hapusSiswa()" class="btn btn-danger" id="tourBtnHapus" title="Hapus baris data siswa yang berada di urutan paling akhir"><i class="fa-solid fa-user-minus"></i> Hapus Baris</button>
