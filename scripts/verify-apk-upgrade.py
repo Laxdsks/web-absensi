@@ -1,4 +1,4 @@
-"""Check APK bundle contents and compatibility with the previous installation."""
+"""Check Android 2 signing, assets and isolation from the original APKs."""
 import hashlib
 from pathlib import Path
 import re
@@ -27,12 +27,13 @@ for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
     contents_only = '--contents-only' in sys.argv[2:]
     if not contents_only:
         old_cert, old_package = details(previous)
-        if old_cert != new_cert or old_package[0] != new_package[0]:
-            raise RuntimeError('APK cannot update the existing installation: ' + name)
-        if int(new_package[1]) <= int(old_package[1]):
-            raise RuntimeError('APK version code was not advanced: ' + name)
-    expected_package = 'id.webabsensi.app.' + ('dosen' if name.startswith('Absensi-Dosen') else 'mahasiswa')
-    if new_package[0] != expected_package or new_package[2] != '1.0.1':
+        if old_package[0] == new_package[0]:
+            raise RuntimeError('APK must not replace the original application: ' + name)
+        expected_cert = (root / 'native/android/signing-certificate.sha256').read_text().strip()
+        if new_cert != [expected_cert]:
+            raise RuntimeError('APK was not signed by the reusable Android 2 identity: ' + name)
+    expected_package = 'id.webabsensi.parallel2026.' + ('dosen' if name.startswith('Absensi-Dosen') else 'mahasiswa')
+    if new_package[0] != expected_package or new_package[2] != '1.0.2':
         raise RuntimeError('APK version was not advanced: ' + name)
     paths = ['app/index.html', 'app/app.js', 'app/core.js', 'app-sw.js', 'app/vendor/qr.js', 'app/vendor/scan.js']
     if name.startswith('Absensi-Dosen'):
@@ -42,6 +43,6 @@ for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
             if hashlib.sha256(apk.read('assets/' + path)).digest() != hashlib.sha256((root / path).read_bytes()).digest():
                 raise RuntimeError('APK contains an outdated asset: ' + path)
     if contents_only:
-        print(name + ': build and offline assets verified only; installation upgrade compatibility NOT checked.')
+        print(name + ': Android 2 identity, build and offline assets verified only; release signing NOT checked.')
     else:
-        print(name + ': signature and package identity retained; version 1.0.1 and offline assets verified.')
+        print(name + ': reusable Android 2 certificate verified; package differs from the original APK; version 1.0.2 and offline assets verified.')
