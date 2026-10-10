@@ -380,6 +380,7 @@
     <script src="app/qr-files.js" defer></script>
     <script src="assets/teacher-tools.js?v=20261010-reliable-4" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
+<link rel="stylesheet" href="assets/sheet-fit.css"><script src="assets/sheet-fit.js" defer></script>
 </head>
 <body>
 
@@ -1990,12 +1991,14 @@
         }
 
         function cloneUntukEkspor(element) {
+            window.WAFitSheetText?.();
             const clone = element.cloneNode(true);
+            const originalInputs=[...element.querySelectorAll('input')].filter(input=>input.type!=='file'&&!input.closest('.sheet-signature-controls,.page-preview-only'));
             clone.querySelectorAll('button, input[type="file"], .sheet-signature-controls, .sheet-signature-image[hidden], .btn-hapus-logo, .page-preview-marker, .page-preview-only').forEach(el => el.remove());
-            clone.querySelectorAll('input').forEach(input => {
+            clone.querySelectorAll('input').forEach((input,index) => {
                 const value = document.createElement('span');
                 value.textContent = input.value || '';
-                value.style.whiteSpace = 'pre-wrap';
+                value.style.whiteSpace = 'nowrap';value.style.fontSize=getComputedStyle(originalInputs[index]||input).fontSize;
                 input.replaceWith(value);
             });
             clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
@@ -2060,7 +2063,7 @@
                 const rows = Array.from(column?.querySelectorAll('.meta-row') || []).map(row => {
                     const label = row.querySelector('.meta-label')?.textContent.trim() || '';
                     const value = row.querySelector('.meta-val')?.textContent.trim() || '';
-                    return `<span style="display:inline-block;width:84pt">${escapeWordHtml(label)}</span>&nbsp;<span style="display:inline-block;width:8pt;text-align:center">:</span>&nbsp;<span>${escapeWordHtml(value)}</span>`;
+                    const field=row.querySelector('.meta-val'),font=Math.min(10.66,parseFloat(getComputedStyle(field).fontSize));return `<span style="white-space:nowrap;font-size:${font}px"><span style="display:inline-block;width:84pt">${escapeWordHtml(label)}</span>&nbsp;<span style="display:inline-block;width:8pt;text-align:center">:</span>&nbsp;<span>${escapeWordHtml(value)}</span></span>`;
                 }).join('<br>');
                 const style = styleSpasiWord(column);
                 return `<td width="50%" valign="top" style="width:50%;border:0;padding:0 5px 3px 0;vertical-align:top;font-size:8pt;line-height:10pt"><p style="margin:0;mso-margin-top-alt:0pt;mso-margin-bottom-alt:0pt;padding:0;line-height:10pt;mso-line-height-rule:exactly;${style}">${rows}</p></td>`;
@@ -2082,12 +2085,12 @@
             table.insertBefore(colgroup, table.firstChild);
             table.querySelectorAll('th,td').forEach(cell => {
                 cell.style.border = '1px solid #111';
-                cell.style.padding = '2px 2px';
+                cell.style.padding = '3px 6px';
                 cell.style.textAlign = 'center';
                 cell.style.verticalAlign = 'middle';
-                cell.style.whiteSpace = 'normal';
-                cell.style.overflowWrap = 'break-word';
-                cell.style.fontSize = '7.5pt';
+                cell.style.whiteSpace = 'nowrap';
+                cell.style.overflowWrap = 'normal';
+                const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?Math.min(10,fitted)+'px':'7.5pt';
                 cell.style.lineHeight = '9pt';
                 cell.style.color = '#111';
                 if (cell.tagName === 'TH') { cell.style.backgroundColor = '#e2e8f0'; cell.style.fontWeight = 'bold'; }
@@ -2097,7 +2100,7 @@
                 while (cell.firstChild) paragraph.appendChild(cell.firstChild);
                 cell.appendChild(paragraph);
             });
-            table.querySelectorAll('td span').forEach(span => { span.style.whiteSpace = 'pre-wrap'; });
+            table.querySelectorAll('td span').forEach(span => { span.style.whiteSpace = 'nowrap'; });
             const tableStyle = styleSpasiWord(tableWrapper);
             if (tableStyle) table.style.cssText += tableStyle + ';';
             const signatureMarkup = Array.from(element.querySelectorAll('.signature-box')).map(box => {
@@ -2128,14 +2131,16 @@
 
         function buatDokumenWordShell(page, title, bodyContent) {
             const orientation = page.orientation === 'landscape' ? 'landscape' : 'portrait';
-            return `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapeWordHtml(title)}</title><style>@page{size:${page.width} ${page.height};margin:${page.marginSize}}@page WordSection1{size:${page.width} ${page.height};margin:${page.marginSize};mso-page-orientation:${orientation};mso-header-margin:8mm;mso-footer-margin:8mm}div.WordSection1{page:WordSection1}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;font-size:8pt}p{mso-line-height-rule:exactly}table{width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt}th,td{border:1px solid #111;padding:4px 3px;text-align:center;vertical-align:middle;white-space:normal;overflow-wrap:break-word;font-size:8pt;color:#111}th{font-weight:bold;background:#e2e8f0}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}</style></head><body><div class="WordSection1">${bodyContent}</div></body></html>`;
+            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapeWordHtml(title)}</title><style>@page{size:${page.width} ${page.height};margin:${page.marginSize}}@page WordSection1{size:${page.width} ${page.height};margin:${page.marginSize};mso-page-orientation:${orientation};mso-header-margin:8mm;mso-footer-margin:8mm}div.WordSection1{page:WordSection1}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;font-size:8pt}p{mso-line-height-rule:exactly}table{width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt}th,td{border:1px solid #111;padding:4px 3px;text-align:center;vertical-align:middle;white-space:nowrap;overflow-wrap:normal;font-size:8pt;color:#111}th{font-weight:bold;background:#e2e8f0}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}</style></head><body><div class="WordSection1">${bodyContent}</div></body></html>`;
+            const width=parseFloat(page.width)*96-2*parseFloat(page.marginSize)*96/25.4;
+            return window.WAFitExportHTML?.(markup,width)||markup;
         }
 
         function buatDokumenWord(element, title) {
             if (element?.id === 'paperSheet') return buatDokumenWordAbsen(element, title);
             const clone = cloneUntukEkspor(element);
             const exportTable = clone.matches('table') ? clone : clone.querySelector('table');
-            if (exportTable) { exportTable.style.width = '100%'; exportTable.style.minWidth = '0'; exportTable.style.tableLayout = 'fixed'; }
+            if (exportTable) { const cols=[...exportTable.querySelectorAll('colgroup col')],total=cols.reduce((n,c)=>n+parseFloat(c.style.width||0),0);if(total)cols.forEach(c=>c.style.width=(parseFloat(c.style.width)/total*100)+'%'); exportTable.style.width = '100%'; exportTable.style.minWidth = '0'; exportTable.style.tableLayout = 'fixed'; }
             const bodyContent = clone.outerHTML;
             const page = getWordPageSettings(element?.id === 'tabelRekapNilai' ? 'landscape' : null);
             const titleMarkup = `<p style="font-size:13pt;font-weight:bold;margin:0 0 8pt">${escapeWordHtml(title)}</p>`;
@@ -2144,10 +2149,12 @@
 
         function buatTabelExcel(element, title) {
             const table = cloneUntukEkspor(element);
-            table.setAttribute('width', '1600');
-            table.style.width = '1600px'; table.style.tableLayout = 'fixed'; table.style.borderCollapse = 'collapse';
-            table.querySelectorAll('colgroup col').forEach(col => { col.setAttribute('width', String(Math.round(parseFloat(col.style.width || '0') * 16)) + 'px'); });
-            return `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:normal;word-wrap:break-word;font-size:9pt;mso-number-format:"\@"}th{font-weight:bold;background:#dbeafe}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
+            const width=Math.max(1600,Math.ceil(element.getBoundingClientRect().width));
+            table.setAttribute('width', String(width));
+            table.style.width = width+'px'; table.style.tableLayout = 'fixed'; table.style.borderCollapse = 'collapse';
+            table.querySelectorAll('colgroup col').forEach(col => { col.setAttribute('width', String(Math.round(parseFloat(col.style.width || '0') * (col.style.width.endsWith('%')?width/100:1))) + 'px'); });
+            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:nowrap;word-wrap:normal;font-size:9pt;mso-number-format:"\@"}th{font-weight:bold;background:#dbeafe}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
+            return window.WAFitExportHTML?.(markup,width)||markup;
         }
 
         async function unduhFileTeks(content, mimeType, filename) {
@@ -2195,6 +2202,7 @@
             let settings=document.getElementById('rekapPrintSettings');
             if(!settings){settings=document.createElement('style');settings.id='rekapPrintSettings';settings.media='print';document.head.appendChild(settings);}
             settings.textContent=recap?'@page { size:A4 landscape; margin:10mm; }':'';
+            window.WAFitSheetText?.();
         }
         function selesaiCetakRekap() {
             document.body.classList.remove('cetak-rekap');

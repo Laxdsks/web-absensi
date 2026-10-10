@@ -1,6 +1,6 @@
-# Aplikasi Absensi 1.0.4
+# Aplikasi Absensi 1.0.5
 
-Tersedia tiga paket **1.0.4** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.4): **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.4.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
+Tersedia tiga paket **1.0.5** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.5): **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.5.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
 
 APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
 
@@ -39,7 +39,11 @@ Musik dari berkas audio lokal dapat diputar offline. Menutup panel musik menyemb
 
 Paket dibuat dan alur utama diuji melalui browser serta build Android/Windows. Penggunaan kamera, notifikasi latar belakang, dialog cetak dan penyimpanan pada perangkat Android/Windows fisik perlu diuji pada perangkat yang dipakai dosen dan mahasiswa. SHA256SUMS.txt menyertakan checksum unduhan.
 
-## Pembaruan 1.0.4
+## Pembaruan 1.0.5
+
+Lembar absensi, ujian dan rekap mempertahankan desain asli. Teks tabel diberi jarak dari garis; NIM/nama serta isian mata kuliah, ruang dan waktu dibuat satu baris dengan ukuran teks mengikuti lebar kolom. Rekap layar memakai kolom yang cukup lebar dan dapat digeser. Ekspor Word/Excel menyesuaikan ukuran teks terhadap lebar kertas/kolom, tanpa memotong isi atau mengubah nilai. Panduan **?** menunjukkan urutan penggunaan dan tombol pada halaman yang sedang dibuka.
+
+### Perbaikan yang tetap disertakan
 
 Pendaftaran dapat dicoba kembali dengan NIM, kelas dan PIN yang sama jika respons jaringan terputus. Dosen melihat pendaftaran di menu Persetujuan akun mahasiswa pada halaman utama atau panel Absensi QR. Persetujuan memperbarui daftar dan sesi aktif; mahasiswa menerima hasil otomatis saat tersambung internet.
 

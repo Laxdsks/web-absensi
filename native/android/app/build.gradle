@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'id.webabsensi.app'
  compileSdk 35
- defaultConfig { applicationId 'id.webabsensi.parallel2026'; minSdk 26; targetSdk 35; versionCode 5; versionName '1.0.4'; buildConfigField 'String','APP_HOST','"datasiswasekolah.42web.io"' }
+ defaultConfig { applicationId 'id.webabsensi.parallel2026'; minSdk 26; targetSdk 35; versionCode 6; versionName '1.0.5'; buildConfigField 'String','APP_HOST','"datasiswasekolah.42web.io"' }
  buildFeatures { buildConfig true }
  signingConfigs {
   if (System.getenv('WA_ANDROID_KEYSTORE_PATH')) {

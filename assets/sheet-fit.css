@@ -1,0 +1,20 @@
+/* Keep original sheets, with complete single-line text and space from cell borders. */
+#paperSheet .meta-label,#paperSheet .meta-val,#paper .meta-label,#paperSheet .meta-value,#paper .meta-value{white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important;min-width:0}
+#paperSheet .meta-val,#paperSheet .meta-value,#paper .meta-value{display:block;max-width:100%;padding:0 2px}
+#paperSheet .meta-val>div,#paperSheet .meta-value>div,#paper .meta-value>div{display:inline}
+#tabelAbsen th,#tabelAbsen td,#paperSheet table th,#paper table th,#paperSheet table td,#paper table td,#tabelRekapNilai th,#tabelRekapNilai td{white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important;padding:3px 6px!important}
+#tabelAbsen td input{box-sizing:border-box;padding:0 2px!important;min-width:16px}
+#tabelAbsen tbody td:nth-child(2),#tabelAbsen tbody td:nth-child(3){padding:3px 7px!important}
+#tabelRekapNilai td{padding:6px 8px!important}
+#tabelRekapNilai .name-value,#tabelRekapNilai .nim-value{white-space:nowrap!important}
+#tabelRekapNilai th{padding:6px 8px!important}
+#tabelRekapNilai .score-input,#tabelRekapNilai .activity-input{box-sizing:border-box;min-width:44px;padding:4px!important}
+#paperSheet .meta-wrapper,#paperSheet .meta,#paper .meta{align-items:start}
+
+#paperSheet .institution .line,#paperSheet .institution .contact,#paperSheet .header-text>*{white-space:nowrap!important;overflow-wrap:normal!important}
+
+/* Narrow attendance marks retain padding without pushing the sheet off its paper. */
+#tabelAbsen td:has(.attendance-cell),#tabelAbsen .meeting-number,#tabelAbsen .date-entry{padding:3px 2px!important;min-width:12px}
+#tabelAbsen td input.attendance-cell{min-width:12px;padding:0 1px!important}
+#tabelRekapNilai th{font-size:11px}
+@media print{body.cetak-rekap #tabelRekapNilai th,body.cetak-rekap #tabelRekapNilai td{padding:3px 4px!important}}

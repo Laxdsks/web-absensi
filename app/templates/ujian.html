@@ -150,6 +150,7 @@
     <script src="app/core.js?v=20261010" defer></script>
     <script src="assets/offline-bridge.js?v=20261010" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
+<link rel="stylesheet" href="assets/sheet-fit.css"><script src="assets/sheet-fit.js" defer></script>
 </head>
 <body>
     <button type="button" class="toolbar-toggle-btn" id="toggleToolbarBtn" onclick="toggleToolbar()" aria-controls="topToolbar">⌃ Menu</button>
@@ -485,6 +486,7 @@
             const span=document.createElement('span');span.textContent=String(value??'');return span.innerHTML;
         }
         function cloneTabelUjian(selector) {
+            window.WAFitSheetText?.();
             const source=paper.querySelector(selector);
             if(!source)return '';
             const table=source.cloneNode(true);
@@ -494,8 +496,8 @@
             table.querySelectorAll('[contenteditable]').forEach(el=>el.removeAttribute('contenteditable'));
             table.querySelectorAll('[data-edit-key]').forEach(el=>el.removeAttribute('data-edit-key'));
             table.querySelectorAll('th,td').forEach(cell=>{
-                cell.style.border='1px solid #111';cell.style.padding='3px 4px';cell.style.verticalAlign='middle';cell.style.color='#111';
-                cell.style.fontSize=selector==='#examTableBlock table'?'8pt':'7.5pt';cell.style.whiteSpace='normal';
+                cell.style.border='1px solid #111';cell.style.padding='3px 6px';cell.style.verticalAlign='middle';cell.style.color='#111';
+                const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?Math.min(fitted,selector==='#examTableBlock table'?10.66:10)+'px':selector==='#examTableBlock table'?'8pt':'7.5pt';cell.style.whiteSpace='nowrap';cell.style.overflowWrap='normal';
                 if(cell.tagName==='TH'){cell.style.textAlign='center';cell.style.fontWeight='bold';cell.style.backgroundColor='#e2e8f0';}
                 else if(cell.classList.contains('name'))cell.style.textAlign='left';
                 else cell.style.textAlign='center';
@@ -514,13 +516,13 @@
         }
         function markupMetaUjian() {
             const columns=['#examMetaLeft','#examMetaRight'].map(selector=>[...paper.querySelectorAll(`${selector} .meta-row`)].map(row=>({
-                label:row.querySelector('.meta-label')?.textContent.trim()||'',value:row.querySelector('.meta-value')?.textContent.trim()||''
+                label:row.querySelector('.meta-label')?.textContent.trim()||'',value:row.querySelector('.meta-value')?.textContent.trim()||'',font:Math.min(10.66,parseFloat(getComputedStyle(row.querySelector('.meta-value')).fontSize))
             })));
             const count=Math.max(...columns.map(rows=>rows.length));
             const rows=Array.from({length:count},(_,index)=>{
                 const cells=columns.flatMap(column=>{
                     const item=column[index]||{label:'',value:''};
-                    return [`<td style="width:20%;border:0;padding:2px 2px 2px 0;white-space:nowrap;font-weight:bold;text-transform:uppercase">${escapeHtmlUjian(item.label)}</td>`,`<td style="width:2%;border:0;padding:2px 0;text-align:center">${item.label?':':''}</td>`,`<td style="width:28%;border:0;padding:2px 5px 2px 0;vertical-align:top">${escapeHtmlUjian(item.value)}</td>`];
+                    return [`<td style="width:20%;border:0;padding:2px 2px 2px 0;white-space:nowrap;font-weight:bold;text-transform:uppercase">${escapeHtmlUjian(item.label)}</td>`,`<td style="width:2%;border:0;padding:2px 0;text-align:center">${item.label?':':''}</td>`,`<td style="width:28%;border:0;padding:2px 5px 2px 0;vertical-align:top;white-space:nowrap;font-size:${item.font||10.66}px">${escapeHtmlUjian(item.value)}</td>`];
                 }).join('');
                 return `<tr>${cells}</tr>`;
             }).join('');
@@ -545,8 +547,9 @@
             const body=`${markupHeaderUjian()}<h1 style="margin:6px 0 8px;text-align:center;font: bold 12pt 'Times New Roman',serif;text-decoration:underline">${title}</h1>${markupMetaUjian()}<div style="width:100%;margin:0 0 10px">${students}</div><table style="width:320px;margin:10px 0 0 auto;border-collapse:collapse;table-layout:fixed">${grading}</table>${savedNote?`<p style="text-align:right;font-size:8pt">${savedNote}</p>`:''}<table class="export-signatures" style="width:100%;margin-top:28px;border:0;border-collapse:collapse;table-layout:fixed;page-break-inside:avoid"><tr>${markupTandaTanganUjian('examSupervisorBox')}${markupTandaTanganUjian('examLecturerBox')}</tr></table>`;
             const titleAttr=escapeHtmlUjian(`Lembar Ujian S1 Kelas ${"A"} Semester ${"1"}`);
             const excel=format==='excel';
-            const styles=`@page{size:A4 portrait;margin:10mm 12mm}*{box-sizing:border-box}body{margin:0;color:#111;background:#fff;font:8pt 'Times New Roman',serif}table{border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}.export-header td,.export-meta td,.export-signatures td{border:0!important}.export-meta td{line-height:1.2}.export-signatures{page-break-inside:avoid}.export-signatures img{object-fit:contain}#exportRoot{width:100%;${excel?'':'max-width:186mm;margin:0 auto;'}}`;
-            return `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="ProgId" content="${excel?'Excel.Sheet':'Word.Document'}"><title>${titleAttr}</title>${excel?`<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Lembar Ujian</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->`:''}<style>${styles}${excel?'body{font-family:Arial,sans-serif}td,th{mso-number-format:"\\@"}':''}</style></head><body><div id="exportRoot">${body}</div></body></html>`;
+            const styles=`@page{size:A4 portrait;margin:10mm 12mm}*{box-sizing:border-box}body{margin:0;color:#111;background:#fff;font:8pt 'Times New Roman',serif}table{border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}.export-header td,.export-meta td,.export-signatures td{border:0!important}.export-meta td{line-height:1.2;white-space:nowrap}.export-signatures{page-break-inside:avoid}.export-signatures img{object-fit:contain}#exportRoot{width:100%;${excel?'':'max-width:186mm;margin:0 auto;'}}`;
+            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="ProgId" content="${excel?'Excel.Sheet':'Word.Document'}"><title>${titleAttr}</title>${excel?`<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Lembar Ujian</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->`:''}<style>${styles}${excel?'body{font-family:Arial,sans-serif}td,th{mso-number-format:"\\@"}':''}</style></head><body><div id="exportRoot">${body}</div></body></html>`;
+            return window.WAFitExportHTML?.(markup,186*96/25.4)||markup;
         }
         function simpanBerkasUjian(content,mime,filename) {
             const blob=new Blob(['\ufeff',content],{type:mime}),ua=navigator.userAgent||'',androidWebView=/android/i.test(ua)&&(/\bwv\b|; wv\)/i.test(ua)||!navigator.share);
