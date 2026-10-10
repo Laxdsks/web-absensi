@@ -63,14 +63,23 @@ for role, filename in roles:
     if 'Status: ok' not in launched:
         raise RuntimeError('Android 2 activity did not launch')
     # Wait for WebView rendering without entering a production account.
-    until = time.monotonic() + 45
+    until = time.monotonic() + 90
     while True:
-        adb('shell', 'uiautomator', 'dump', '/sdcard/absensi-ui.xml')
-        hierarchy = adb('shell', 'cat', '/sdcard/absensi-ui.xml')
+        dump = adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
+        try:
+            hierarchy = adb('shell', 'cat', '/sdcard/absensi-ui.xml')
+        except subprocess.CalledProcessError:
+            # UIAutomator can return success before it writes XML while WebView
+            # is still laying out the offline homepage. Retry the read, not installation.
+            hierarchy = ''
         expected = 'masuk ke sistem' if role == 'dosen' else 'masuk mahasiswa'
         if expected in hierarchy.lower():
             break
         if time.monotonic() > until:
+            (RESULTS / (role + '-dump-error.txt')).write_text(dump)
+            (RESULTS / (role + '-runtime.log')).write_text(adb('logcat', '-d', '-s', 'AndroidRuntime', 'chromium'))
+            adb('shell', 'screencap', '-p', '/sdcard/absensi-failed.png')
+            adb('pull', '/sdcard/absensi-failed.png', str(RESULTS / (role + '-failed.png')))
             raise RuntimeError('Login UI did not render for ' + role)
         time.sleep(2)
     (RESULTS / (role + '-ui.xml')).write_text(hierarchy)
