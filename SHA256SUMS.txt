@@ -1,2 +1,2 @@
-099dff9180f8367a84abe85b422e53f94cd41b0e9c106dc846add74613a53e49  Absen-Mahasiswa-Android-2-1.0.1.apk
-f0c98196ec4735829e9e82c9ca89711ee9fbdfd4f1f400a53bf63e47376a78f6  Absensi-Dosen-Android-2-1.0.1.apk
+82edea0b9bdbf9695a8bc832943b0925c97da90d905d0801f509c7f3c9c557d4  Absen-Mahasiswa-Android-2-1.0.2.apk
+6561c4eae7f761ddaf8de045d24bd6cae7aa3b598cc91e10c27fc2dc74b4a7e5  Absensi-Dosen-Android-2-1.0.2.apk
