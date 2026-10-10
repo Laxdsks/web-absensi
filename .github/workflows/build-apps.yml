@@ -82,7 +82,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download aplikasi-1.0.0 --pattern '*.apk' --dir previous-installers
-          gh release download aplikasi-1.0.5 --pattern '*.apk' --dir previous-v2-installers
+          gh release download aplikasi-1.0.6 --pattern '*.apk' --dir previous-v2-installers
           signers=("$ANDROID_HOME"/build-tools/*/apksigner)
           python3 scripts/verify-apk-upgrade.py "${signers[-1]}"
       - name: Enable emulator hardware acceleration

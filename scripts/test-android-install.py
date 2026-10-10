@@ -54,7 +54,7 @@ for role, filename in roles:
     if adb('shell', 'cat', marker) != sentinel or adb('shell', 'pm', 'path', old) != old_path or adb('shell', 'sha256sum', old_path.removeprefix('package:')) != old_hash:
         raise RuntimeError('Original application or its private data changed')
     if adb('shell', 'cat', new_marker) != 'new-app-data':
-        raise RuntimeError('Updating Android 2 from 1.0.5 lost private application data')
+        raise RuntimeError('Updating Android 2 from 1.0.6 lost private application data')
     install(ROOT / 'installers' / filename)
     if adb('shell', 'cat', new_marker) != 'new-app-data' or adb('shell', 'cat', marker) != sentinel:
         raise RuntimeError('A same-key APK update lost private application data')
@@ -98,7 +98,7 @@ for role, filename in roles:
     report.append({'role': role, 'old_package': old, 'new_package': new,
                    'coinstalled': True, 'old_private_data_retained': True,
                    'same_key_update_retained_data': True, 'login_ui_rendered': True,
-                   'upgrade_from_version': '1.0.5', 'teacher_homepage_original': role == 'dosen',
+                   'upgrade_from_version': '1.0.6', 'teacher_homepage_original': role == 'dosen',
                    'student_navigation_only': role == 'mahasiswa',
                    'apk_sha256': hashlib.sha256((ROOT / 'installers' / filename).read_bytes()).hexdigest()})
     print(role + ': old/new apps installed together; original data retained; update retained new data; login UI rendered.')

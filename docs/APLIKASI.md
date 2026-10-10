@@ -1,6 +1,6 @@
 # Aplikasi Absensi 1.0.5
 
-Tersedia tiga paket **1.0.5** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.6): **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.6.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
+Tersedia tiga paket **1.0.5** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.7): **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.7.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
 
 APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
 
@@ -39,7 +39,7 @@ Musik dari berkas audio lokal dapat diputar offline. Menutup panel musik menyemb
 
 Paket dibuat dan alur utama diuji melalui browser serta build Android/Windows. Penggunaan kamera, notifikasi latar belakang, dialog cetak dan penyimpanan pada perangkat Android/Windows fisik perlu diuji pada perangkat yang dipakai dosen dan mahasiswa. SHA256SUMS.txt menyertakan checksum unduhan.
 
-## Pembaruan 1.0.6
+## Pembaruan 1.0.7
 
 Impor foto pada Presen Desk memakai alamat lengkap untuk worker, mesin dan bahasa OCR; pengenalan Electron tidak lagi menyebabkan impor berhenti dengan pesan **undefined**. JPEG lembar berkepala, 21 mahasiswa dan 16 kolom pertemuan diuji lewat impor foto. Jika pembaca gagal dimuat, pesan jelas muncul dan percobaan ulang tersedia. Hasil OCR tetap ditinjau sebelum disimpan.
 
@@ -65,3 +65,9 @@ Nama aplikasi diperbarui sesuai peran. Identitas Android dan folder data Windows
 APK Android 2 memakai applicationId baru dan kunci yang bisa dipakai kembali. Login/sinkronisasi mengambil data dari hosting yang sama. Penyimpanan lokal aplikasi lama tidak dibaca langsung; pengguna dengan data offline harus menyinkronkan aplikasi lama terlebih dahulu. Cadangan JSON lama bukan migrasi penuh dan memiliki batas pemulihan. [Petunjuk Android 2](ANDROID-2.md) menjelaskan pemasangan, pemindahan data, cadangan kunci privat dan empat GitHub Secrets yang perlu diisi pemilik repository untuk pembaruan berikutnya. Jangan mencopot aplikasi lama sebelum data dipastikan tersedia.
 
 Status sinkronisasi besar kini disembunyikan secara awal. Ikon **?** di tepi setiap halaman membuka panduan singkat bergambar, menyorot tombol yang dijelaskan, dapat digeser, dan dapat diperkecil menjadi garis. Status lengkap bisa ditampilkan dari panduan. Daftar mahasiswa mengikuti urutan penyimpanan/impor, bukan diurutkan ulang menurut abjad. OCR menjaga nama yang terbungkus dalam satu baris tabel dan memperlihatkan potongan gambar asli untuk pengecekan identitas. [Panduan singkat](PANDUAN-SINGKAT.md).
+
+## Pembaruan 1.0.7
+
+Kode lembar lama yang tertahan cache tidak lagi dipakai sesudah membuka halaman versi baru. Penghapusan satu kelas tersimpan sekaligus pada perangkat dan ditunggu sebelum berpindah halaman atau menutup aplikasi. Nama yang sudah dihapus tidak dipulihkan dari lembar tersimpan pada absen, rekap, maupun ujian. Data kelas lain, catatan kehadiran, nilai, dan draf yang masih berlaku tetap disimpan.
+
+Perbarui paket dengan memasang versi baru menggunakan identitas aplikasi yang sama, lalu tutup dan buka kembali aplikasi. Jangan hapus data aplikasi atau mencopot aplikasi lama. Website tetap memakai alamat serta desain asli.

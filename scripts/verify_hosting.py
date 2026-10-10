@@ -110,7 +110,7 @@ def main():
         raise RuntimeError("The hosting build does not match this GitHub revision.")
     print("Deployed API build verified: " + expected, flush=True)
     page, _ = request("app/")
-    if b"app.js" not in page or b"core.js" not in page:
+    if b"app.js" not in page or (b"core.js" not in page and b"core-" not in page):
         raise RuntimeError("The application entry page is missing.")
     _, mime = request("app/vendor/pdf.min.mjs")
     if not mime.get_content_type() in {"application/javascript", "text/javascript"}:
@@ -122,7 +122,7 @@ def main():
     if b'Aplikasi offline & Absen QR' in original:
         raise RuntimeError("The obsolete second-dashboard link is still published.")
     print("Original teacher homepage retained; obsolete second-dashboard link removed.", flush=True)
-    for path in ("app/app.js", "app/core.js", "app/qr-files.js", "app/guide.js", "app/guide.css", "assets/sheet-fit.js", "assets/sheet-fit.css", "app/app.css", "app-sw.js", "assets/offline-bridge.js", "assets/teacher-tools.js", "assets/teacher-tools.css"):
+    for path in (*[str(path.relative_to(ROOT)) for path in (ROOT / "app").glob("*-[0-9]*.js")], "app/app.js", "app/core.js", "app/qr-files.js", "app/guide.js", "app/guide.css", "assets/sheet-fit.js", "assets/sheet-fit.css", "app/app.css", "app-sw.js", "assets/offline-bridge.js", "assets/teacher-tools.js", "assets/teacher-tools.css"):
         deployed, _ = request(path + "?verify=" + expected)
         if hashlib.sha256(deployed).digest() != hashlib.sha256((ROOT / path).read_bytes()).digest():
             raise RuntimeError("Deployed client file does not match the tested revision: " + path)
