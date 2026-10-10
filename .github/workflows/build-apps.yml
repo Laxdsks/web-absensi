@@ -1,11 +1,13 @@
 name: Build Android and Windows applications
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths: ['native/**','app/**','assets/**','package.json','package-lock.json','app-sw.js','.github/workflows/build-apps.yml']
   workflow_dispatch:
 concurrency:
-  group: application-installers
+  group: application-installers-${{ github.ref }}
   cancel-in-progress: false
 permissions:
   contents: read
@@ -35,6 +37,13 @@ jobs:
           mkdir -p installers
           cp native/android/app/build/outputs/apk/dosen/debug/*.apk installers/Absensi-Dosen-Android.apk
           cp native/android/app/build/outputs/apk/mahasiswa/debug/*.apk installers/Absen-Mahasiswa-Android.apk
+      - name: Verify offline APK contents and upgrade signing identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download aplikasi-1.0.0 --pattern '*.apk' --dir previous-installers
+          signers=("$ANDROID_HOME"/build-tools/*/apksigner)
+          python3 scripts/verify-apk-upgrade.py "${signers[-1]}"
       - name: Keep APK installers
         uses: actions/upload-artifact@v4
         with:
@@ -51,7 +60,10 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npm run check
       - run: npm run windows
+      - name: Verify bundled Windows application
+        run: node scripts/verify-windows-bundle.cjs
       - name: Keep Windows installer
         uses: actions/upload-artifact@v4
         with:
@@ -59,6 +71,7 @@ jobs:
           path: dist/windows/*.exe
           if-no-files-found: error
   release:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: [android, windows]
     runs-on: ubuntu-24.04
     permissions:
@@ -75,7 +88,7 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           tag="aplikasi-$version"
-          sha256sum installers/* > installers/SHA256SUMS.txt
+          (cd installers && sha256sum *.apk *.exe) > installers/SHA256SUMS.txt
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" installers/* --clobber
           else
