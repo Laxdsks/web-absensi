@@ -8,7 +8,7 @@ async function connect(){
   while(Date.now()<until){
     try{const targets=await fetch(`http://127.0.0.1:${port}/json`).then(r=>r.json()),page=targets.find(x=>x.type==='page');
       if(page){socket=new WebSocket(page.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
-        socket.onmessage=event=>{const message=JSON.parse(event.data),item=pending.get(message.id);if(item){pending.delete(message.id);clearTimeout(item.timer);message.error?item.reject(Error(message.error.message)):item.resolve(message.result);}};return;}
+        socket.onclose=()=>{for(const item of pending.values()){clearTimeout(item.timer);item.reject(Error('Desktop target closed.'));}pending.clear();};socket.onmessage=event=>{const message=JSON.parse(event.data),item=pending.get(message.id);if(item){pending.delete(message.id);clearTimeout(item.timer);message.error?item.reject(Error(message.error.message)):item.resolve(message.result);}};return;}
     }catch(_){}await pause(500);
   }throw Error('Packaged desktop app did not expose its test debugging port.');
 }
@@ -22,7 +22,7 @@ async function launch(){
 }
 async function close(){
   const exited=new Promise(resolve=>child.once('exit',resolve));
-  await evaluate('window.close()');await Promise.race([exited,pause(20000).then(()=>{throw Error('Desktop app failed to close after saving.');})]);socket.close();
+  await Promise.race([evaluate('window.close()'),exited]);await Promise.race([exited,pause(20000).then(()=>{throw Error('Desktop app failed to close after saving.');})]);socket.close();
 }
 (async()=>{
   assert(fs.existsSync(executable));await launch();await wait("document.body.innerText.toLowerCase().includes('masuk ke sistem')");
