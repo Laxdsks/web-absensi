@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_hapus_permanen']
 
 // PENARIKAN DATA MENGGUNAKAN OPERATOR EKSAK (=) SESUAI INSTRUKSI
 if (isset($koneksi) && $koneksi) {
-    $query = "SELECT nim, nama, jk FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY nama ASC";
+    $query = "SELECT nim, nama, jk FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY id ASC";
     $stmt  = mysqli_prepare($koneksi, $query);
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, "sssss", $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
@@ -491,17 +491,15 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 <script src="assets/native-export.js?v=20261010" defer></script>
     <script src="app/core.js?v=20261010" defer></script>
     <script src="assets/offline-bridge.js?v=20261010" defer></script>
-    <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-integrated-1">
+    <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
-    <script src="assets/teacher-tools.js?v=20261010-integrated-1" defer></script>
+    <script src="app/qr-files.js" defer></script>
+    <script src="assets/teacher-tools.js?v=20261010-reliable-4" defer></script>
+<link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 </head>
 <body>
-<dialog id="attendanceQRPanel" class="teacher-tools"><button type="button" id="closeAttendanceQR">Kembali ke lembar</button><div id="teacherTools" class="teacher-tools" data-page="absen" hidden>
-    <h2>Absensi QR</h2><span id="toolConnection"></span><button type="button" id="sync">Sinkronkan</button>
-    <p id="toolNotice" role="status" aria-live="polite"></p><div id="toolBody"></div>
-<dialog id="scanner"><h2>Pindai QR mahasiswa</h2><video playsinline muted id="camera"></video><canvas id="scanCanvas" hidden></canvas><label>Pilih foto QR<input id="qrImage" type="file" accept="image/*"></label><label>Atau tempel kode<textarea id="qrText"></textarea></label><button type="button" id="readText">Baca kode</button><button type="button" id="stopScan">Tutup</button></dialog>
-    <dialog id="codeDialog"><h2 id="codeTitle"></h2><div id="codeImage"></div><p id="countdown"></p><button type="button" id="shareCode">Bagikan QR</button><button type="button" id="closeCode">Tutup</button></dialog></div></dialog>
+
     <?php if(!empty($pesan_validasi)): ?>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
@@ -627,6 +625,11 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         </div>
     </div>
     
+<section id="attendanceQRPanel" class="teacher-tools" hidden aria-label="Pengaturan Absensi QR"><button type="button" id="closeAttendanceQR">Tutup pengaturan QR</button><div id="teacherTools" class="teacher-tools" data-page="absen" hidden>
+    <h2>Absensi QR</h2><span id="toolConnection"></span><button type="button" id="sync">Sinkronkan</button>
+    <p id="toolNotice" role="status" aria-live="polite"></p><div id="toolBody"></div>
+<dialog id="scanner"><h2>Pindai QR mahasiswa</h2><video playsinline muted id="camera"></video><canvas id="scanCanvas" hidden></canvas><label>Pilih foto QR<input id="qrImage" type="file" accept="image/*"></label><label>Atau tempel kode<textarea id="qrText"></textarea></label><button type="button" id="readText">Baca kode</button><button type="button" id="stopScan">Tutup</button></dialog>
+    <dialog id="codeDialog"><h2 id="codeTitle"></h2><div id="codeImage"></div><p id="countdown"></p><button type="button" id="shareCode">Bagikan QR</button><button type="button" id="closeCode">Tutup</button></dialog></div></section>
     <div class="workspace-container kontainer-kertas" id="workspaceContainer">
         <div class="paper-sheet" id="paperSheet">
             <!-- KOP SURAT CETAK FISIK RESMI STKIP YAPIS DOMPU (Sesuai Permintaan Foto 100%) -->
@@ -691,7 +694,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     <thead>
                         <tr>
                             <th rowspan="3" style="width: 24px;" contenteditable="true">NO</th>
-                            <th rowspan="3" style="width: 120px; min-width: 120px;" contenteditable="true" id="thLabelId"><?php echo $label_id; ?></th>
+                            <th rowspan="3" style="width: 132px; min-width: 132px;" contenteditable="true" id="thLabelId"><?php echo $label_id; ?></th>
                             <th rowspan="3" style="width: 190px; min-width: 190px;" contenteditable="true">NAMA MAHASISWA</th>
                             <th rowspan="3" style="width: 24px;" contenteditable="true">L/P</th>
                             <th colspan="16" id="headerPertemuan" contenteditable="true">TANGGAL / BULAN</th>

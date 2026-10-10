@@ -35,12 +35,14 @@ try {
         else wa_query('UPDATE wa_login_attempts SET attempts=attempts+1 WHERE bucket=?',[$bucket]);
         $account=wa_one('SELECT * FROM wa_accounts WHERE nim=? AND ctx_key=?',[$nim,wa_ctx_key($ctx)]);
         if($action==='register') {
-            if($account)throw new InvalidArgumentException('NIM di kelas ini sudah didaftarkan. Gunakan menu Masuk mahasiswa.');
+            if($account&&!password_verify($pin,$account['pin_hash']))throw new InvalidArgumentException('NIM di kelas ini sudah didaftarkan. Gunakan menu Masuk mahasiswa dengan PIN sebelumnya.');
             $name=wa_text($input['nama']??''); $jk=wa_text($input['jk']??'',1);
             if(strlen($name)<2||!in_array($jk,['L','P'],true))throw new InvalidArgumentException('Lengkapi nama dan L/P.');
+            if(!$account){
             $id=wa_uuid();
             wa_query('INSERT INTO wa_accounts(id,nim,nama,jk,ctx,ctx_key,pin_hash,created_at) VALUES(?,?,?,?,?,?,?,?)',[$id,$nim,$name,$jk,wa_json($ctx),wa_ctx_key($ctx),password_hash($pin,PASSWORD_DEFAULT),wa_now()]);
             $account=wa_one('SELECT * FROM wa_accounts WHERE id=?',[$id]);
+            }
         }elseif(!$account||!password_verify($pin,$account['pin_hash']))wa_response(['status'=>'error','message'=>'NIM, PIN, atau kelas tidak cocok.'],401);
         wa_query('DELETE FROM wa_login_attempts WHERE bucket=?',[$bucket]);
         session_unset();

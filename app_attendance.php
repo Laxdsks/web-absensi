@@ -18,6 +18,7 @@ function wa_session_operation(array $device,array $op): array {
         $roster=array_values(array_unique(array_merge(json_decode($old['roster'],true),array_map(static function($s){return strtoupper($s['nim']);},wa_roster($ctx)))));
     }else $roster=array_values(array_unique(array_map(static function($s){return strtoupper($s['nim']);},wa_roster($ctx))));
     wa_query('INSERT INTO wa_sessions(id,scope,ctx,matkul,slot,day,starts,deadline,ends,version,challenge,teacher_id,roster) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE starts=VALUES(starts),deadline=VALUES(deadline),ends=VALUES(ends),version=VALUES(version),challenge=VALUES(challenge),roster=VALUES(roster),finalized=0',[$id,$scope,wa_json($ctx),$course,$slot,wa_day($starts),$starts,$deadline,$ends,$version,$challenge,$device['id'],wa_json($roster)]);
+    if($deadline>wa_now())wa_query("DELETE FROM wa_marks WHERE scope=? AND slot=? AND source='automatic'",[$scope,$slot]);
     wa_audit($device,$old?'reset-qr':'open-session',$id,['slot'=>$slot,'day'=>wa_day($starts),'version'=>$version]);
     return ['status'=>'success','session'=>$id];
 }
@@ -71,7 +72,7 @@ function wa_accept_reply(array $device,array $op): array {
     $location=wa_location($reply['location']??null);
     if($location && abs((int)($reply['at']??0)-$location['at'])>300000)throw new InvalidArgumentException('Lokasi sudah terlalu lama. Ambil lokasi kembali.');
     $old=wa_one('SELECT * FROM wa_marks WHERE scope=? AND slot=? AND nim=? FOR UPDATE',[$session['scope'],$session['slot'],$student['nim']]);
-    if($old && $old['source']!=='automatic')return ['status'=>'success','duplicate'=>true,'mark'=>$old['mark'],'message'=>'Absen sudah tercatat; perubahan berikutnya dilakukan dosen.'];
+    if($old && $old['mark']!=='' && $old['source']!=='automatic')return ['status'=>'success','duplicate'=>true,'mark'=>$old['mark'],'message'=>'Absen sudah tercatat; perubahan berikutnya dilakukan dosen.'];
     wa_query('INSERT INTO wa_marks(scope,slot,nim,mark,session_id,reason,location,source,review_status,revision,recorded_at) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE mark=VALUES(mark),reason=VALUES(reason),location=VALUES(location),source=VALUES(source),review_status=VALUES(review_status),revision=revision+1,recorded_at=VALUES(recorded_at)',[$session['scope'],$session['slot'],$student['nim'],$mark,$session['id'],$reason,$location?wa_json($location):null,$receipt?'qr-offline':'qr-online',$mark==='.'?'final':'pending',1,$at]);
     wa_audit($device,$receipt?'scan-reply':'submit-attendance',$session['id'].':'.$student['nim'],['mark'=>$mark,'locationIncluded'=>$location!==null,'receivedAt'=>$at]);
     return ['status'=>'success','mark'=>$mark];
@@ -90,6 +91,10 @@ function wa_operation(array $device,array $op): array {
         if(!$match)wa_query("INSERT INTO siswa(jenjang,prodi,semester,kelas,nim,nama,jk) VALUES('S1',?,?,?,?,?,?)",[$ctx['prodi'],$ctx['semester'],$ctx['kelas'],$nim,$account['nama'],$account['jk']]);
         else wa_query('UPDATE wa_accounts SET nama=?,jk=? WHERE id=?',[$match[0]['nama'],$match[0]['jk'],$id]);
         wa_query('UPDATE wa_accounts SET approved=1,approved_by=? WHERE id=?',[$device['account_id'],$id]);
+        foreach(wa_rows('SELECT id,ctx,roster FROM wa_sessions WHERE deadline>? FOR UPDATE',[wa_now()]) as $session){
+            if(wa_ctx_key(json_decode($session['ctx'],true))!==wa_ctx_key($ctx))continue;
+            $roster=json_decode($session['roster'],true);if(!in_array($nim,$roster,true)){$roster[]=$nim;wa_query('UPDATE wa_sessions SET roster=? WHERE id=?',[wa_json($roster),$session['id']]);}
+        }
         wa_audit($device,'approve-student',$id,['nim'=>$nim]);
         return ['status'=>'success'];
     }
