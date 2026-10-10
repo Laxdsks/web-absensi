@@ -24,13 +24,32 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Keep the Android install signing identity between builds
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: absensi-android-install-key-v1
+      - name: Load the existing Android installation signing identity
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          required = ('KEYSTORE_BASE64', 'KEYSTORE_PASSWORD', 'KEY_ALIAS', 'KEY_PASSWORD')
+          if any(not os.environ.get(key) for key in required):
+              raise SystemExit('Original APK 1.0.0 signing key is required. Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD in repository secrets. Existing installations must not be uninstalled.')
+          path = Path(os.environ['RUNNER_TEMP']) / 'absensi-install.keystore'
+          with path.open('xb') as output:
+              os.chmod(path, 0o600)
+              output.write(base64.b64decode(os.environ['KEYSTORE_BASE64'], validate=True))
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('WA_ANDROID_KEYSTORE_PATH=' + str(path) + '\n')
+          PY
       - name: Build teacher and student Android apps
         working-directory: native/android
+        env:
+          WA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          WA_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          WA_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle assembleDosenDebug assembleMahasiswaDebug --no-daemon
       - name: Name APK installers
         run: |
@@ -50,6 +69,9 @@ jobs:
           name: Android-Absensi-Dosen-dan-Mahasiswa
           path: installers/*.apk
           if-no-files-found: error
+      - name: Remove temporary Android signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/absensi-install.keystore"
   windows:
     runs-on: windows-latest
     timeout-minutes: 25

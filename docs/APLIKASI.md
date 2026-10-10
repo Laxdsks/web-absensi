@@ -41,4 +41,4 @@ Paket dibuat dan alur utama diuji melalui browser serta build Android/Windows. P
 
 Pengingat dan hitung mundur berhenti ketika dosen mengisi absensi manual, termasuk saat catatan dibuat sebelum sesi QR dibuka. Notifikasi Android menggunakan ID sesi yang sama agar dapat ditutup setelah absensi diterima.
 
-Pasang APK baru sebagai pembaruan pada aplikasi lama, tanpa menghapus aplikasi atau datanya. Aplikasi tetap memakai identitas paket dan kunci pemasangan sebelumnya. Windows tetap memakai penyimpanan pengguna Absensi Dosen. Sinkronkan perubahan offline atau buat cadangan sebelum memperbarui perangkat.
+Pasang APK baru sebagai pembaruan pada aplikasi lama, tanpa menghapus aplikasi atau datanya. Pembaruan APK hanya diterbitkan setelah sertifikatnya cocok dengan APK 1.0.0; pembuat rilis harus menyediakan kunci penandatanganan asli melalui GitHub Secrets. Windows tetap memakai penyimpanan pengguna Absensi Dosen. Sinkronkan perubahan offline atau buat cadangan sebelum memperbarui perangkat.
