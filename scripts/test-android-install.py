@@ -27,6 +27,10 @@ def install(path):
 adb('root')
 adb('wait-for-device')
 adb('shell', 'svc', 'wifi', 'disable')
+adb('shell', 'svc', 'data', 'disable')
+adb('shell', 'settings', 'put', 'global', 'airplane_mode_on', '1')
+adb('shell', 'am', 'broadcast', '-a', 'android.intent.action.AIRPLANE_MODE', '--ez', 'state', 'true')
+time.sleep(3)
 # Exercise the packaged offline login page without production credentials.
 roles = [('dosen', 'Absensi-Dosen-Android.apk'), ('mahasiswa', 'Absen-Mahasiswa-Android.apk')]
 report = []
@@ -69,6 +73,7 @@ for role, filename in roles:
         if time.monotonic() > until:
             raise RuntimeError('Login UI did not render for ' + role)
         time.sleep(2)
+    (RESULTS / (role + '-ui.xml')).write_text(hierarchy)
     if role == 'mahasiswa' and any(label in hierarchy.lower() for label in ('dosen / pengelola', 'ruang kerja dosen', 'pusat kendali')):
         raise RuntimeError('Student APK exposes teacher navigation')
     if role == 'dosen' and 'aplikasi offline &amp; absen qr' in hierarchy.lower():
