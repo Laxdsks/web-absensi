@@ -1,3 +1,3 @@
-# Signed Android 2 artifacts
+Public signed Android 2 packages for versions 1.0.2, 1.0.3 and 1.0.4. No signing key or password is stored here.
 
-Public APKs for version 1.0.3. The source branch pins this commit and verifies all source input fingerprints and APK hashes. No private signing key or password is stored here. APKs are published as a release only after CI installation tests pass.
+Version 1.0.4: Presen Pro (teacher) and Presen Go (student), same Android 2 application IDs and reusable signing certificate. Publication requires the source fingerprint and installation checks on the main branch.
