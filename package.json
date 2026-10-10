@@ -1,6 +1,6 @@
 {
   "name": "web-absensi-app",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "description": "Aplikasi dosen dan mahasiswa dengan penyimpanan offline dan absensi QR",
   "scripts": {

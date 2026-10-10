@@ -195,6 +195,10 @@ def publish(files):
             print(f"Staged and verified: {name}", flush=True)
         # All uploads are complete before any current application file is replaced.
         # Install shared assets and helpers before the pages that use them.
+        # A versioned entry point must exist before HTML references it; publish
+        # the worker last so installation sees the complete replacement build.
+        staged.sort(key=lambda item: 2 if item[1] == "app-sw.js" else
+                    1 if item[1].endswith((".php", ".html")) else 0)
         for temporary, name, digest in staged:
             client.rename(temporary, name)
             installed.append(name)

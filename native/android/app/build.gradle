@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'id.webabsensi.app'
  compileSdk 35
- defaultConfig { applicationId 'id.webabsensi.parallel2026'; minSdk 26; targetSdk 35; versionCode 7; versionName '1.0.6'; buildConfigField 'String','APP_HOST','"datasiswasekolah.42web.io"' }
+ defaultConfig { applicationId 'id.webabsensi.parallel2026'; minSdk 26; targetSdk 35; versionCode 8; versionName '1.0.7'; buildConfigField 'String','APP_HOST','"datasiswasekolah.42web.io"' }
  buildFeatures { buildConfig true }
  signingConfigs {
   if (System.getenv('WA_ANDROID_KEYSTORE_PATH')) {
@@ -37,7 +37,7 @@ tasks.register('bundleDosenOffline',Copy){
 }
 tasks.register('bundleMahasiswaOffline',Copy){
  into layout.buildDirectory.dir('mahasiswaOfflineAssets')
- from('../../../app'){into 'app';include 'index.html','core.js','app.js','qr-files.js','app.css','guide.js','guide.css','guide-images/student-*.png','icon.svg','icon-*.png','manifest.webmanifest','vendor/qr.js','vendor/scan.js'}
+ from('../../../app'){into 'app';include 'index.html','core.js','core-*.js','app.js','qr-files.js','app.css','guide.js','guide.css','guide-images/student-*.png','icon.svg','icon-*.png','manifest.webmanifest','vendor/qr.js','vendor/scan.js'}
  from('../../../app-sw.js')
 }
 tasks.configureEach{task->if(task.name in ['preDosenDebugBuild','preDosenReleaseBuild'])task.dependsOn 'bundleDosenOffline';if(task.name in ['preMahasiswaDebugBuild','preMahasiswaReleaseBuild'])task.dependsOn 'bundleMahasiswaOffline'}
