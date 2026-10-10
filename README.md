@@ -1,3 +1,3 @@
-# Android 2 signed bootstrap artifacts
+# Signed Android 2 artifacts
 
-Version 1.0.2 initial signed APKs. Private signing material is not included. Public release requires source/input, certificate, checksum and emulator installation verification.
+Public APKs for version 1.0.3. The source branch pins this commit and verifies all source input fingerprints and APK hashes. No private signing key or password is stored here. APKs are published as a release only after CI installation tests pass.
