@@ -129,6 +129,8 @@ jobs:
       - run: npm run windows
       - name: Verify bundled Windows application
         run: node scripts/verify-windows-bundle.cjs
+      - name: Test packaged Windows launch and persistence across closing
+        run: node scripts/test-windows-runtime.cjs
       - name: Keep Windows installer
         uses: actions/upload-artifact@v4
         with:
