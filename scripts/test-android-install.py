@@ -174,7 +174,14 @@ for role, filename in roles:
     (RESULTS / (role + '-ui.xml')).write_text(hierarchy)
     adb('shell', 'screencap', '-p', '/sdcard/absensi-' + role + '.png')
     adb('pull', '/sdcard/absensi-' + role + '.png', str(RESULTS / (role + '.png')))
-    icon_test(new, role)
+    try:
+        icon_test(new, role)
+    except Exception:
+        (RESULTS / (role + '-icon-failed-ui.xml')).write_text(ET.tostring(ui(), encoding='unicode'))
+        (RESULTS / (role + '-icon-runtime.log')).write_text(adb('logcat', '-d', '-s', 'AndroidRuntime', 'chromium'))
+        adb('shell', 'screencap', '-p', '/sdcard/icon-failed.png')
+        adb('pull', '/sdcard/icon-failed.png', str(RESULTS / (role + '-icon-failed.png')))
+        raise
     if adb('shell', 'cat', marker) != sentinel or adb('shell', 'cat', new_marker) != 'new-app-data':
         raise RuntimeError('Icon editing changed private attendance data')
     report.append({'custom_icon_editor_and_launcher_tested': True, 'role': role, 'old_package': old, 'new_package': new,
