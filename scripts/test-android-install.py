@@ -85,10 +85,20 @@ def icon_test(package, role):
         time.sleep(1)
     tap_label('^Buat / perbarui pintasan$', scroll=True)
     tap_label('^Add to home screen$|Add automatically|^Add$|Tambahkan otomatis|^Tambahkan$', button=True)
-    shortcuts = adb('shell', 'dumpsys', 'shortcut')
-    package_section = shortcuts.split('Package: ' + package, 1)[-1].split('Package: ', 1)[0]
-    if 'custom-app-icon' not in package_section or not re.search(r'\[.*Pin.*\]', package_section):
-        raise RuntimeError('Custom Android shortcut was not registered')
+    # dumpsys lists launcher-owned Package sections before the app section;
+    # selecting its first Package header therefore misses ShortcutInfo flags.
+    # Query only this app's pinned shortcuts (FLAG_MATCH_PINNED = 2), and allow
+    # the launcher to finish accepting the system confirmation asynchronously.
+    until = time.monotonic() + 30
+    while True:
+        shortcuts = adb('shell', 'cmd', 'shortcut', 'get-shortcuts', '--user', '0', '--flags', '2', package)
+        (RESULTS / (role + '-pinned-shortcut.txt')).write_text(shortcuts)
+        if re.search(r'ShortcutInfo \{id=custom-app-icon, flags=0x[0-9a-f]+ \[[^\]]*Pin[^\]]*\]', shortcuts) and 'packageName=' + package in shortcuts:
+            break
+        if time.monotonic() > until:
+            (RESULTS / (role + '-shortcut-dump.txt')).write_text(adb('shell', 'dumpsys', 'shortcut'))
+            raise RuntimeError('Custom Android shortcut was not registered')
+        time.sleep(1)
     # The package and private attendance markers remain; reinstall keeps its icon.
     install(ROOT / 'installers' / ('Absensi-Dosen-Android.apk' if role == 'dosen' else 'Absen-Mahasiswa-Android.apk'))
     if adb('shell', 'sha256sum', custom).split()[0] != saved_hash:
