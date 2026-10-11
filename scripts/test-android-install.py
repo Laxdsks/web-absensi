@@ -87,11 +87,12 @@ def icon_test(package, role):
     tap_label('^Add to home screen$|Add automatically|^Add$|Tambahkan otomatis|^Tambahkan$', button=True)
     # dumpsys lists launcher-owned Package sections before the app section;
     # selecting its first Package header therefore misses ShortcutInfo flags.
-    # Query only this app's pinned shortcuts (FLAG_MATCH_PINNED = 2), and allow
+    # Query only this app's pinned shortcuts (ShortcutManager.FLAG_MATCH_PINNED
+    # = 1 << 2, unlike LauncherApps.ShortcutQuery's flag), and allow
     # the launcher to finish accepting the system confirmation asynchronously.
     until = time.monotonic() + 30
     while True:
-        shortcuts = adb('shell', 'cmd', 'shortcut', 'get-shortcuts', '--user', '0', '--flags', '2', package)
+        shortcuts = adb('shell', 'cmd', 'shortcut', 'get-shortcuts', '--user', '0', '--flags', '4', package)
         (RESULTS / (role + '-pinned-shortcut.txt')).write_text(shortcuts)
         if re.search(r'ShortcutInfo \{id=custom-app-icon, flags=0x[0-9a-f]+ \[[^\]]*Pin[^\]]*\]', shortcuts) and 'packageName=' + package in shortcuts:
             break
