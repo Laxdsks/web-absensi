@@ -37,12 +37,12 @@ def ui():
         return ET.Element('hierarchy')
 
 
-def tap_label(pattern, scroll=False, attempts=12):
+def tap_label(pattern, scroll=False, attempts=12, button=False):
     for attempt in range(attempts):
         for node in ui().iter('node'):
             labels = (node.get('text', ''), node.get('content-desc', ''))
             bounds = re.findall(r'\d+', node.get('bounds', ''))
-            if any(re.search(pattern, label, re.I) for label in labels) and len(bounds) == 4:
+            if any(re.search(pattern, label, re.I) for label in labels) and len(bounds) == 4 and (not button or node.get('class', '').endswith('Button')):
                 x1, y1, x2, y2 = map(int, bounds)
                 if x2 > x1 and y2 > y1:
                     adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
@@ -84,7 +84,7 @@ def icon_test(package, role):
             raise RuntimeError('Actual Android editor did not persist the selected icon')
         time.sleep(1)
     tap_label('^Buat / perbarui pintasan$', scroll=True)
-    tap_label('Add automatically|^Add$|Tambahkan otomatis|^Tambahkan$')
+    tap_label('^Add to home screen$|Add automatically|^Add$|Tambahkan otomatis|^Tambahkan$', button=True)
     shortcuts = adb('shell', 'dumpsys', 'shortcut')
     package_section = shortcuts.split('Package: ' + package, 1)[-1].split('Package: ', 1)[0]
     if 'custom-app-icon' not in package_section or not re.search(r'\[.*Pin.*\]', package_section):
