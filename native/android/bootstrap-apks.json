@@ -1,18 +1,18 @@
 {
-  "artifact_commit": "732454872a0d752f4c592f80023087d3029b8ec5",
-  "source_inputs_sha256": "64f559c7bd73e3a47ea14aee8732593b4b6208203aaaad8ef7c3f673387f13ea",
+  "artifact_commit": "3a333788ad6c69551bb3b5c996056295a3362171",
+  "source_inputs_sha256": "b46a8f8e5a3d66b0728db508d7f9195bf035d13c8de65658f36854a4a45befd5",
   "apks": [
     {
       "path": "Absensi-Dosen-Android-2-1.0.8.apk",
       "installer": "Absensi-Dosen-Android.apk",
-      "size": 18235511,
-      "sha256": "e04119632456a4cb2762abc6b185bc73da9d3a7fac0ca5074a0be365ea6bd7c2"
+      "size": 18235555,
+      "sha256": "6521265be9801507e272211655b6ae7c3561fe4aa2d7bfa0491ae1a32c84952c"
     },
     {
       "path": "Absen-Mahasiswa-Android-2-1.0.8.apk",
       "installer": "Absen-Mahasiswa-Android.apk",
-      "size": 190035,
-      "sha256": "d7d096e8eb85416a736fac79dcb1aaf4bcc7c30ee5a2a0433177cca0f677b3b4"
+      "size": 190055,
+      "sha256": "39ce1f8afd171dedb65afdfd195d8f3805d95e5367372de928fec0c447749579"
     }
   ]
 }

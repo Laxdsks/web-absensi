@@ -65,7 +65,7 @@ def icon_test(package, role):
     fixture.write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB',512,512,8,6,0,0,0)) + chunk(b'IDAT',zlib.compress(row*512)) + chunk(b'IEND',b''))
     adb('push', str(fixture), '/sdcard/Download/icon-test.png')
     tap_label('^Ikon aplikasi$' if role == 'dosen' else '^Ikon$')
-    tap_label('^Choose File$|^Pilih File$|^Browse$|^Pilih berkas$')
+    tap_label(r'^1\. Pilih gambar|Choose File|Pilih File|Browse|Pilih berkas')
     # Android DocumentsUI opens Recent by default; select Downloads explicitly.
     tap_label('Show roots|Open navigation drawer|Tampilkan akar')
     tap_label('^Downloads$|^Unduhan$')
