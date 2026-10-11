@@ -28,6 +28,21 @@ async function close(){
 }
 (async()=>{
   assert(fs.existsSync(executable));await launch();await wait("document.body.innerText.toLowerCase().includes('masuk ke sistem')");
+  await wait("!!document.querySelector('#formLoginAuth [data-app-icon-open]')");
+  await evaluate("document.querySelector('#formLoginAuth [data-app-icon-open]').click()");await wait("document.querySelector('#appIconDialog[open]')&&document.querySelector('#appIconSave').disabled===false");
+  const chosen=await evaluate("(()=>{const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');g.fillStyle='#1e40af';g.fillRect(0,0,512,512);g.fillStyle='#f59e0b';g.fillRect(128,128,256,256);return c.toDataURL('image/png');})()");
+  assert.equal(await evaluate("AbsensiDesktop.setAppIcon("+JSON.stringify(chosen)+")"),true);
+  const savedIcon=(await evaluate('AbsensiDesktop.getAppIcon()')).png;
+  assert.equal(await evaluate("AbsensiDesktop.createIconShortcut()"),true);
+  const shortcut=path.join(require('node:os').homedir(),'Desktop','Presen Desk - Ikon saya.lnk');assert(fs.existsSync(shortcut),'Custom desktop shortcut must exist');
+  const png=path.join(process.env.APPDATA,'web-absensi-app','app-icon','icon.png');assert(fs.existsSync(png));
+  const ico=fs.readdirSync(path.dirname(png)).find(x=>x.endsWith('.ico'));const iconBytes=fs.readFileSync(path.join(path.dirname(png),ico));assert.equal(iconBytes.readUInt16LE(2),1);assert.equal(iconBytes.readUInt16LE(4),1);assert.equal(iconBytes.readUInt32LE(18),22);assert.equal(iconBytes.subarray(22,30).toString('hex'),'89504e470d0a1a0a');
+  assert.equal(await evaluate("AbsensiDesktop.setAppIcon('data:image/png;base64,AAAA').then(()=>false,()=>true)"),true);
+  assert.equal(await evaluate("(()=>{const c=document.createElement('canvas');c.width=c.height=1;return AbsensiDesktop.setAppIcon(c.toDataURL()).then(()=>false,()=>true);})()"),true);
+  await evaluate("document.querySelector('#appIconDialog').close()");await close();await launch();assert.equal((await evaluate('AbsensiDesktop.getAppIcon()')).png,savedIcon);
+  console.log('Presen Desk: custom PNG persists across native restart; desktop shortcut and PNG-encoded ICO created; invalid images rejected.');
+  assert.equal(await evaluate('AbsensiDesktop.resetAppIcon()'),true);assert.notEqual((await evaluate('AbsensiDesktop.getAppIcon()')).png,savedIcon);
+  fs.unlinkSync(shortcut);
   await evaluate(`WA.change(s=>({...s,token:null,profile:{role:'teacher',device:crypto.randomUUID(),account:{nama:'CI offline'}},snapshot:{roster:[{jenjang:'S1',prodi:'Pendidikan Teknologi Informasi',semester:'1',kelas:'A',id:1,nim:'C1234567890123',nama:'CI mahasiswa',jk:'L'}],sessions:[],marks:[],documents:[],registrations:[]},outbox:[],selection:null}))`);
   const url='https://datasiswasekolah.42web.io/absen.php?prodi=Pendidikan%20Teknologi%20Informasi&semester=1&kelas=A&matkul=CI-offline';
   await navigate(url);await wait("window.WASheetReady===true&&!!document.querySelector('.attendance-cell')");
