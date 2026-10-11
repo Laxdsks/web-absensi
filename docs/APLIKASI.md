@@ -1,6 +1,6 @@
-# Aplikasi Absensi 1.0.5
+# Aplikasi Absensi 1.0.8
 
-Tersedia tiga paket **1.0.5** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.7): **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.7.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
+Tersedia tiga paket **1.0.8** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.8): **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.8.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
 
 APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
 
@@ -71,3 +71,11 @@ Status sinkronisasi besar kini disembunyikan secara awal. Ikon **?** di tepi set
 Kode lembar lama yang tertahan cache tidak lagi dipakai sesudah membuka halaman versi baru. Perintah penghapusan dicatat segera pada perangkat, lalu seluruh kelas dihapus dalam satu transaksi. Jika aplikasi tertutup saat proses berjalan, penghapusan diselesaikan saat dibuka kembali; berpindah halaman menunggu transaksi selesai. Nama yang sudah dihapus tidak dipulihkan dari lembar tersimpan pada absen, rekap, maupun ujian. Data kelas lain, catatan kehadiran, nilai, dan draf yang masih berlaku tetap disimpan.
 
 Perbarui paket dengan memasang versi baru menggunakan identitas aplikasi yang sama, lalu tutup dan buka kembali aplikasi. Jangan hapus data aplikasi atau mencopot aplikasi lama. Website tetap memakai alamat serta desain asli.
+
+## Pembaruan 1.0.8: ikon pilihan
+
+Presen Desk dan Presen Pro: buka Menu Pengaturan di beranda, lalu **Atur ikon aplikasi**. Presen Go: tekan **Ikon** pada bilah atas. Pengaturan ikon juga tersedia dari layar masuk aplikasi dosen. Pilih PNG, JPG atau WebP (maksimal 8 MB), atur ukuran gambar dan posisinya dalam pratinjau, lalu **Simpan ikon**. **Pas di tengah** menampilkan seluruh gambar; **Ikon bawaan** mengembalikan gambar awal. Ukuran yang diatur adalah gambar di dalam ikon; ukuran ikon di desktop/HP mengikuti sistem. Pengaturan disimpan hanya di perangkat dan tidak mengubah data absensi, foto profil atau pengaturan pengguna lain.
+
+Pada Windows, ikon jendela berubah langsung dan tetap tersimpan saat dibuka kembali. Tekan **Buat / perbarui pintasan** untuk membuat “Presen Desk - Ikon saya” di desktop. Jalankan lewat pintasan tersebut untuk memakai ikon pilihan. Ikon yang tertanam pada berkas EXE tetap mengikuti paket; ikon taskbar yang sudah disematkan dapat tetap memakai ikon lama dari Windows.
+
+Pada Android, ikon aplikasi terkini dan pintasan layar utama memakai gambar pilihan. Tekan **Buat / perbarui pintasan**, kemudian konfirmasi dialog Android. Launcher harus mendukung pintasan khusus; bentuk dan ukuran luar mengikuti launcher. Pintasan membuka APK yang sama dengan data yang sama. Ikon asli di daftar aplikasi dan ikon APK tidak dapat diganti dengan gambar bebas saat aplikasi sedang terpasang. Tidak perlu mencopot aplikasi atau membuat APK/website terpisah.

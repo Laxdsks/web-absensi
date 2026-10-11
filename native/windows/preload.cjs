@@ -1,2 +1,2 @@
 const {contextBridge,ipcRenderer}=require('electron');
-contextBridge.exposeInMainWorld('AbsensiDesktop',{saveFile:(name,mime,data)=>ipcRenderer.invoke('save-file',{name,mime,data}),printDocument:(html,base)=>ipcRenderer.invoke('print-document',{html,base})});
+contextBridge.exposeInMainWorld('AbsensiDesktop',{saveFile:(name,mime,data)=>ipcRenderer.invoke('save-file',{name,mime,data}),printDocument:(html,base)=>ipcRenderer.invoke('print-document',{html,base}),getAppIcon:()=>ipcRenderer.invoke('app-icon-get'),setAppIcon:data=>ipcRenderer.invoke('app-icon-set',data),resetAppIcon:()=>ipcRenderer.invoke('app-icon-reset'),createIconShortcut:()=>ipcRenderer.invoke('app-icon-shortcut')});

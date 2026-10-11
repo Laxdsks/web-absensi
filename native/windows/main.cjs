@@ -1,13 +1,15 @@
-const {app,BrowserWindow,session,net,protocol,ipcMain,dialog}=require('electron');const fs=require('node:fs'),path=require('node:path');
+const {app,BrowserWindow,session,net,protocol,ipcMain,dialog,nativeImage,shell}=require('electron');const fs=require('node:fs'),path=require('node:path');
 // Keep the data directory used by previous packages, independently of the display name.
 app.setPath('userData',path.join(app.getPath('appData'),'web-absensi-app'));
 app.setName('Presen Desk');
+if(process.platform==='win32')app.setAppUserModelId('id.webabsensi.dosen');
 const HOST='datasiswasekolah.42web.io',ROOT=path.resolve(__dirname,'../..');let main,closing=false;
 function asset(url){const u=new URL(url);if(u.hostname!==HOST)return null;let rel=decodeURIComponent(u.pathname).replace(/^\//,'');if(rel==='app'||rel==='app/')rel='app/index.html';if(/^(index|data_siswa|absen|ujian|music_player)\.php$/.test(rel))rel='app/templates/'+rel.replace('.php','.html');if(!(rel.startsWith('app/')||rel.startsWith('assets/')||rel==='app-sw.js'))return null;const file=path.resolve(ROOT,rel);if(!file.startsWith(ROOT+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile())return null;const ext=path.extname(file),mime={'.html':'text/html; charset=utf-8','.js':'application/javascript','.mjs':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.wasm':'application/wasm','.png':'image/png','.webmanifest':'application/manifest+json'}[ext]||'application/octet-stream';return new Response(fs.readFileSync(file),{headers:{'Content-Type':mime}});}
-function trusted(event){try{return new URL(event.senderFrame.url).hostname===HOST;}catch(_){return false;}}
+function trusted(event){try{return new URL(event.senderFrame.url).origin==='https://'+HOST;}catch(_){return false;}}
 app.whenReady().then(async()=>{
  protocol.handle('https',async request=>{try{const response=await net.fetch(request,{bypassCustomProtocolHandlers:true});if(request.method==='GET'&&(response.status>=500||response.status===404)){const fallback=asset(request.url);if(fallback)return fallback;}return response;}catch(e){const fallback=request.method==='GET'?asset(request.url):null;if(fallback)return fallback;throw e;}});
  main=new BrowserWindow({width:1250,height:900,minWidth:600,minHeight:500,title:'Presen Desk',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
+ require('./icon-actions.cjs').register({app,main,ipcMain,nativeImage,shell,trusted,root:ROOT});
  main.on('close',event=>{if(closing)return;event.preventDefault();main.webContents.executeJavaScript('Promise.resolve(window.WAFlush?.())').then(()=>{closing=true;main.close();}).catch(()=>dialog.showMessageBox(main,{type:'info',message:'Perubahan disimpan di perangkat. Tunggu penyimpanan selesai sebelum menutup aplikasi.'}));});
  main.webContents.setWindowOpenHandler(({url})=>{if(new URL(url).hostname===HOST){main.loadURL(url);return {action:'deny'};}if(url.startsWith('https://'))require('electron').shell.openExternal(url);return {action:'deny'};});
  main.webContents.on('will-navigate',(event,url)=>{if(new URL(url).hostname!==HOST){event.preventDefault();if(url.startsWith('https://'))require('electron').shell.openExternal(url);}});

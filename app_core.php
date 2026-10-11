@@ -1,6 +1,6 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261010-cache-roster-7';
+const WA_BUILD = '20261011-icons-8';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_db(): mysqli {

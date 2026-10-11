@@ -5,6 +5,10 @@ import os
 from pathlib import Path
 import subprocess
 import time
+import re
+import struct
+import zlib
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 ADB = os.environ.get('WA_ADB', 'adb')
@@ -22,6 +26,81 @@ def install(path):
     result = adb('install', '-r', str(path))
     if 'Success' not in result:
         raise RuntimeError('APK installation did not succeed')
+
+
+# Exercise the actual WebView editor and Android launcher using only local images.
+def ui():
+    adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
+    try:
+        return ET.fromstring(adb('shell', 'cat', '/sdcard/absensi-ui.xml'))
+    except (ET.ParseError, subprocess.CalledProcessError):
+        return ET.Element('hierarchy')
+
+
+def tap_label(pattern, scroll=False, attempts=12):
+    for attempt in range(attempts):
+        for node in ui().iter('node'):
+            labels = (node.get('text', ''), node.get('content-desc', ''))
+            bounds = re.findall(r'\d+', node.get('bounds', ''))
+            if any(re.search(pattern, label, re.I) for label in labels) and len(bounds) == 4:
+                x1, y1, x2, y2 = map(int, bounds)
+                if x2 > x1 and y2 > y1:
+                    adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+                    time.sleep(1)
+                    return
+        if scroll:
+            size = re.findall(r'(\d+)x(\d+)', adb('shell', 'wm', 'size'))[-1]
+            w, h = map(int, size)
+            adb('shell', 'input', 'swipe', str(w//2), str(h*3//4), str(w//2), str(h//3), '400')
+        time.sleep(1)
+    raise RuntimeError('Android icon control not found: ' + pattern)
+
+
+def icon_test(package, role):
+    # Deterministic PNG fixture; no production/student image is used.
+    def chunk(kind, data):
+        return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind+data) & 0xffffffff)
+    row = bytes([0]) + bytes([37, 99, 235, 255]) * 512
+    fixture = RESULTS / 'icon-test.png'
+    fixture.write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB',512,512,8,6,0,0,0)) + chunk(b'IDAT',zlib.compress(row*512)) + chunk(b'IEND',b''))
+    adb('push', str(fixture), '/sdcard/Download/icon-test.png')
+    tap_label('^Ikon aplikasi$' if role == 'dosen' else '^Ikon$')
+    tap_label('^Choose File$|^Pilih File$|^Browse$|^Pilih berkas$')
+    # Android DocumentsUI opens Recent by default; select Downloads explicitly.
+    tap_label('Show roots|Open navigation drawer|Tampilkan akar')
+    tap_label('^Downloads$|^Unduhan$')
+    tap_label('^icon-test.png$')
+    tap_label(r'^3\. Simpan ikon$', scroll=True)
+    custom = '/data/user/0/' + package + '/files/custom-app-icon.png'
+    until = time.monotonic() + 30
+    while True:
+        try:
+            saved_hash = adb('shell','sha256sum',custom).split()[0]
+            if len(saved_hash) == 64:
+                break
+        except subprocess.CalledProcessError:
+            pass
+        if time.monotonic() > until:
+            raise RuntimeError('Actual Android editor did not persist the selected icon')
+        time.sleep(1)
+    tap_label('^Buat / perbarui pintasan$', scroll=True)
+    tap_label('Add automatically|^Add$|Tambahkan otomatis|^Tambahkan$')
+    shortcuts = adb('shell', 'dumpsys', 'shortcut')
+    package_section = shortcuts.split('Package: ' + package, 1)[-1].split('Package: ', 1)[0]
+    if 'custom-app-icon' not in package_section or not re.search(r'\[.*Pin.*\]', package_section):
+        raise RuntimeError('Custom Android shortcut was not registered')
+    # The package and private attendance markers remain; reinstall keeps its icon.
+    install(ROOT / 'installers' / ('Absensi-Dosen-Android.apk' if role == 'dosen' else 'Absen-Mahasiswa-Android.apk'))
+    if adb('shell', 'sha256sum', custom).split()[0] != saved_hash:
+        raise RuntimeError('APK update lost the selected icon')
+    adb('shell', 'am', 'start', '-W', '-n', package + '/id.webabsensi.app.MainActivity')
+    time.sleep(3)
+    tap_label('^Ikon aplikasi$' if role == 'dosen' else '^Ikon$')
+    tap_label('^Ikon bawaan$', scroll=True)
+    if adb('shell', 'test', '!', '-f', custom) != '':
+        raise RuntimeError('Default icon reset did not clear custom image')
+    adb('shell', 'input', 'keyevent', '4')
+    print(role + ': real icon image selected, saved, pinned, retained across APK reinstall and reset.')
 
 
 adb('root')
@@ -54,7 +133,7 @@ for role, filename in roles:
     if adb('shell', 'cat', marker) != sentinel or adb('shell', 'pm', 'path', old) != old_path or adb('shell', 'sha256sum', old_path.removeprefix('package:')) != old_hash:
         raise RuntimeError('Original application or its private data changed')
     if adb('shell', 'cat', new_marker) != 'new-app-data':
-        raise RuntimeError('Updating Android 2 from 1.0.6 lost private application data')
+        raise RuntimeError('Updating Android 2 from 1.0.7 lost private application data')
     install(ROOT / 'installers' / filename)
     if adb('shell', 'cat', new_marker) != 'new-app-data' or adb('shell', 'cat', marker) != sentinel:
         raise RuntimeError('A same-key APK update lost private application data')
@@ -95,10 +174,13 @@ for role, filename in roles:
     (RESULTS / (role + '-ui.xml')).write_text(hierarchy)
     adb('shell', 'screencap', '-p', '/sdcard/absensi-' + role + '.png')
     adb('pull', '/sdcard/absensi-' + role + '.png', str(RESULTS / (role + '.png')))
-    report.append({'role': role, 'old_package': old, 'new_package': new,
+    icon_test(new, role)
+    if adb('shell', 'cat', marker) != sentinel or adb('shell', 'cat', new_marker) != 'new-app-data':
+        raise RuntimeError('Icon editing changed private attendance data')
+    report.append({'custom_icon_editor_and_launcher_tested': True, 'role': role, 'old_package': old, 'new_package': new,
                    'coinstalled': True, 'old_private_data_retained': True,
                    'same_key_update_retained_data': True, 'login_ui_rendered': True,
-                   'upgrade_from_version': '1.0.6', 'teacher_homepage_original': role == 'dosen',
+                   'upgrade_from_version': '1.0.7', 'teacher_homepage_original': role == 'dosen',
                    'student_navigation_only': role == 'mahasiswa',
                    'apk_sha256': hashlib.sha256((ROOT / 'installers' / filename).read_bytes()).hexdigest()})
     print(role + ': old/new apps installed together; original data retained; update retained new data; login UI rendered.')
