@@ -30,10 +30,10 @@ def install(path):
 
 # Exercise the actual WebView editor and Android launcher using only local images.
 def ui():
-    adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
     try:
+        adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
         return ET.fromstring(adb('shell', 'cat', '/sdcard/absensi-ui.xml'))
-    except (ET.ParseError, subprocess.CalledProcessError):
+    except (ET.ParseError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return ET.Element('hierarchy')
 
 
@@ -155,12 +155,14 @@ for role, filename in roles:
     # Wait for WebView rendering without entering a production account.
     until = time.monotonic() + 90
     while True:
-        dump = adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
         try:
+            dump = adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
             hierarchy = adb('shell', 'cat', '/sdcard/absensi-ui.xml')
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             # UIAutomator can return success before it writes XML while WebView
-            # is still laying out the offline homepage. Retry the read, not installation.
+            # is laying out the page, or be killed under emulator memory pressure.
+            # Retry within this deadline; a missing login UI still fails the test.
+            dump = 'UIAutomator did not finish; retrying within the login deadline.'
             hierarchy = ''
         expected = 'masuk ke sistem' if role == 'dosen' else 'masuk mahasiswa'
         if expected in hierarchy.lower():
@@ -227,4 +229,7 @@ for role, filename in roles:
                    'student_navigation_only': role == 'mahasiswa',
                    'apk_sha256': hashlib.sha256((ROOT / 'installers' / filename).read_bytes()).hexdigest()})
     print(role + ': old/new apps installed together; original data retained; update retained new data; login UI rendered.')
+    # Both packages stay installed. Release the finished role's WebView before
+    # testing the next one on the memory-limited emulator; never clear app data.
+    adb('shell', 'am', 'force-stop', new)
 (RESULTS / 'report.json').write_text(json.dumps({'device': adb('shell', 'getprop', 'ro.build.version.release'), 'tests': report}, indent=2))

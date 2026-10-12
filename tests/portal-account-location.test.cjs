@@ -10,7 +10,7 @@ async function sameMusic(frame,initial){const current=await frame.evaluate(()=>{
 test('responsive portal, transparent location, message dismissal and scoped account deletion',{timeout:180000},async t=>{
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']}),teacher=await browser.newContext({viewport:{width:1280,height:900}}),student=await browser.newContext({viewport:{width:393,height:852},permissions:['geolocation'],geolocation:{latitude:-8.536,longitude:118.462,accuracy:25}}),other=await browser.newContext();
  const contexts=[teacher,student,other],errors=[];for(const c of contexts)await c.route('**/*',r=>new URL(r.request().url()).origin===new URL(BASE).origin?r.continue():r.abort());
- const p=await teacher.newPage(),sp=await student.newPage(),op=await other.newPage();for(const page of [p,sp,op])page.on('pageerror',e=>errors.push(e.message));
+ const p=await teacher.newPage(),sp=await student.newPage(),op=await other.newPage();for(const page of [p,sp,op])page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',page.url(),e.stack);});
  const suffix=Date.now(),ctx={jenjang:'S1',prodi:'Pendidikan Teknologi Informasi',semester:'8',kelas:'E'},ctxOther={...ctx,kelas:'D'},nim='PL'+suffix,otherNim='CONTROL'+suffix,course='Portal-'+suffix;let account,accountOther;
  async function drain(){await p.evaluate(()=>WA.sync());await p.waitForFunction(async()=>!(await WA.get()).outbox.length);}
  try{
