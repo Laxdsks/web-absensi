@@ -2,6 +2,22 @@
 
 Dicatat 12 Oktober 2026. Branch `feat/portal-location-accounts` menyimpan pekerjaan yang sebelumnya hanya berada di workspace percakapan lama. Penyimpanan branch ini bukan merge, deployment, atau rilis. Hosting dan paket terverifikasi sebelumnya tetap 1.0.8.
 
+## Pembaruan verifikasi pada workspace penerus
+
+Source dipulihkan dari commit `df389b1f79d91c2f9b83b7d4e44d23aa2f2ef7f6`. Catatan kegagalan di bagian historis bawah telah ditindaklanjuti:
+
+- Uji musik kini membedakan popup desktop, panel Android/Windows, dan fallback popup diblokir. WAV lokal benar-benar diputar; identitas dokumen pemutar, sumber audio, status pemutaran dan waktu diperiksa setelah navigasi/reopen. Launcher child membuka pemutar induk tanpa duplikasi.
+- Ditemukan dan diperbaiki jalur tautan lembar pada `assets/offline-bridge.js`: setelah `WAFlush`, navigasi memakai `AbsensiUIAudio.navigateApplication` agar dokumen induk dan musik bertahan. Uji tautan lembar juga memastikan edit tahun akademik tersimpan sebelum perpindahan.
+- Full browser regression pada source setelah perbaikan: **61/61 lulus**, 0 gagal/skip. `npm run check`, lint sembilan halaman/backend PHP, YAML workflow, dan manifest deploy juga lulus. Fixture memakai server loopback dan database terpisah `web_absensi_handoff_test`.
+- Panduan beranda, login dosen, lembar, QR dosen dan QR mahasiswa diambil ulang setelah uji fitur lulus; screenshot HP tersimpan pada direktori audit. Capture tidak lagi memerlukan direktori privat workspace lama.
+- Kedua APK release 1.1.0/versionCode 10 berhasil dikompilasi dengan JDK 21, SDK 35 dan Gradle 8.11.1. Verifikasi paket memeriksa 299 aset dosen dan 22 aset mahasiswa, ID yang tetap, serta isolasi bundle mahasiswa. **Paket lokal ini unsigned dan bukan paket pemasangan/rilis.** Perbaikan `R.drawable.ic_attendance` sudah lolos kompilasi; kunci Android 2 tidak dibuat ulang.
+- Verifikasi paket Android/Windows sekarang juga memeriksa skrip dan template musik. Release workflow memerlukan APK signed yang siap, kedua APK dan EXE dengan versi yang sama; rilis Windows saja tidak dipublikasikan ketika signing Android belum tersedia. Build workflow dapat berjalan pada push branch ini untuk memeriksa native Windows/Android sebelum merge.
+- Pembuka `docs/APLIKASI.md` mengarahkan ke rilis yang sudah terbit dan tidak lagi mengklaim paket 1.1.0 sudah tersedia.
+
+Log pemeriksaan terbaru berada di `/workspace/scratch/handoff-audit/`: `full-tests-1.1.0-final.log`, `music-anchor-before.log`, `music-anchor-after.log`, `android-build-1.1.0-final.log`, `android-unsigned-verification.json`, dan log build/verifikasi Windows. Selesaikan dan periksa hasil build Windows final sebelum menganggap paket tersebut final.
+
+Masih diperlukan: akses API GitHub (`api.github.com`) untuk PR/status CI dan pemeriksaan nama Repository Secrets; signing Android 2 melalui kunci asli atau empat `ANDROID_V2_*` Secrets; uji native CI, immutable signed APK pin bila dipakai, merge, deployment dan publikasi terverifikasi. API ditolak oleh jaringan workspace ini, sementara Git read bekerja. Usulan perubahan jaringan tidak berhasil disimpan karena draf lingkungan tidak dapat diedit; usulan nonrahasia disimpan di direktori audit. Keberadaan Secrets di GitHub belum dapat dipastikan. Manifest bootstrap masih untuk 1.0.8 dan tidak boleh diganti dengan APK unsigned.
+
 ## Keputusan pengguna
 
 - Satu website dosen asli: https://datasiswasekolah.42web.io/index.php . Jangan membuat portal dosen kedua. `/app/?role=student` hanya untuk mahasiswa.
