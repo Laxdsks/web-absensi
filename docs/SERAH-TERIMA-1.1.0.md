@@ -2,6 +2,12 @@
 
 Dicatat 12 Oktober 2026. Branch `feat/portal-location-accounts` menyimpan pekerjaan yang sebelumnya hanya berada di workspace percakapan lama. Penyimpanan branch ini bukan merge, deployment, atau rilis. Hosting dan paket terverifikasi sebelumnya tetap 1.0.8.
 
+## Penyelesaian signing pada workspace asal
+
+Kunci Android 2 yang tersimpan di luar repository masih tersedia pada workspace asal. Kedua APK 1.1.0/versionCode 10 berhasil dibangun dan ditandatangani dengan kunci yang sama. Verifikasi sertifikat reusable, ID terpisah dari APK lama, upgrade dari 1.0.8, dan aset offline lulus. Pemeriksaan tidak menemukan keystore atau kata sandi signing dalam proyek/paket. Hanya APK publik signed yang disimpan pada branch artifact; `native/android/bootstrap-apks.json` kini mematok commit, hash APK dan fingerprint source 1.1.0. Empat Repository Secrets belum diisi dan tidak diperlukan untuk memakai pin yang cocok dengan source ini. Perubahan source input berikutnya membutuhkan build signed dan pin baru atau Secrets tersebut.
+
+Alat connector GitHub pada workspace asal tersedia untuk PR/status/merge, sehingga perubahan kebijakan jaringan `api.github.com` pada workspace penerus tidak diperlukan untuk menyelesaikan jalur ini. CI Windows pada run `38235683371` sudah diverifikasi berhasil. Pengujian pemasangan emulator terhadap APK signed, PR, merge, deployment dan publikasi masih harus diperiksa sebelum mengklaim rilis selesai. Bagian kendala dan pin 1.0.8 di bawah merupakan catatan historis yang telah digantikan oleh pembaruan ini.
+
 ## Pembaruan verifikasi pada workspace penerus
 
 Source dipulihkan dari commit `df389b1f79d91c2f9b83b7d4e44d23aa2f2ef7f6`. Catatan kegagalan di bagian historis bawah telah ditindaklanjuti:
