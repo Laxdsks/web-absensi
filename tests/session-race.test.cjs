@@ -26,3 +26,23 @@ for(const result of ['success','expired'])test('late '+result+' sync does not re
   await page.locator('#login').waitFor();assert.deepEqual(errors,[]);
  }finally{release();await browser.close();}
 });
+
+test('a sync requested during an older fetch waits for the fresh attendance result',{timeout:45000},async()=>{
+ const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']}),context=await browser.newContext(),page=await context.newPage();
+ const release=[],start=[],gates=[0,1].map(i=>new Promise(r=>release[i]=r)),requested=[0,1].map(i=>new Promise(r=>start[i]=r));let count=0;
+ const snapshot={profile:{role:'student',device:'queued-device',account:{nama:'Uji sinkronisasi',nim:'SYNC001',approved:true,ctx:{jenjang:'S1',prodi:'Pendidikan Teknologi Informasi',semester:'1',kelas:'A'}}},roster:[],marks:[],sessions:[],documents:[],registrations:[],tag:'first',serverTime:Date.now()};
+ await context.route('**/*',async route=>{
+  const req=route.request(),url=new URL(req.url());if(url.origin!==new URL(BASE).origin)return route.abort();
+  if(url.pathname.endsWith('/app_api.php')&&req.method()==='POST'){
+   const i=count++;if(i<2){start[i]();await gates[i];}
+   return route.fulfill({contentType:'application/json',body:JSON.stringify({status:'success',snapshot:{...snapshot,tag:i?'fresh':'first',marks:i?[{scope:'test-scope',slot:1,nim:'SYNC001',mark:'.'}]:[]}})});
+  }
+  return route.continue();
+ });
+ try{
+  await page.goto(BASE+'app/?role=student');await page.locator('#login').waitFor();await page.evaluate(snapshot=>WA.change(s=>({...s,token:'queued-race-token',profile:snapshot.profile,snapshot})),snapshot);
+  await page.evaluate(()=>{window.firstSync=WA.sync();});await requested[0];await page.evaluate(()=>{window.queuedFinished=false;window.queuedSync=WA.sync().then(()=>{window.queuedFinished=true;});});release[0]();await requested[1];
+  assert.equal(await page.evaluate(()=>window.queuedFinished),false,'the refresh must still wait while the newer attendance response is held');
+  release[1]();await page.evaluate(()=>window.queuedSync);assert.equal((await page.evaluate(()=>WA.get())).snapshot.marks[0].mark,'.');
+ }finally{release.forEach(r=>r());await browser.close();}
+});
