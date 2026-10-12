@@ -221,7 +221,7 @@
     }
 
     function installFloatingButton() {
-        if (IS_PLAYER_PAGE || parentMusicHost() || document.getElementById('absensiMusicLauncher')) return;
+        if (IS_PLAYER_PAGE || document.getElementById('absensiMusicLauncher')) return;
         if (!document.getElementById('absensiAudioPrintStyle')) {
             const style = document.createElement('style');
             style.id = 'absensiAudioPrintStyle';

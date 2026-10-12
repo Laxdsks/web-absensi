@@ -372,13 +372,15 @@
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.0.8.js" defer></script>
+    <script src="app/runtime-teacher-1.1.0.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
     <script src="app/qr-files.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="assets/sheet-fit.css"><script src="assets/sheet-fit.js" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/locations.js?v=20261012" defer></script>
+<script src="app/account-tools.js?v=20261012" defer></script>
 </head>
 <body>
 
@@ -1082,7 +1084,7 @@
 
         function htmlKertasTanpaPratinjau() {
             const clone = document.getElementById('paperSheet').cloneNode(true);
-            clone.querySelectorAll('.page-preview-only').forEach(element => element.remove());
+            clone.querySelectorAll('.page-preview-only,.p-location-icon,.p-screen-only').forEach(element => element.remove());
             return clone.innerHTML;
         }
 
@@ -1919,7 +1921,7 @@
                     [...el.attributes].forEach(attr=>{if(attr.name==='id'||attr.name.startsWith('on')||['href','for','contenteditable'].includes(attr.name))el.removeAttribute(attr.name);});
                     el.removeAttribute('style');el.setAttribute('tabindex','-1');
                 });
-                clone.querySelectorAll('input,.logo-remove,.btn-hapus-logo').forEach(el=>el.remove());
+                clone.querySelectorAll('input,.logo-remove,.btn-hapus-logo,.p-location-icon,.p-screen-only').forEach(el=>el.remove());
                 if(clone.matches('.logo-box,.logo-slot')){
                     const img=clone.querySelector('img');
                     if(!img||!img.getAttribute('src')||img.hidden){clone.replaceChildren();clone.textContent='▣ Pilih logo';}
@@ -1992,7 +1994,7 @@
             window.WAFitSheetText?.();
             const clone = element.cloneNode(true);
             const originalInputs=[...element.querySelectorAll('input')].filter(input=>input.type!=='file'&&!input.closest('.sheet-signature-controls,.page-preview-only'));
-            clone.querySelectorAll('button, input[type="file"], .sheet-signature-controls, .sheet-signature-image[hidden], .btn-hapus-logo, .page-preview-marker, .page-preview-only').forEach(el => el.remove());
+            clone.querySelectorAll('.p-screen-only, button, input[type="file"], .sheet-signature-controls, .sheet-signature-image[hidden], .btn-hapus-logo, .page-preview-marker, .page-preview-only').forEach(el => el.remove());
             clone.querySelectorAll('input').forEach((input,index) => {
                 const value = document.createElement('span');
                 value.textContent = input.value || '';

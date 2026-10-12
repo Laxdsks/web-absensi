@@ -50,6 +50,8 @@ try {
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
+    if($action==='delete-account')wa_response(wa_delete_account($device,$input));
+    if($action==='push-unsubscribe'){wa_query('DELETE FROM wa_push_devices WHERE device_id=?',[$device['id']]);wa_response(['status'=>'success']);}
     if($action==='push-key')wa_response(['status'=>'success','publicKey'=>wa_push_key()['public']]);
     if($action==='push-subscribe'){wa_push_subscribe($device,$input['subscription']??[]);wa_response(['status'=>'success']);}
     if($action==='dispatch-push'){wa_teacher($device);session_write_close();try{wa_push_pending();}catch(Throwable $ignored){error_log('WA push deferred');}wa_response(['status'=>'success']);}

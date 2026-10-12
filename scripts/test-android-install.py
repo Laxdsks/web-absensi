@@ -144,7 +144,7 @@ for role, filename in roles:
     if adb('shell', 'cat', marker) != sentinel or adb('shell', 'pm', 'path', old) != old_path or adb('shell', 'sha256sum', old_path.removeprefix('package:')) != old_hash:
         raise RuntimeError('Original application or its private data changed')
     if adb('shell', 'cat', new_marker) != 'new-app-data':
-        raise RuntimeError('Updating Android 2 from 1.0.7 lost private application data')
+        raise RuntimeError('Updating Android 2 from 1.0.8 lost private application data')
     install(ROOT / 'installers' / filename)
     if adb('shell', 'cat', new_marker) != 'new-app-data' or adb('shell', 'cat', marker) != sentinel:
         raise RuntimeError('A same-key APK update lost private application data')
@@ -193,12 +193,37 @@ for role, filename in roles:
         adb('shell', 'screencap', '-p', '/sdcard/icon-failed.png')
         adb('pull', '/sdcard/icon-failed.png', str(RESULTS / (role + '-icon-failed.png')))
         raise
+    if role == 'mahasiswa':
+        # No login or token: the watch stays idle and never queries production.
+        # Verify the OS notification has an explicit stop action and that its
+        # exact service intent removes the foreground service and notification.
+        adb('shell', 'pm', 'grant', new, 'android.permission.POST_NOTIFICATIONS')
+        component = new + '/id.webabsensi.app.AttendanceWatch'
+        adb('shell', 'am', 'start-foreground-service', '-n', component)
+        until = time.monotonic() + 30
+        while True:
+            notifications = adb('shell', 'dumpsys', 'notification', '--noredact')
+            if new in notifications and 'Matikan pengingat' in notifications:
+                break
+            if time.monotonic() > until:
+                raise RuntimeError('Android reminder notification lacks its stop control')
+            time.sleep(1)
+        adb('shell', 'am', 'startservice', '-n', component, '-a', 'id.webabsensi.STOP_WATCH')
+        until = time.monotonic() + 30
+        while True:
+            services = adb('shell', 'dumpsys', 'activity', 'services', new)
+            if 'AttendanceWatch' not in services:
+                break
+            if time.monotonic() > until:
+                raise RuntimeError('Android reminder stop action did not stop the service')
+            time.sleep(1)
+        print('mahasiswa: foreground reminder exposes a stop action; stop intent removes the service without an account token.')
     if adb('shell', 'cat', marker) != sentinel or adb('shell', 'cat', new_marker) != 'new-app-data':
         raise RuntimeError('Icon editing changed private attendance data')
-    report.append({'custom_icon_editor_and_launcher_tested': True, 'role': role, 'old_package': old, 'new_package': new,
+    report.append({'custom_icon_editor_and_launcher_tested': True, 'reminder_stop_action_tested': role == 'mahasiswa', 'role': role, 'old_package': old, 'new_package': new,
                    'coinstalled': True, 'old_private_data_retained': True,
                    'same_key_update_retained_data': True, 'login_ui_rendered': True,
-                   'upgrade_from_version': '1.0.7', 'teacher_homepage_original': role == 'dosen',
+                   'upgrade_from_version': '1.0.8', 'teacher_homepage_original': role == 'dosen',
                    'student_navigation_only': role == 'mahasiswa',
                    'apk_sha256': hashlib.sha256((ROOT / 'installers' / filename).read_bytes()).hexdigest()})
     print(role + ': old/new apps installed together; original data retained; update retained new data; login UI rendered.')
