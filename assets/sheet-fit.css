@@ -1,4 +1,8 @@
 /* Keep original sheets, with complete single-line text and space from cell borders. */
+/* Paper is always light, even when the surrounding controls use a dark theme.
+   Otherwise Chromium's dark form defaults paint white ink on the white sheet. */
+#paperSheet,#paper{color-scheme:light}
+#paperSheet input,#paperSheet textarea,#paperSheet select,#paper input,#paper textarea,#paper select{color:inherit}
 #paperSheet .meta-label,#paperSheet .meta-val,#paper .meta-label,#paperSheet .meta-value,#paper .meta-value{white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important;min-width:0}
 #paperSheet .meta-val,#paperSheet .meta-value,#paper .meta-value{display:block;max-width:100%;padding:0 2px}
 #paperSheet .meta-val>div,#paperSheet .meta-value>div,#paper .meta-value>div{display:inline}

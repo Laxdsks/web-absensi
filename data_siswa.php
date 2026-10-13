@@ -382,7 +382,7 @@ if ($stmt) {
     </style>
     <script src="app/vendor/tesseract.min.js" defer></script>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.1.0.js" defer></script>
+    <script src="app/runtime-teacher-1.1.1.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script>
 </head>

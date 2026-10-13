@@ -16,8 +16,26 @@ test('single-line sheet text, cell spacing and Office exports',{timeout:180000},
  const context=await browser.newContext({viewport:{width:1280,height:900}});await context.route('**/*',r=>new URL(r.request().url()).origin===new URL(BASE).origin?r.continue():r.abort());const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(BASE+'index.php');await p.waitForFunction(()=>!!window.WA);const source=fs.readFileSync(path.join(__dirname,'../index.php'),'utf8');await p.evaluate(f=>WA.login('teacher',f),{username:source.match(/\$user === '([^']+)'/)[1],password:source.match(/\$pass === '([^']+)'/)[1]});
  const ctx={jenjang:'S1',prodi:'Pendidikan Sejarah',semester:'7',kelas:'D'},nim='C'+String(Date.now())+'012345',name='Muhammad Fadillah Nur Rahman Pratama',course='Algoritma dan Pemrograman Komputer';await p.evaluate(async row=>{await WA.queue({type:'student-upsert',ctx:row,...row});await WA.sync();},{...ctx,nim,nama:name,jk:'L'});
  const exports=[];
+ await p.goto(BASE+'absen.php?'+new URLSearchParams({...ctx,matkul:course}));await p.waitForFunction(()=>window.WASheetReady);
+  await t.test('paper identities and attendance ink remain visible in every theme, on phone and print',async()=>{
+   const originalTheme=await p.evaluate(()=>document.documentElement.dataset.theme);
+   // Inspect the paper itself without a fixed inspector/toolbar covering its pixels.
+   const captureStyle=await p.addStyleTag({content:'#topToolbar,.inspector-panel,.wa-guide{visibility:hidden!important}'});
+   await p.locator('#tbodySiswa tr').filter({has:p.locator('.nim-input')}).last().locator('.attendance-cell').first().fill('.');
+   for(const theme of ['malam','putih','samudra','senja'])for(const width of [1280,393])for(const media of ['screen','print']){
+    await p.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);await p.setViewportSize({width:media==='print'?794:width,height:900});await p.emulateMedia({media});await p.evaluate(()=>WAFitSheetText());
+    const row=p.locator('#tbodySiswa tr').filter({has:p.locator('.nim-input')}).last();
+    assert.equal(await row.locator('.nim-input').inputValue(),nim);assert.equal(await row.locator('.name-input').inputValue(),name);
+    const ink=await row.locator('input').evaluateAll(els=>els.filter(e=>e.value).map(e=>({value:e.value,color:getComputedStyle(e).color,fill:getComputedStyle(e).webkitTextFillColor,scheme:getComputedStyle(e).colorScheme})));
+    assert(ink.length>=4);for(const field of ink){assert.equal(field.color,'rgb(0, 0, 0)',`${theme} ${width} ${media}: ${field.value}`);assert.equal(field.fill,field.color);assert.equal(field.scheme,'light');}
+    // Check actual painted glyphs, not only populated input values or CSS declarations.
+    for(const selector of ['.nim-input','.name-input']){const shot=await row.locator(selector).screenshot();const darkPixels=await p.evaluate(async data=>{const img=new Image();img.src='data:image/png;base64,'+data;await img.decode();const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;const c=canvas.getContext('2d');c.drawImage(img,0,0);const rgba=c.getImageData(0,0,canvas.width,canvas.height).data;let dark=0;for(let i=0;i<rgba.length;i+=4)if(rgba[i+3]>240&&rgba[i]<180&&rgba[i+1]<180&&rgba[i+2]<180)dark++;return dark;},shot.toString('base64'));assert(darkPixels>20,`${theme} ${width} ${media}: ${selector} must paint readable text`);}
+   }
+   // Explicit text formatting remains independent from the surrounding screen theme.
+   await p.locator('#tbodySiswa .name-input').last().evaluate(el=>el.style.color='#123456');assert.equal(await p.locator('#tbodySiswa .name-input').last().evaluate(el=>getComputedStyle(el).color),'rgb(18, 52, 86)');await p.locator('#tbodySiswa .name-input').last().evaluate(el=>el.style.removeProperty('color'));
+   await captureStyle.evaluate(el=>el.remove());await p.evaluate(theme=>{if(theme)document.documentElement.dataset.theme=theme;else delete document.documentElement.dataset.theme;},originalTheme);await p.emulateMedia({media:'screen'});
+  });
  await t.test('attendance fits long identities with padding on desktop, phone and print',async()=>{
-  await p.goto(BASE+'absen.php?'+new URLSearchParams({...ctx,matkul:course}));await p.waitForFunction(()=>window.WASheetReady);
   for(const width of [1280,393]){await p.setViewportSize({width,height:900});for(const media of ['screen','print']){await p.setViewportSize({width:media==='print'?794:width,height:900});await p.emulateMedia({media});await p.waitForTimeout(400);await p.evaluate(()=>WAFitSheetText());assert.deepEqual(await p.evaluate(checkGeometry),[],width+' '+media);const dimensions=await p.evaluate(()=>{const table=document.getElementById('tabelAbsen'),paper=document.getElementById('tableWrapper');return {table:table.getBoundingClientRect().width,paper:paper.getBoundingClientRect().width,padding:parseFloat(getComputedStyle(table.rows[3].cells[1]).paddingLeft)};});assert(dimensions.padding>=6);assert(dimensions.table<=dimensions.paper+2,JSON.stringify(dimensions));}}
   await p.emulateMedia({media:'screen'});await p.setViewportSize({width:1280,height:900});exports.push({name:'attendance Word',html:await p.evaluate(()=>buatDokumenWord(document.getElementById('paperSheet'),'Lembar Absen')),width:734});exports.push({name:'attendance Excel',html:await p.evaluate(()=>buatTabelExcel(document.getElementById('tabelAbsen'),'Absensi')),width:1600});
  });
