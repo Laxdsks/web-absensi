@@ -46,6 +46,13 @@ async function close(){
   await evaluate(`WA.change(s=>({...s,token:null,profile:{role:'teacher',device:crypto.randomUUID(),account:{nama:'CI offline'}},snapshot:{roster:[{jenjang:'S1',prodi:'Pendidikan Teknologi Informasi',semester:'1',kelas:'A',id:1,nim:'C1234567890123',nama:'CI mahasiswa',jk:'L'}],sessions:[],marks:[],documents:[],registrations:[]},outbox:[],selection:null}))`);
   const url='https://datasiswasekolah.42web.io/absen.php?prodi=Pendidikan%20Teknologi%20Informasi&semester=1&kelas=A&matkul=CI-offline';
   await navigate(url);await wait("window.WASheetReady===true&&!!document.querySelector('.attendance-cell')");
+  for(const theme of ['malam','putih','samudra','senja'])for(const media of ['screen','print']){
+    await evaluate('document.documentElement.dataset.theme='+JSON.stringify(theme));await command('Emulation.setEmulatedMedia',{media});
+    const fields=await evaluate("Array.from(document.querySelectorAll('#tbodySiswa tr:first-child input')).slice(0,3).map(e=>({value:e.value,color:getComputedStyle(e).color,scheme:getComputedStyle(e).colorScheme}))");
+    assert.deepEqual(fields.map(e=>e.value),['C1234567890123','CI mahasiswa','L']);for(const field of fields){assert.equal(field.color,'rgb(0, 0, 0)',theme+' '+media);assert.equal(field.scheme,'light');}
+  }
+  await command('Emulation.setEmulatedMedia',{media:'screen'});
+  console.log('Presen Desk: offline paper names, NIM and L/P use visible black ink in all four themes and print.');
   await evaluate("(()=>{const el=document.querySelector('.attendance-cell');el.value='.';el.dispatchEvent(new Event('input',{bubbles:true}));})()");
   // Close before the debounce expires; the native close handler must flush the draft.
   await close();await launch();await navigate(url);await wait("window.WASheetReady===true&&document.querySelector('.attendance-cell')?.value==='.'");

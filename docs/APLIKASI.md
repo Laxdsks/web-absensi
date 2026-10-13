@@ -1,6 +1,6 @@
-# Aplikasi Absensi 1.1.0
+# Aplikasi Absensi 1.1.1
 
-Panduan ini menjelaskan tiga paket **1.1.0**: **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.1.0.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Lihat [rilis aplikasi terbaru](https://github.com/Laxdsks/web-absensi/releases/latest) untuk versi dan paket yang sudah diterbitkan. Android 2 memakai identitas aplikasi dan kunci yang tetap sejak versi 1.0.2 sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
+Panduan ini menjelaskan tiga paket **1.1.1**: **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.1.1.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Lihat [rilis aplikasi terbaru](https://github.com/Laxdsks/web-absensi/releases/latest) untuk versi dan paket yang sudah diterbitkan. Android 2 memakai identitas aplikasi dan kunci yang tetap sejak versi 1.0.2 sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
 
 APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
 
@@ -81,7 +81,11 @@ Pada Windows, ikon jendela berubah langsung dan tetap tersimpan saat dibuka kemb
 Pada Android, ikon aplikasi terkini dan pintasan layar utama memakai gambar pilihan. Tekan **Buat / perbarui pintasan**, kemudian konfirmasi dialog Android. Launcher harus mendukung pintasan khusus; bentuk dan ukuran luar mengikuti launcher. Pintasan membuka APK yang sama dengan data yang sama. Ikon asli di daftar aplikasi dan ikon APK tidak dapat diganti dengan gambar bebas saat aplikasi sedang terpasang. Tidak perlu mencopot aplikasi atau membuat APK/website terpisah.
 
 
-## Pembaruan 1.1.0: tampilan, lokasi dan kontrol data
+## Pembaruan 1.1.1: teks kertas absen
+
+Nama, NIM, L/P dan tanda kehadiran pada kertas absen memakai warna kertas yang tetap terbaca di semua tema, termasuk Samudra. Tema menu tetap dapat diubah. Pembaruan tidak mengubah daftar mahasiswa, nilai, absensi atau format lembar. Jika memakai aplikasi, pasang pembaruan tanpa mencopot versi sebelumnya; jika memakai browser, muat ulang halaman agar cache versi baru aktif.
+
+## Fitur 1.1.0: tampilan, lokasi dan kontrol data
 
 Beranda memakai navigasi biru tua, latar lebar, panel pilihan kelas di kiri dan akses cepat dengan aksen kuning. Identitas dan menu tetap milik sistem absensi. Presen Go memakai tampilan lebih sederhana dengan kartu, ikon modern dan tombol yang mudah disentuh. Menu lembar, data mahasiswa, rekap dan pemutar musik dirapikan; format cetak dan fungsi tetap dipertahankan. Tekan **Tampilan** untuk memilih tema, warna utama dan foto latar. Pengaturan berada pada perangkat; tidak mengubah foto atau tema pengguna lain. Foto latar bebas dipilih, bukan gambar universitas pada referensi.
 
@@ -91,4 +95,4 @@ Presen Go memiliki menu **Pesan** dan bagian **Pemberitahuan**. Hapus satu pesan
 
 Mahasiswa bisa **Hapus akun** dengan konfirmasi PIN ketika online. Pendaftaran dan akses perangkat dihapus, sehingga NIM dapat dipakai untuk mendaftar kembali. Catatan dan daftar milik dosen tetap ada. Pada menu dosen **Akun mahasiswa terdaftar**, penghapusan memerlukan konfirmasi NIM. Dosen dapat memilih hapus akun saja atau sekaligus membersihkan daftar, absensi, lokasi dan nilai NIM tersebut pada kelas akun ini. Pilihan bersihkan data hanya untuk data percobaan, tidak dapat dibatalkan dan tidak memengaruhi NIM sama pada kelas lain. Selesaikan sinkronisasi sebelum menghapus akun/data. Penerbitan pembaruan tidak menghapus data apa pun secara otomatis.
 
-Perbarui dari versi 1.0.8 dengan memasang APK/EXE 1.1.0 tanpa mencopot aplikasi atau menghapus datanya. Kunci Android 2, applicationId dan folder data Windows tetap sama.
+Perbarui dari versi 1.0.8 atau 1.1.0 dengan memasang APK/EXE 1.1.1 tanpa mencopot aplikasi atau menghapus datanya. Kunci Android 2, applicationId dan folder data Windows tetap sama.
