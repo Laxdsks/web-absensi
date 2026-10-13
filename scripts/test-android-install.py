@@ -152,6 +152,9 @@ for role, filename in roles:
     launched = adb('shell', 'am', 'start', '-W', '-n', new + '/id.webabsensi.app.MainActivity')
     if 'Status: ok' not in launched:
         raise RuntimeError('Android 2 activity did not launch')
+    launched_pids = adb('shell', 'pidof', new).split()
+    if not launched_pids:
+        raise RuntimeError('Android 2 process stopped immediately after launch')
     # Wait for WebView rendering without entering a production account.
     until = time.monotonic() + 90
     while True:
@@ -179,7 +182,11 @@ for role, filename in roles:
         raise RuntimeError('Student APK exposes teacher navigation')
     if role == 'dosen' and 'aplikasi offline &amp; absen qr' in hierarchy.lower():
         raise RuntimeError('Teacher APK still exposes the obsolete second-dashboard link')
-    log = adb('logcat', '-d', '-s', 'AndroidRuntime', 'chromium')
+    # UIAutomator also uses AndroidRuntime. Keep all diagnostics, but do not
+    # mistake a failed automation process for an exception in the tested app.
+    (RESULTS / (role + '-device-runtime.log')).write_text(adb('logcat', '-d', '-s', 'AndroidRuntime', 'chromium'))
+    log = '\n'.join(adb('logcat', '-d', '--pid=' + pid, '-s', 'AndroidRuntime', 'chromium') for pid in launched_pids)
+    (RESULTS / (role + '-runtime.log')).write_text(log)
     if 'FATAL EXCEPTION' in log or 'Uncaught SyntaxError' in log:
         raise RuntimeError('Android/WebView runtime failure for ' + role)
     if not adb('shell', 'pidof', new):
