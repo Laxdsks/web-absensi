@@ -30,10 +30,10 @@ def install(path):
 
 # Exercise the actual WebView editor and Android launcher using only local images.
 def ui():
-    adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
     try:
+        adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
         return ET.fromstring(adb('shell', 'cat', '/sdcard/absensi-ui.xml'))
-    except (ET.ParseError, subprocess.CalledProcessError):
+    except (ET.ParseError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return ET.Element('hierarchy')
 
 
@@ -144,7 +144,7 @@ for role, filename in roles:
     if adb('shell', 'cat', marker) != sentinel or adb('shell', 'pm', 'path', old) != old_path or adb('shell', 'sha256sum', old_path.removeprefix('package:')) != old_hash:
         raise RuntimeError('Original application or its private data changed')
     if adb('shell', 'cat', new_marker) != 'new-app-data':
-        raise RuntimeError('Updating Android 2 from 1.0.7 lost private application data')
+        raise RuntimeError('Updating Android 2 from 1.0.8 lost private application data')
     install(ROOT / 'installers' / filename)
     if adb('shell', 'cat', new_marker) != 'new-app-data' or adb('shell', 'cat', marker) != sentinel:
         raise RuntimeError('A same-key APK update lost private application data')
@@ -152,15 +152,20 @@ for role, filename in roles:
     launched = adb('shell', 'am', 'start', '-W', '-n', new + '/id.webabsensi.app.MainActivity')
     if 'Status: ok' not in launched:
         raise RuntimeError('Android 2 activity did not launch')
+    launched_pids = adb('shell', 'pidof', new).split()
+    if not launched_pids:
+        raise RuntimeError('Android 2 process stopped immediately after launch')
     # Wait for WebView rendering without entering a production account.
     until = time.monotonic() + 90
     while True:
-        dump = adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
         try:
+            dump = adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/absensi-ui.xml')
             hierarchy = adb('shell', 'cat', '/sdcard/absensi-ui.xml')
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             # UIAutomator can return success before it writes XML while WebView
-            # is still laying out the offline homepage. Retry the read, not installation.
+            # is laying out the page, or be killed under emulator memory pressure.
+            # Retry within this deadline; a missing login UI still fails the test.
+            dump = 'UIAutomator did not finish; retrying within the login deadline.'
             hierarchy = ''
         expected = 'masuk ke sistem' if role == 'dosen' else 'masuk mahasiswa'
         if expected in hierarchy.lower():
@@ -177,7 +182,11 @@ for role, filename in roles:
         raise RuntimeError('Student APK exposes teacher navigation')
     if role == 'dosen' and 'aplikasi offline &amp; absen qr' in hierarchy.lower():
         raise RuntimeError('Teacher APK still exposes the obsolete second-dashboard link')
-    log = adb('logcat', '-d', '-s', 'AndroidRuntime', 'chromium')
+    # UIAutomator also uses AndroidRuntime. Keep all diagnostics, but do not
+    # mistake a failed automation process for an exception in the tested app.
+    (RESULTS / (role + '-device-runtime.log')).write_text(adb('logcat', '-d', '-s', 'AndroidRuntime', 'chromium'))
+    log = '\n'.join(adb('logcat', '-d', '--pid=' + pid, '-s', 'AndroidRuntime', 'chromium') for pid in launched_pids)
+    (RESULTS / (role + '-runtime.log')).write_text(log)
     if 'FATAL EXCEPTION' in log or 'Uncaught SyntaxError' in log:
         raise RuntimeError('Android/WebView runtime failure for ' + role)
     if not adb('shell', 'pidof', new):
@@ -193,13 +202,41 @@ for role, filename in roles:
         adb('shell', 'screencap', '-p', '/sdcard/icon-failed.png')
         adb('pull', '/sdcard/icon-failed.png', str(RESULTS / (role + '-icon-failed.png')))
         raise
+    if role == 'mahasiswa':
+        # No login or token: the watch stays idle and never queries production.
+        # Verify the OS notification has an explicit stop action and that its
+        # exact service intent removes the foreground service and notification.
+        adb('shell', 'pm', 'grant', new, 'android.permission.POST_NOTIFICATIONS')
+        component = new + '/id.webabsensi.app.AttendanceWatch'
+        adb('shell', 'am', 'start-foreground-service', '-n', component)
+        until = time.monotonic() + 30
+        while True:
+            notifications = adb('shell', 'dumpsys', 'notification', '--noredact')
+            if new in notifications and 'Matikan pengingat' in notifications:
+                break
+            if time.monotonic() > until:
+                raise RuntimeError('Android reminder notification lacks its stop control')
+            time.sleep(1)
+        adb('shell', 'am', 'startservice', '-n', component, '-a', 'id.webabsensi.STOP_WATCH')
+        until = time.monotonic() + 30
+        while True:
+            services = adb('shell', 'dumpsys', 'activity', 'services', new)
+            if 'AttendanceWatch' not in services:
+                break
+            if time.monotonic() > until:
+                raise RuntimeError('Android reminder stop action did not stop the service')
+            time.sleep(1)
+        print('mahasiswa: foreground reminder exposes a stop action; stop intent removes the service without an account token.')
     if adb('shell', 'cat', marker) != sentinel or adb('shell', 'cat', new_marker) != 'new-app-data':
         raise RuntimeError('Icon editing changed private attendance data')
-    report.append({'custom_icon_editor_and_launcher_tested': True, 'role': role, 'old_package': old, 'new_package': new,
+    report.append({'custom_icon_editor_and_launcher_tested': True, 'reminder_stop_action_tested': role == 'mahasiswa', 'role': role, 'old_package': old, 'new_package': new,
                    'coinstalled': True, 'old_private_data_retained': True,
                    'same_key_update_retained_data': True, 'login_ui_rendered': True,
-                   'upgrade_from_version': '1.0.7', 'teacher_homepage_original': role == 'dosen',
+                   'upgrade_from_version': '1.0.8', 'teacher_homepage_original': role == 'dosen',
                    'student_navigation_only': role == 'mahasiswa',
                    'apk_sha256': hashlib.sha256((ROOT / 'installers' / filename).read_bytes()).hexdigest()})
     print(role + ': old/new apps installed together; original data retained; update retained new data; login UI rendered.')
+    # Both packages stay installed. Release the finished role's WebView before
+    # testing the next one on the memory-limited emulator; never clear app data.
+    adb('shell', 'am', 'force-stop', new)
 (RESULTS / 'report.json').write_text(json.dumps({'device': adb('shell', 'getprop', 'ro.build.version.release'), 'tests': report}, indent=2))

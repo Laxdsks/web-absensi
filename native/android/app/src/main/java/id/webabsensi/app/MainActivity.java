@@ -37,7 +37,9 @@ public class MainActivity extends Activity {
   @JavascriptInterface public void notifySession(String id,String title,String body){AttendanceWatch.notify(MainActivity.this,Math.abs(id.hashCode()),title,body);}
   @JavascriptInterface public void notify(String title,String body){AttendanceWatch.notify(MainActivity.this,Math.abs(body.hashCode()),title,body);}
   @JavascriptInterface public void startWatch(String token,String nim){if(!BuildConfig.APP_ROLE.equals("student")||!token.matches("[a-f0-9]{64}"))return;String cookies=CookieManager.getInstance().getCookie("https://"+host+"/");getSharedPreferences("attendance",MODE_PRIVATE).edit().putString("token",token).putString("nim",nim).putString("cookies",cookies==null?"":cookies).apply();runOnUiThread(()->startForegroundService(new Intent(MainActivity.this,AttendanceWatch.class)));}
-  @JavascriptInterface public void stopWatch(){stopService(new Intent(MainActivity.this,AttendanceWatch.class));getSharedPreferences("attendance",MODE_PRIVATE).edit().clear().apply();}
+  @JavascriptInterface public void stopWatch(){stopService(new Intent(MainActivity.this,AttendanceWatch.class));getSharedPreferences("attendance",MODE_PRIVATE).edit().clear().apply();((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).cancelAll();}
+  @JavascriptInterface public boolean watchEnabled(){return iconPageTrusted&&BuildConfig.APP_ROLE.equals("student")&&!getSharedPreferences("attendance",MODE_PRIVATE).getString("token","").isEmpty();}
+  @JavascriptInterface public void dismissSession(String id,int version){if(!iconPageTrusted||!BuildConfig.APP_ROLE.equals("student")||id==null||!id.matches("[a-fA-F0-9-]{36}")||version<1)return;getSharedPreferences("attendance",MODE_PRIVATE).edit().putBoolean(id+"-"+version+"-dismissed",true).apply();((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).cancel(Math.abs(id.hashCode()));}
   @JavascriptInterface public void attendanceAccepted(String id){((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).cancel(Math.abs(id.hashCode()));}
  }
 }

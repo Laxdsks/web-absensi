@@ -3,8 +3,8 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
-    paths: ['native/**','app/**','assets/**','package.json','package-lock.json','app-sw.js','scripts/*android*.py','scripts/verify-apk-upgrade.py','.github/workflows/build-apps.yml']
+    branches: [main, feat/portal-location-accounts]
+    paths: ['native/**','app/**','assets/**','package.json','package-lock.json','app-sw.js','scripts/*android*.py','scripts/*windows*.cjs','scripts/verify-apk-upgrade.py','.github/workflows/build-apps.yml']
   workflow_dispatch:
 concurrency:
   group: application-installers-${{ github.ref }}
@@ -82,7 +82,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download aplikasi-1.0.0 --pattern '*.apk' --dir previous-installers
-          gh release download aplikasi-1.0.7 --pattern '*.apk' --dir previous-v2-installers
+          gh release download aplikasi-1.0.8 --pattern '*.apk' --dir previous-v2-installers
           signers=("$ANDROID_HOME"/build-tools/*/apksigner)
           python3 scripts/verify-apk-upgrade.py "${signers[-1]}"
       - name: Enable emulator hardware acceleration
@@ -138,7 +138,7 @@ jobs:
           path: dist/windows/*.exe
           if-no-files-found: error
   release:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.android.outputs.release_ready == 'true'
     needs: [android, windows]
     runs-on: ubuntu-24.04
     permissions:
@@ -157,12 +157,14 @@ jobs:
           version=$(node -p "require('./package.json').version")
           tag="aplikasi-$version"
           python3 - <<'PY'
-          import hashlib
+          import hashlib, json
           from pathlib import Path
           root = Path('installers')
           files = sorted([*root.glob('*.apk'), *root.glob('*.exe')])
-          if not any(path.suffix == '.exe' for path in files):
-              raise SystemExit('Verified Windows installer is missing')
+          version = json.loads(Path('package.json').read_text())['version']
+          required = {'Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk', 'Absensi-Dosen-Windows-' + version + '.exe'}
+          if {path.name for path in files} != required:
+              raise SystemExit('Release requires both verified Android APKs and the matching Windows installer')
           with (root / 'SHA256SUMS.txt').open('w') as output:
               for path in files:
                   output.write(hashlib.sha256(path.read_bytes()).hexdigest() + '  ' + path.name + '\n')

@@ -1,6 +1,6 @@
-# Aplikasi Absensi 1.0.8
+# Aplikasi Absensi 1.1.0
 
-Tersedia tiga paket **1.0.8** dari [rilis aplikasi](https://github.com/Laxdsks/web-absensi/releases/tag/aplikasi-1.0.8): **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.0.8.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Android 2 memakai identitas aplikasi dan kunci baru sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
+Panduan ini menjelaskan tiga paket **1.1.0**: **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.1.0.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Lihat [rilis aplikasi terbaru](https://github.com/Laxdsks/web-absensi/releases/latest) untuk versi dan paket yang sudah diterbitkan. Android 2 memakai identitas aplikasi dan kunci yang tetap sejak versi 1.0.2 sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
 
 APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
 
@@ -8,7 +8,7 @@ APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portabl
 
 Dosen masuk dengan akun pengelola/dosen yang sudah digunakan di website. Mahasiswa mendaftar nama, NIM lengkap termasuk awalan C, PIN, prodi, semester, dan kelas. Dosen mencocokkan identitas dengan daftar mahasiswa lalu menyetujui sekali. Mahasiswa menyinkronkan persetujuan saat masih online. Login dan data perangkat bertahan setelah aplikasi ditutup; **Keluar akun** menghapus akses lokal dan meminta login lagi. Jangan keluar sebelum perubahan offline tersinkron atau dicadangkan.
 
-Android dosen dan Windows membuka [website asli](https://datasiswasekolah.42web.io/index.php). Desain, navigasi, tabel, lembar ujian dan pengaturan asli dipertahankan. Di **Lembar Absen**, tekan **Absensi QR**; pengaturan muncul di bawah pita menu pada lembar yang sama. Persetujuan mahasiswa juga tersedia di sana. Isi mata kuliah sekali, lalu mulai sesi atau pindai balasan. Di **Pusat Kendali** halaman utama, buka persetujuan akun mahasiswa, sinkronisasi dan cadangan. Halaman lama `/app/` mengarahkan dosen ke website asli; [halaman mahasiswa](https://datasiswasekolah.42web.io/app/?role=student) tetap khusus untuk mengirim absensi. Paket dosen menyertakan pustaka PDF, Word, Excel dan OCR; paket mahasiswa hanya membawa kebutuhan absensi. Mesin konversi dimuat saat dibutuhkan. Ekspor Word/Excel melalui dialog penyimpanan, cetak/PDF melalui dialog cetak sistem. Hasil OCR tetap perlu dibandingkan dengan dokumen asli; NIM kosong atau hasil meragukan harus dikoreksi sebelum disimpan.
+Android dosen dan Windows membuka [website asli](https://datasiswasekolah.42web.io/index.php). Halaman asli tetap dipakai dengan desain responsif baru; tabel, lembar ujian dan pengaturan tetap berfungsi. Di **Lembar Absen**, tekan **Absensi QR**; pengaturan muncul di bawah pita menu pada lembar yang sama. Persetujuan mahasiswa juga tersedia di sana. Isi mata kuliah sekali, lalu mulai sesi atau pindai balasan. Di **Pusat Kendali** halaman utama, buka persetujuan akun mahasiswa, sinkronisasi dan cadangan. Halaman lama `/app/` mengarahkan dosen ke website asli; [halaman mahasiswa](https://datasiswasekolah.42web.io/app/?role=student) tetap khusus untuk mengirim absensi. Paket dosen menyertakan pustaka PDF, Word, Excel dan OCR; paket mahasiswa hanya membawa kebutuhan absensi. Mesin konversi dimuat saat dibutuhkan. Ekspor Word/Excel melalui dialog penyimpanan, cetak/PDF melalui dialog cetak sistem. Hasil OCR tetap perlu dibandingkan dengan dokumen asli; NIM kosong atau hasil meragukan harus dikoreksi sebelum disimpan.
 
 ## Membuka absensi
 
@@ -27,7 +27,7 @@ Mahasiswa dan dosen dapat sama-sama offline setelah login/persetujuan awal:
 2. Aplikasi mahasiswa membuat **QR balasan**; mahasiswa menunjukkannya kepada dosen.
 3. Dosen memindai balasan **sebelum batas waktu habis**. Kehadiran tersimpan di perangkat dosen dan dikirim ke server ketika internet kembali.
 
-Membuat atau memfoto QR saja belum mencatat kehadiran. Dosen harus menerima balasannya. Keterangan S/I memakai alur yang sama; pengiriman dari rumah tetap memerlukan internet atau orang yang membawa QR balasan kepada dosen. Dosen dapat meninjau alasan dan mengoreksi catatan. Lokasi hanya diambil sekali jika mahasiswa memilih **Sertakan lokasi**, lalu mengizinkannya. Lokasi, waktu dan akurasi ditampilkan untuk peninjauan; koordinat tidak membuktikan benar/salahnya alasan.
+Membuat atau memfoto QR saja belum mencatat kehadiran. Dosen harus menerima balasannya. Keterangan S/I memakai alur yang sama; pengiriman dari rumah tetap memerlukan internet atau orang yang membawa QR balasan kepada dosen. Dosen dapat meninjau alasan dan mengoreksi catatan. Keterangan dekat tombol kirim menjelaskan bahwa dosen dapat melihat lokasi saat absensi dikirim. Aplikasi meminta izin lokasi perangkat dan mengambilnya sekali saat mengirim. Jika GPS atau izin gagal, mahasiswa dapat memilih kirim tanpa lokasi. Lokasi, waktu dan akurasi ditampilkan untuk peninjauan; koordinat tidak membuktikan benar/salahnya alasan.
 
 ## Lembar dan sinkronisasi
 
@@ -47,7 +47,7 @@ Lembar absen memeriksa NIM pada tabel tersimpan terhadap daftar mahasiswa terbar
 
 ### Perbaikan tampilan yang tetap disertakan
 
-Lembar absensi, ujian dan rekap mempertahankan desain asli. Teks tabel diberi jarak dari garis; NIM/nama serta isian mata kuliah, ruang dan waktu dibuat satu baris dengan ukuran teks mengikuti lebar kolom. Rekap layar memakai kolom yang cukup lebar dan dapat digeser. Ekspor Word/Excel menyesuaikan ukuran teks terhadap lebar kertas/kolom, tanpa memotong isi atau mengubah nilai. Panduan **?** menunjukkan urutan penggunaan dan tombol pada halaman yang sedang dibuka.
+Lembar absensi, ujian dan rekap mempertahankan format dokumen; menu layar dirapikan untuk HP dan Windows. Teks tabel diberi jarak dari garis; NIM/nama serta isian mata kuliah, ruang dan waktu dibuat satu baris dengan ukuran teks mengikuti lebar kolom. Rekap layar memakai kolom yang cukup lebar dan dapat digeser. Ekspor Word/Excel menyesuaikan ukuran teks terhadap lebar kertas/kolom, tanpa memotong isi atau mengubah nilai. Panduan **?** menunjukkan urutan penggunaan dan tombol pada halaman yang sedang dibuka.
 
 ### Perbaikan yang tetap disertakan
 
@@ -79,3 +79,16 @@ Presen Desk dan Presen Pro: buka Menu Pengaturan di beranda, lalu **Atur ikon ap
 Pada Windows, ikon jendela berubah langsung dan tetap tersimpan saat dibuka kembali. Tekan **Buat / perbarui pintasan** untuk membuat “Presen Desk - Ikon saya” di desktop. Jalankan lewat pintasan tersebut untuk memakai ikon pilihan. Ikon yang tertanam pada berkas EXE tetap mengikuti paket; ikon taskbar yang sudah disematkan dapat tetap memakai ikon lama dari Windows.
 
 Pada Android, ikon aplikasi terkini dan pintasan layar utama memakai gambar pilihan. Tekan **Buat / perbarui pintasan**, kemudian konfirmasi dialog Android. Launcher harus mendukung pintasan khusus; bentuk dan ukuran luar mengikuti launcher. Pintasan membuka APK yang sama dengan data yang sama. Ikon asli di daftar aplikasi dan ikon APK tidak dapat diganti dengan gambar bebas saat aplikasi sedang terpasang. Tidak perlu mencopot aplikasi atau membuat APK/website terpisah.
+
+
+## Pembaruan 1.1.0: tampilan, lokasi dan kontrol data
+
+Beranda memakai navigasi biru tua, latar lebar, panel pilihan kelas di kiri dan akses cepat dengan aksen kuning. Identitas dan menu tetap milik sistem absensi. Presen Go memakai tampilan lebih sederhana dengan kartu, ikon modern dan tombol yang mudah disentuh. Menu lembar, data mahasiswa, rekap dan pemutar musik dirapikan; format cetak dan fungsi tetap dipertahankan. Tekan **Tampilan** untuk memilih tema, warna utama dan foto latar. Pengaturan berada pada perangkat; tidak mengubah foto atau tema pengguna lain. Foto latar bebas dipilih, bukan gambar universitas pada referensi.
+
+Pada lembar absen, ikon lokasi berada di sebelah kiri nomor baris mahasiswa yang mengirim lokasi. Tekan untuk melihat waktu, akurasi dan membuka Google Maps. Ikon tidak disertakan pada cetak/PDF, Word atau Excel. Tanpa internet, rincian koordinat tetap bisa dibaca; Google Maps memerlukan koneksi. Lokasi tidak membuktikan kebenaran alasan dan tidak dilacak terus-menerus.
+
+Presen Go memiliki menu **Pesan** dan bagian **Pemberitahuan**. Hapus satu pesan atau semua pesan tanpa menghapus catatan absensi. Pesan yang dihapus tidak muncul kembali sesudah aplikasi dibuka ulang. QR balasan tersimpan dapat dihapus dari perangkat; dosen tetap menentukan catatan kehadiran. **Matikan pengingat** menghentikan notifikasi; pada Android, tindakan itu juga tersedia di pemberitahuan layanan yang sedang aktif. A otomatis setelah waktu habis ditampilkan sebagai tidak hadir, bukan pesan absen diterima.
+
+Mahasiswa bisa **Hapus akun** dengan konfirmasi PIN ketika online. Pendaftaran dan akses perangkat dihapus, sehingga NIM dapat dipakai untuk mendaftar kembali. Catatan dan daftar milik dosen tetap ada. Pada menu dosen **Akun mahasiswa terdaftar**, penghapusan memerlukan konfirmasi NIM. Dosen dapat memilih hapus akun saja atau sekaligus membersihkan daftar, absensi, lokasi dan nilai NIM tersebut pada kelas akun ini. Pilihan bersihkan data hanya untuk data percobaan, tidak dapat dibatalkan dan tidak memengaruhi NIM sama pada kelas lain. Selesaikan sinkronisasi sebelum menghapus akun/data. Penerbitan pembaruan tidak menghapus data apa pun secara otomatis.
+
+Perbarui dari versi 1.0.8 dengan memasang APK/EXE 1.1.0 tanpa mencopot aplikasi atau menghapus datanya. Kunci Android 2, applicationId dan folder data Windows tetap sama.

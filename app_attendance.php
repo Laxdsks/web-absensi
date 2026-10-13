@@ -78,6 +78,52 @@ function wa_accept_reply(array $device,array $op): array {
     return ['status'=>'success','mark'=>$mark];
 }
 
+// Students delete only their login. Class-record deletion requires the lecturer.
+function wa_delete_account(array $device,array $input): array {
+    $teacher=$device['role']==='teacher';
+    if($teacher)wa_teacher($device);
+    $id=$teacher?wa_id($input['account']??''):wa_id($device['account_id']);
+    if(!$teacher&&(($input['purge']??false)===true||isset($input['account'])&&$input['account']!==$id))throw new DomainException('Mahasiswa hanya dapat menghapus akun sendiri, tanpa menghapus catatan dosen.');
+    $purge=$teacher&&($input['purge']??false)===true;
+    wa_db()->begin_transaction();
+    try {
+        $account=wa_one('SELECT * FROM wa_accounts WHERE id=? FOR UPDATE',[$id]);
+        if(!$account)throw new InvalidArgumentException('Akun sudah dihapus atau tidak ditemukan. Sinkronkan daftar.');
+        if($teacher){
+            if(wa_nim($input['confirmation']??'')!==$account['nim'])throw new InvalidArgumentException('Ketik NIM akun yang akan dihapus dengan tepat.');
+        }elseif(!password_verify(wa_text($input['pin']??'',12),$account['pin_hash']))throw new DomainException('PIN tidak cocok. Akun belum dihapus.');
+        $ctx=json_decode($account['ctx'],true);
+        if($purge){
+            foreach(wa_roster($ctx) as $row)if(strtoupper($row['nim'])===$account['nim'])wa_query('DELETE FROM siswa WHERE id=?',[$row['id']]);
+            foreach(wa_rows('SELECT id,scope,ctx,roster FROM wa_sessions WHERE ctx=? FOR UPDATE',[wa_json(wa_ctx($ctx))]) as $session){
+                if(wa_ctx_key(json_decode($session['ctx'],true))!==$account['ctx_key'])continue;
+                $roster=array_values(array_filter(json_decode($session['roster'],true),static fn($nim)=>$nim!==$account['nim']));
+                wa_query('UPDATE wa_sessions SET roster=? WHERE id=?',[wa_json($roster),$session['id']]);
+                wa_query('DELETE FROM wa_marks WHERE scope=? AND nim=?',[$session['scope'],$account['nim']]);
+            }
+            foreach(wa_rows('SELECT scope,kind,ctx,content FROM wa_documents WHERE ctx=? FOR UPDATE',[wa_json(wa_ctx($ctx))]) as $doc){
+                if(wa_ctx_key(json_decode($doc['ctx'],true))!==$account['ctx_key'])continue;
+                wa_query('DELETE FROM wa_marks WHERE scope=? AND nim=?',[$doc['scope'],$account['nim']]);
+                $content=json_decode($doc['content'],true);$nim=$account['nim'];
+                foreach(['ket','draft'] as $key)unset($content[$key][$nim]);
+                unset($content['text']['[data-edit-key="ket-'.rawurlencode($nim).'"]']);
+                if(is_array($content['data_nilai']??null))$content['data_nilai']=array_values(array_filter($content['data_nilai'],static fn($r)=>($r['nim']??'')!==$nim));
+                if(is_array($content['table']['rows']??null))$content['table']['rows']=array_values(array_filter($content['table']['rows'],static fn($r)=>strtoupper((string)($r[1]??''))!==$nim));
+                wa_query('UPDATE wa_documents SET content=?,revision=revision+1,updated_at=? WHERE scope=? AND kind=?',[wa_json($content),wa_now(),$doc['scope'],$doc['kind']]);
+            }
+        }
+        foreach(wa_rows('SELECT id FROM wa_devices WHERE account_id=? AND role=?',[$id,'student']) as $row){
+            wa_query('DELETE FROM wa_push_devices WHERE device_id=?',[$row['id']]);
+            wa_query('DELETE FROM wa_push_sent WHERE device_id=?',[$row['id']]);
+            wa_query('UPDATE wa_devices SET revoked=1 WHERE id=?',[$row['id']]);
+        }
+        wa_query('DELETE FROM wa_accounts WHERE id=?',[$id]);
+        wa_audit($device,$purge?'purge-student':'delete-account',$id,['classDataRemoved'=>$purge]);
+        wa_db()->commit();
+        return ['status'=>'success','classDataRemoved'=>$purge];
+    }catch(Throwable $error){wa_db()->rollback();throw $error;}
+}
+
 function wa_operation(array $device,array $op): array {
     $type=(string)($op['type']??'');
     if($type==='session')return wa_session_operation($device,$op);

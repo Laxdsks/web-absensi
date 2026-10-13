@@ -271,9 +271,10 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.0.8.js" defer></script>
+    <script src="app/runtime-teacher-1.1.0.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="assets/sheet-fit.css"><script src="assets/sheet-fit.js" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script>
 </head>
 <body>
     <button type="button" class="toolbar-toggle-btn" id="toggleToolbarBtn" onclick="toggleToolbar()" aria-controls="topToolbar">⌃ Menu</button>
@@ -511,7 +512,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                     [...el.attributes].forEach(attr=>{if(attr.name==='id'||attr.name.startsWith('on')||['href','for','contenteditable'].includes(attr.name))el.removeAttribute(attr.name);});
                     el.removeAttribute('style');el.setAttribute('tabindex','-1');
                 });
-                clone.querySelectorAll('input,.logo-remove,.btn-hapus-logo').forEach(el=>el.remove());
+                clone.querySelectorAll('input,.logo-remove,.btn-hapus-logo,.p-location-icon,.p-screen-only').forEach(el=>el.remove());
                 if(clone.matches('.logo-box,.logo-slot')){
                     const img=clone.querySelector('img');
                     if(!img||!img.getAttribute('src')||img.hidden){clone.replaceChildren();clone.textContent='▣ Pilih logo';}
