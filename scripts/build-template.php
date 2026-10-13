@@ -8,6 +8,7 @@ chdir($stub);set_include_path($stub.PATH_SEPARATOR.$root);
 $_SERVER['REQUEST_METHOD']='GET';$_SERVER['PHP_SELF']='/'.$page.'.php';$_SERVER['HTTP_HOST']='localhost';
 session_start();$_SESSION=['id_user'=>'admin_01','nama_user'=>'Dosen','role'=>'Administrator Utama','theme'=>'putih'];
 $_GET=['jenjang'=>'S1','prodi'=>'Pendidikan Teknologi Informasi','semester'=>'1','kelas'=>'A','theme'=>'putih'];
+$_REQUEST=$_GET; // CLI rendering does not populate REQUEST from GET automatically.
 ob_start();require $root.'/'.$page.'.php';$html=ob_get_clean();
 if(!str_contains($html,'<html'))exit(3);
 if($page==='index')$html=preg_replace('/isLoggedIn: (?:true|false)/','isLoggedIn: false',$html);

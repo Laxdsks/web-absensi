@@ -32,9 +32,9 @@ $_SESSION['theme'] = $theme;
         @media(max-width:420px){body{padding:8px}.player{padding:13px}.search{flex-wrap:wrap}.search button{width:100%}}
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.1.1.js" defer></script>
+    <script src="app/runtime-teacher-1.1.2.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script>
 </head>
 <body>
 <div id="musicApplicationView" hidden><iframe id="musicApplicationFrame" name="absensi_music_standalone_app" title="Halaman aplikasi absensi"></iframe></div>
