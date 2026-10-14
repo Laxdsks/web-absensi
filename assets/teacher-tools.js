@@ -18,6 +18,8 @@
       jenjang: document.getElementById('jenjang')?.value,
       prodi: document.getElementById('prodi')?.value,
       semester: document.getElementById('semester')?.value,
+      year: document.getElementById('academicYear')?.value,
+      period: document.getElementById('academicPeriod')?.value,
       kelas: document.getElementById('kelas')?.value,
       ...(!document.getElementById('prodi') ? state.selection : {})
     });
@@ -146,7 +148,7 @@
         host.querySelectorAll('[data-session]').forEach(button=>button.onclick=()=>void run(()=>showQR(sessions.find(x=>x.id===button.dataset.session))));
       }
       const registrations=state.snapshot.registrations.filter(x=>!x.approved), pending=marks.filter(x=>['S','I'].includes(x.mark));
-      $('#toolResults').innerHTML=(`<details open><summary>Persetujuan akun mahasiswa (${registrations.length})</summary>${registrations.map(x=>{const match=state.snapshot.roster.find(r=>WA.sameCtx(r,x.ctx)&&r.nim===x.nim);return `<div class="tool-card"><b>${escape(x.nama)} · ${escape(x.nim)}</b><p>${escape(x.ctx.prodi)} · semester ${escape(x.ctx.semester)} · kelas ${escape(x.ctx.kelas)}</p><p>${match?'Nama pada daftar: '+escape(match.nama):'NIM belum ada pada daftar. Persetujuan menambahkan mahasiswa ini.'}</p><button type="button" data-approve="${x.id}">Setujui setelah dicocokkan</button></div>`;}).join('')||'<p>Belum ada pendaftaran menunggu.</p>'}</details>`+(sheet?`<details><summary>Keterangan sakit & izin (${pending.length})</summary>${pending.map(x=>`<div class="tool-card"><b>${escape(x.nim)} · ${x.mark} · pertemuan ${x.slot}</b><p>${escape(x.reason)}</p><p>${x.location?`Lokasi: ${x.location.lat.toFixed(5)}, ${x.location.lon.toFixed(5)} · akurasi ±${Math.round(x.location.accuracy)} m`:'Lokasi tidak disertakan.'}</p><span>Status: ${escape(x.review_status)}</span><button type="button" data-review="${escape(x.nim)}:${x.slot}" data-status="accepted">Tandai sudah ditinjau</button><button type="button" data-review="${escape(x.nim)}:${x.slot}" data-status="rejected">Ubah menjadi A</button></div>`).join('')||'<p>Belum ada keterangan S/I.</p>'}</details>`:''))+`<details><summary>Perubahan belum tersinkron (${state.outbox.length})</summary>${state.outbox.filter(x=>x.problem).map(x=>`<div class="tool-card"><p>${escape(x.problem.message||'Ada perubahan pada perangkat lain.')}</p><button type="button" data-resolve="${x.id}" data-keep="1">Kirim salinan perangkat ini</button><button type="button" data-resolve="${x.id}" data-keep="0">Gunakan data server</button></div>`).join('')||'<p>Perubahan tersimpan di perangkat sampai server menerima sinkronisasi.</p>'}</details>`;
+      $('#toolResults').innerHTML=`<details><summary>Perubahan belum tersinkron (${state.outbox.length})</summary>${state.outbox.filter(x=>x.problem).map(x=>`<div class="tool-card"><p>${escape(x.problem.message||'Ada perubahan pada perangkat lain.')}</p><button type="button" data-resolve="${x.id}" data-keep="1">Kirim salinan perangkat ini</button><button type="button" data-resolve="${x.id}" data-keep="0">Gunakan data server</button></div>`).join('')||'<p>Perubahan tersimpan di perangkat sampai server menerima sinkronisasi.</p>'}</details>`;
       host.querySelectorAll('[data-approve]').forEach(button=>button.onclick=()=>void run(async()=>{const op=await WA.queue({type:'approve',account:button.dataset.approve});await WA.sync();const current=await WA.get(),pending=current.outbox.find(x=>x.id===op.id);notify(pending?pending.problem?.message||'Persetujuan tersimpan di perangkat. Sambungkan internet lalu tekan Sinkronkan.':'Akun disetujui. Mahasiswa akan menerima hasil saat tersambung internet.');},button));
       host.querySelectorAll('[data-review]').forEach(button=>button.onclick=()=>void run(async()=>{const[nim,slot]=button.dataset.review.split(':'),mark=marks.find(x=>x.nim===nim&&x.slot===Number(slot)); await WA.queue({type:'review',ctx:c,matkul:course(),nim,slot:Number(slot),mark:button.dataset.status==='rejected'?'A':mark.mark,reason:mark.reason,review_status:button.dataset.status,baseRevision:mark.revision});},button));
       host.querySelectorAll('[data-resolve]').forEach(button=>button.onclick=()=>void run(()=>WA.resolve(button.dataset.resolve,button.dataset.keep==='1'),button));
@@ -159,6 +161,12 @@
     window.onload=async event=>{
       const state=await WA.get();
       window.SERVER_CONFIG.isLoggedIn=state.profile?.role==='teacher'||window.SERVER_CONFIG.isLoggedIn;
+      if(state.profile?.role==='teacher'){
+        const id=state.profile.account.id||'admin_01',custom=await WA.get('appearance-profile:'+id),dosen=id==='dosen_01';
+        window.SERVER_CONFIG.adminName=custom?.nama||state.profile.account.nama;
+        window.SERVER_CONFIG.adminRole=dosen?'Dosen':'Administrator Utama';
+        window.SERVER_CONFIG.adminAvatar=custom?.avatar||'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/'+(dosen?'user':'user-tie')+'.svg';
+      }
       originalOnload?.call(window,event);
     };
     const state=await WA.get();

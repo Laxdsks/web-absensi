@@ -26,7 +26,7 @@ try {
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     if($action==='register'||$action==='student-login') {
-        $ctx=wa_ctx($input['ctx']??null); $nim=wa_nim($input['nim']??''); $pin=wa_text($input['pin']??'',12); $pub=wa_text($input['pubkey']??'',300); wa_pub_pem($pub);
+        $GLOBALS['wa_request_owner']='admin_01'; $ctx=wa_ctx($input['ctx']??null); $nim=wa_nim($input['nim']??''); $pin=wa_text($input['pin']??'',12); $pub=wa_text($input['pubkey']??'',300); wa_pub_pem($pub);
         if(!preg_match('/^\d{6,12}$/',$pin))throw new InvalidArgumentException('Gunakan PIN 6–12 angka.');
         $bucket=hash('sha256',($_SERVER['REMOTE_ADDR']??'').'|'.$nim.'|'.wa_ctx_key($ctx));
         $attempt=wa_one('SELECT * FROM wa_login_attempts WHERE bucket=?',[$bucket]);
@@ -40,13 +40,13 @@ try {
             if(strlen($name)<2||!in_array($jk,['L','P'],true))throw new InvalidArgumentException('Lengkapi nama dan L/P.');
             if(!$account){
             $id=wa_uuid();
-            wa_query('INSERT INTO wa_accounts(id,nim,nama,jk,ctx,ctx_key,pin_hash,created_at) VALUES(?,?,?,?,?,?,?,?)',[$id,$nim,$name,$jk,wa_json($ctx),wa_ctx_key($ctx),password_hash($pin,PASSWORD_DEFAULT),wa_now()]);
+            wa_query('INSERT INTO wa_accounts(id,nim,nama,jk,ctx,ctx_key,pin_hash,created_at,owner_id) VALUES(?,?,?,?,?,?,?,?,?)',[$id,$nim,$name,$jk,wa_json($ctx),wa_ctx_key($ctx),password_hash($pin,PASSWORD_DEFAULT),wa_now(),wa_context_owner($ctx)]);
             $account=wa_one('SELECT * FROM wa_accounts WHERE id=?',[$id]);
             }
         }elseif(!$account||!password_verify($pin,$account['pin_hash']))wa_response(['status'=>'error','message'=>'NIM, PIN, atau kelas tidak cocok.'],401);
         wa_query('DELETE FROM wa_login_attempts WHERE bucket=?',[$bucket]);
         session_unset();
-        $issued=wa_issue_device($account['id'],'student',$pub);
+        $GLOBALS['wa_request_owner']=$account['owner_id']; $issued=wa_issue_device($account['id'],'student',$pub);
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
@@ -64,7 +64,7 @@ try {
         if($device['role']==='teacher'&&array_filter($ops,static fn($op)=>(int)($op['resetEpoch']??0)!==$epoch))wa_response(['status'=>'success','resetRequired'=>true,'snapshot'=>wa_snapshot($device)]);
         $results=wa_sync($device,$ops); wa_response(['status'=>'success','results'=>$results,'snapshot'=>wa_snapshot($device)]);
     }
-    if($action==='audit') { wa_teacher($device); wa_response(['status'=>'success','audit'=>wa_rows('SELECT device_id,action,reference_id,details,created_at FROM wa_audit ORDER BY id DESC LIMIT 500')]); }
+    if($action==='audit') { wa_teacher($device); wa_response(['status'=>'success','audit'=>wa_rows('SELECT a.device_id,a.action,a.reference_id,a.details,a.created_at FROM wa_audit a JOIN wa_devices d ON d.id=a.device_id WHERE d.account_id=? ORDER BY a.id DESC LIMIT 500',[$device['account_id']])]); }
     throw new InvalidArgumentException('Fitur aplikasi tidak dikenali.');
 }catch(DomainException $error) { wa_response(['status'=>'error','message'=>$error->getMessage()],403); }
 catch(InvalidArgumentException|JsonException $error) { wa_response(['status'=>'error','message'=>$error->getMessage()],422); }

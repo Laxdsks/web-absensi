@@ -150,14 +150,14 @@
     <script src="app/runtime-teacher-1.1.3.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="assets/sheet-fit.css"><script src="assets/sheet-fit.js" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/account-tools.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script>
 </head>
 <body>
     <button type="button" class="toolbar-toggle-btn" id="toggleToolbarBtn" onclick="toggleToolbar()" aria-controls="topToolbar">⌃ Menu</button>
     <nav class="toolbar top-toolbar" id="topToolbar" title="Usap ke atas untuk menyembunyikan menu" aria-label="Pengaturan lembar ujian">
         <div class="toolbar-group">
-            <a href="data_siswa.php?jenjang=S1&kelas=A&prodi=Pendidikan%20Teknologi%20Informasi&semester=1&theme=putih" title="Kembali ke daftar mahasiswa"><i class="fa-solid fa-arrow-left"></i> Data Mahasiswa</a>
-            <a href="absen.php?jenjang=S1&kelas=A&prodi=Pendidikan%20Teknologi%20Informasi&semester=1&theme=putih" title="Buka lembar absen"><i class="fa-solid fa-clipboard-user"></i> Lembar Absen</a>
+            <a href="data_siswa.php?jenjang=S1&kelas=A&prodi=Pendidikan%20Teknologi%20Informasi&semester=1&year=2026%2F2027&period=Ganjil&theme=putih" title="Kembali ke daftar mahasiswa"><i class="fa-solid fa-arrow-left"></i> Data Mahasiswa</a>
+            <a href="absen.php?jenjang=S1&kelas=A&prodi=Pendidikan%20Teknologi%20Informasi&semester=1&year=2026%2F2027&period=Ganjil&theme=putih" title="Buka lembar absen"><i class="fa-solid fa-clipboard-user"></i> Lembar Absen</a>
         </div>
         <div class="toolbar-group">
             <button type="button" onclick="mulaiTurInteraktif()" title="Panduan langkah penggunaan">? Panduan</button>
@@ -397,7 +397,7 @@
             }
         });
 
-        const storageKey = new URLSearchParams(location.search).get('app')==='1'?'ujian_-app-'+encodeURIComponent(['prodi','semester','kelas','matkul'].map(k=>new URLSearchParams(location.search).get(k)||'').join('|')):"ujian_S1_206a7055e072e70980f1c722457f272e";
+        const storageKey = new URLSearchParams(location.search).get('app')==='1'?'ujian_-app-'+encodeURIComponent(['prodi','semester','kelas','matkul'].map(k=>new URLSearchParams(location.search).get(k)||'').join('|')):"ujian_S1_9ef298907888ef88371461e0466d9e82";
         const paper = document.getElementById('paperSheet');
         let zoomLevel = 1;
         let selectedElement = null;

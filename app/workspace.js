@@ -24,7 +24,7 @@ function show(el){const text=label(el);if(!text)return;focused=el;tip.textConten
 function target(e){return e.target.closest('.portal-nav [data-nav],.portal-nav [data-control],.portal-quick-grid [data-nav],.portal-quick-grid [data-control],.p-worknav button,.header-actions a,#topToolbar a');}
 if(page!=='index.php'){
  const nav=document.createElement('nav');nav.className='p-worknav p-screen-only';nav.setAttribute('aria-label','Navigasi utama');
- nav.innerHTML=Object.entries(pages).map(([name,[title,icon]])=>`<button type="button" ${name==='accounts'?'data-control':'data-nav="'+name+'"'} ${name===page?'aria-current="page"':''} title="${esc(pages[name][2])}">${PresenUI.icon(icon)}<span>${esc(title)}</span></button>`).join('')+'<button type="button" data-appearance title="Atur tema, warna, dan latar aplikasi">'+PresenUI.icon('settings')+'<span>Tampilan</span></button>';
+ nav.innerHTML=Object.entries(pages).filter(([name])=>name!=='accounts').map(([name,[title,icon]])=>`<button type="button" ${name==='accounts'?'data-control':'data-nav="'+name+'"'} ${name===page?'aria-current="page"':''} title="${esc(pages[name][2])}">${PresenUI.icon(icon)}<span>${esc(title)}</span></button>`).join('')+'<button type="button" data-appearance title="Atur tema, warna, dan latar aplikasi">'+PresenUI.icon('settings')+'<span>Tampilan</span></button>';
  const toolbar=document.getElementById('topToolbar'),dataHeader=document.querySelector('.card-header-flex');
  if(toolbar){toolbar.prepend(nav);toolbar.querySelectorAll('a[href]').forEach(a=>{if(dest(a))a.remove();});}
  else if(dataHeader){dataHeader.append(nav);dataHeader.querySelectorAll('.header-actions a[href]').forEach(a=>{if(dest(a))a.remove();});}
@@ -37,6 +37,6 @@ tip.addEventListener('pointerenter',()=>clearTimeout(timer));tip.addEventListene
 document.addEventListener('focusin',e=>{const el=target(e);if(el){clearTimeout(timer);show(el);}});document.addEventListener('focusout',e=>{if(target(e))timer=setTimeout(hide,160);});
 document.addEventListener('click',e=>{if(!tip.contains(e.target)&&!target(e))hide();});document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
 window.addEventListener('resize',()=>focused&&show(focused));window.addEventListener('scroll',()=>focused&&show(focused),true);
-window.PresenWorkspace={close:hide,open:async target=>{hide();if(target==='accounts'){if(page==='index.php')window.toggleSidebar?.();else await PresenUI.navigate('index.php?view=accounts');return;}if(target===page)return;await PresenUI.navigate(target);}};
+window.PresenWorkspace={close:hide,open:async target=>{hide();if(target==='accounts'){await window.PresenInbox?.open();return;}if(target===page)return;await PresenUI.navigate(target);}};
 if(new URLSearchParams(location.search).get('view')==='accounts'&&page==='index.php')setTimeout(()=>window.toggleSidebar?.(),400);
 })();

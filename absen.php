@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/auth_guard.php';
+$data_owner=wa_owner();
 app_require_authenticated_user();
 // Pastikan file koneksi ada
 if (file_exists('koneksi.php')) {
@@ -9,6 +10,7 @@ if (file_exists('koneksi.php')) {
 if (!isset($koneksi) && isset($conn)) {
     $koneksi = $conn;
 }
+if(isset($koneksi)&&$koneksi instanceof mysqli)wa_schema($koneksi);
 
 // ==============================================================================
 // KUSTOMISASI TEMA GLOBAL & SINKRONISASI OTOMATIS (ANTI-RESET)
@@ -49,7 +51,9 @@ $semester_input = preg_replace('/^Semester\s+/i', '', $semester_input);
 $semester = ctype_digit($semester_input) && (int)$semester_input >= 1 && (int)$semester_input <= 8 ? (string)(int)$semester_input : '1';
 $kelas_lama = 'Kelas ' . $kelas;
 $semester_lama = 'Semester ' . $semester;
-$_SESSION['konteks_siswa'] = ['jenjang' => $jenjang, 'kelas' => $kelas, 'prodi' => $prodi, 'semester' => $semester];
+$academic_context=wa_page_context(['prodi'=>$prodi,'semester'=>$semester,'kelas'=>$kelas]);
+$data_year=wa_academic_year($academic_context); $data_period=wa_academic_period($academic_context);
+$_SESSION['konteks_siswa'] = ['jenjang' => $jenjang, 'kelas' => $kelas, 'prodi' => $prodi, 'semester' => $semester, 'year'=>$data_year, 'period'=>$data_period];
 
 // LOGIKA BACKEND SINKRONISASI EKSAK & INTERISOLASI DATA (=)
 // Menggunakan operator pencarian eksak = pada query database SQL penarikan nama mahasiswa sesuai instruksi
@@ -62,7 +66,7 @@ if (empty($_REQUEST['kelas']) && empty($_REQUEST['jenjang'])) {
 // FITUR UPDATE BARU: MASS DELETE SEKALIGUS PADA MODAL HAPUS PERMANEN
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_hapus_massal_kelas'])) {
     if (!empty($prodi) && !empty($semester) && !empty($kelas) && isset($koneksi) && $koneksi) {
-        $q_del_massal = "DELETE FROM siswa WHERE jenjang='S1' AND prodi=? AND semester IN (?, ?) AND kelas IN (?, ?)";
+        $q_del_massal = "DELETE FROM siswa WHERE owner_id='{$data_owner}' AND academic_year='{$data_year}' AND academic_period='{$data_period}' AND jenjang='S1' AND prodi=? AND semester IN (?, ?) AND kelas IN (?, ?)";
         $stmt_dm = mysqli_prepare($koneksi, $q_del_massal);
         if ($stmt_dm) {
             mysqli_stmt_bind_param($stmt_dm, "sssss", $prodi, $semester, $semester_lama, $kelas, $kelas_lama);
@@ -78,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_hapus_massal_kel
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_hapus_permanen'])) {
     $id_target = trim($_POST['hapus_permanen_id']);
     if (!empty($id_target) && isset($koneksi) && $koneksi) {
-        $q_del = "DELETE FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) AND nim=?";
+        $q_del = "DELETE FROM siswa WHERE owner_id='{$data_owner}' AND academic_year='{$data_year}' AND academic_period='{$data_period}' AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) AND nim=?";
         $stmt_del = mysqli_prepare($koneksi, $q_del);
         if ($stmt_del) {
             mysqli_stmt_bind_param($stmt_del, "ssssss", $kelas, $kelas_lama, $prodi, $semester, $semester_lama, $id_target);
@@ -95,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_hapus_permanen']
 
 // PENARIKAN DATA MENGGUNAKAN OPERATOR EKSAK (=) SESUAI INSTRUKSI
 if (isset($koneksi) && $koneksi) {
-    $query = "SELECT nim, nama, jk FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY id ASC";
+    $query = "SELECT nim, nama, jk FROM siswa WHERE owner_id='{$data_owner}' AND academic_year='{$data_year}' AND academic_period='{$data_period}' AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY id ASC";
     $stmt  = mysqli_prepare($koneksi, $query);
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, "sssss", $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
@@ -281,8 +285,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         #tabelRekapNilai td { padding: 5px 4px !important; }
         #tabelRekapNilai .activity-input { width: 100%; max-width: 88px; min-height: 38px; padding: 4px; text-align: center; }
         #tabelRekapNilai .name-value { text-align: left; }
-        .rekap-header-blue { background: #c7dcf5 !important; }
-        .rekap-header-yellow { background: #fff200 !important; }
+        .rekap-header-blue { background: #fff0a6 !important; }
+        .rekap-header-yellow { background: #fff0a6 !important; }
         .rekap-activity-help { margin: 0 0 8px; color: #38bdf8; font-size: 12px; line-height: 1.5; }
         
         #tabelRekapNilai {
@@ -496,7 +500,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
     <script src="app/qr-files.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="assets/sheet-fit.css"><script src="assets/sheet-fit.js" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/locations.js?v=20261012" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script><script src="app/locations.js?v=20261012" defer></script>
 <script src="app/account-tools.js?v=20261012" defer></script>
 </head>
 <body>
@@ -571,10 +575,10 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
     
     <div class="top-toolbar" id="topToolbar" title="Pita Menu Utama">
         <div class="toolbar-group">
-            <a href="data_siswa.php?jenjang=S1&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&theme=<?php echo urlencode($theme); ?>" class="btn btn-dark" title="Kembali Ke Halaman Data Siswa Utama">
+            <a href="data_siswa.php?jenjang=S1&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&year=<?php echo rawurlencode($data_year); ?>&period=<?php echo rawurlencode($data_period); ?>&theme=<?php echo urlencode($theme); ?>" class="btn btn-dark" title="Kembali Ke Halaman Data Siswa Utama">
                 <i class="fa-solid fa-arrow-left"></i>
             </a>
-            <a href="ujian.php?jenjang=S1&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&theme=<?php echo urlencode($theme); ?>" class="btn btn-warning" title="Buka Lembar Ujian untuk konteks kelas ini">
+            <a href="ujian.php?jenjang=S1&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&year=<?php echo rawurlencode($data_year); ?>&period=<?php echo rawurlencode($data_period); ?>&theme=<?php echo urlencode($theme); ?>" class="btn btn-warning" title="Buka Lembar Ujian untuk konteks kelas ini">
                 <i class="fa-solid fa-file-invoice"></i> Lembar Ujian
             </a>
             <button onclick="mulaiTurInteraktif()" class="btn btn-primary" id="tourBtnGuide" title="Buka Panduan & Tur Interaktif"><i class="fa-solid fa-circle-question"></i> Panduan</button>
@@ -667,7 +671,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             <div class="meta-wrapper">
                 <div class="meta-column selectable-element" id="metaLeftBox" data-type="Blok Kiri (Semester, Tahun, Prodi)" onclick="pilihElemen(event, this)">
                     <div class="meta-row">
-                        <div class="meta-label" contenteditable="true">Semester</div><div class="meta-colon">:</div><div class="meta-val" contenteditable="true"><?php echo htmlspecialchars($semester_lama); ?> (<?php echo ((int)$semester % 2 === 0) ? 'Genap' : 'Ganjil'; ?>)</div>
+                        <div class="meta-label" contenteditable="true">Semester</div><div class="meta-colon">:</div><div class="meta-val" contenteditable="true"><?php echo htmlspecialchars($semester_lama); ?> (<?php echo $data_period; ?>)</div>
                     </div>
                     <div class="meta-row">
                         <div class="meta-label" contenteditable="true">Tahun Akademik</div><div class="meta-colon">:</div><div class="meta-val" contenteditable="true">2026/2027</div>
@@ -1599,7 +1603,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 addCell(sakitCount, 'sakit-count', 'text-align:center;color:#92400e;font-weight:bold;');
                 addCell(izinCount, 'izin-count', 'text-align:center;color:#0369a1;font-weight:bold;');
                 addCell(totalDiisi, 'filled-count', 'text-align:center;');
-                const oldValues = draftNilaiPerNim[nim] || [0, 0, 0, 0, 0];
+                const oldValues = draftNilaiPerNim[nim] || ['', '', '', '', ''];
                 const scores = oldValues.length >= 5 ? oldValues : [0, 0, Math.min(25, Number(oldValues[0]) || 0), oldValues[1] || 0, oldValues[2] || 0];
                 const inputDefs = [
                     ['Bertanya (jumlah)', 0, 999, 1],
@@ -1612,12 +1616,12 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     const cell = document.createElement('td');
                     const input = document.createElement('input');
                     input.type = 'number'; input.min = String(min); input.max = String(max); input.step = String(step);
-                    input.value = String(scores[scoreIndex] ?? 0); input.className = 'activity-input score-input';
+                    input.value = String(scores[scoreIndex] ?? ''); input.className = 'activity-input score-input';
                     input.setAttribute('aria-label', label); input.title = label;
                     input.addEventListener('input', () => {
                         if (scoreIndex === 2 && Number(input.value) > 25) input.value = '25';
                         if (Number(input.value) < 0) input.value = '0';
-                        draftNilaiPerNim[nim] = Array.from(tr.querySelectorAll('.score-input')).map(scoreInput => scoreInput.value || '0');
+                        draftNilaiPerNim[nim] = Array.from(tr.querySelectorAll('.score-input')).map(scoreInput => scoreInput.value);
                         hitungSkorBaris(input);
                     });
                     cell.appendChild(input); tr.appendChild(cell);
@@ -2048,7 +2052,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 
         function buatDokumenWordShell(page, title, bodyContent) {
             const orientation = page.orientation === 'landscape' ? 'landscape' : 'portrait';
-            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapeWordHtml(title)}</title><style>@page{size:${page.width} ${page.height};margin:${page.marginSize}}@page WordSection1{size:${page.width} ${page.height};margin:${page.marginSize};mso-page-orientation:${orientation};mso-header-margin:8mm;mso-footer-margin:8mm}div.WordSection1{page:WordSection1}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;font-size:8pt}p{mso-line-height-rule:exactly}table{width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt}th,td{border:1px solid #111;padding:4px 3px;text-align:center;vertical-align:middle;white-space:nowrap;overflow-wrap:normal;font-size:8pt;color:#111;background:#fff}th{font-weight:bold;background:#fff0a6}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}</style></head><body><div class="WordSection1">${bodyContent}</div></body></html>`;
+            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapeWordHtml(title)}</title><style>@page{size:${page.width} ${page.height};margin:${page.marginSize}}@page WordSection1{size:${page.width} ${page.height};margin:${page.marginSize};mso-page-orientation:${orientation};mso-header-margin:8mm;mso-footer-margin:8mm}div.WordSection1{page:WordSection1}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;font-size:8pt}p{mso-line-height-rule:exactly}table{width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt}th,td{border:1px solid #111;padding:4px 3px;text-align:center;vertical-align:middle;white-space:nowrap;overflow-wrap:normal;font-size:8pt;color:#111;background:#fff}th{font-weight:bold;background:#fff0a6}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff0a6}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}</style></head><body><div class="WordSection1">${bodyContent}</div></body></html>`;
             const width=parseFloat(page.width)*96-2*parseFloat(page.marginSize)*96/25.4;
             return window.WAFitExportHTML?.(markup,width)||markup;
         }
@@ -2070,7 +2074,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             table.setAttribute('width', String(width));
             table.style.width = width+'px'; table.style.tableLayout = 'fixed'; table.style.borderCollapse = 'collapse';
             table.querySelectorAll('colgroup col').forEach(col => { col.setAttribute('width', String(Math.round(parseFloat(col.style.width || '0') * (col.style.width.endsWith('%')?width/100:1))) + 'px'); });
-            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif;background:#fff;color:#111}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:nowrap;word-wrap:normal;font-size:9pt;color:#111;background:#fff;mso-number-format:"\@"}th{font-weight:bold;background:#fff0a6}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
+            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif;background:#fff;color:#111}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:nowrap;word-wrap:normal;font-size:9pt;color:#111;background:#fff;mso-number-format:"\@"}th{font-weight:bold;background:#fff0a6}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff0a6}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
             return window.WAFitExportHTML?.(markup,width)||markup;
         }
 

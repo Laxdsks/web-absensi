@@ -8,7 +8,7 @@ function asset(url){const u=new URL(url);if(u.hostname!==HOST)return null;let re
 function trusted(event){try{return new URL(event.senderFrame.url).origin==='https://'+HOST;}catch(_){return false;}}
 app.whenReady().then(async()=>{
  protocol.handle('https',async request=>{try{const response=await net.fetch(request,{bypassCustomProtocolHandlers:true});if(request.method==='GET'&&(response.status>=500||response.status===404)){const fallback=asset(request.url);if(fallback)return fallback;}return response;}catch(e){const fallback=request.method==='GET'?asset(request.url):null;if(fallback)return fallback;throw e;}});
- main=new BrowserWindow({width:1250,height:900,minWidth:600,minHeight:500,title:'Presen Desk',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
+ main=new BrowserWindow({width:1250,height:900,minWidth:600,minHeight:500,title:'Presen Desk',icon:path.join(ROOT,'app/icon-192.png'),webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
  require('./icon-actions.cjs').register({app,main,ipcMain,nativeImage,shell,trusted,root:ROOT});
  main.on('close',event=>{if(closing)return;event.preventDefault();main.webContents.executeJavaScript('Promise.resolve(window.WAFlush?.())').then(()=>{closing=true;main.close();}).catch(()=>dialog.showMessageBox(main,{type:'info',message:'Perubahan disimpan di perangkat. Tunggu penyimpanan selesai sebelum menutup aplikasi.'}));});
  main.webContents.setWindowOpenHandler(({url})=>{if(new URL(url).hostname===HOST){main.loadURL(url);return {action:'deny'};}if(url.startsWith('https://'))require('electron').shell.openExternal(url);return {action:'deny'};});

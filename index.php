@@ -38,6 +38,8 @@ $profiles['dosen_01'] = array_merge($defaultConfig, [
     'admin_name' => 'Zen', 'admin_role' => 'Dosen',
     'admin_avatar' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/user.svg'
 ], is_array($profiles['dosen_01'] ?? null) ? $profiles['dosen_01'] : []);
+$profiles['dosen_01']['admin_role']='Dosen';
+$profiles['admin_01']['admin_role']='Administrator Utama';
 $accountId = (string)($_SESSION['id_user'] ?? 'admin_01');
 $globalConfig = $profiles[$accountId] ?? $profiles['admin_01'];
 $globalConfig['app_title'] = $configStore['app_title'] ?? $globalConfig['app_title'] ?? $defaultConfig['app_title'];
@@ -58,7 +60,8 @@ if (isset($_POST['set_theme_session'])) {
 if (isset($_POST['get_login_logs'])) {
     app_require_authenticated_user(true);
     $logs = file_exists($logFile) ? json_decode(file_get_contents($logFile), true) : [];
-    echo json_encode(array_reverse($logs));
+    $logs=array_filter(is_array($logs)?$logs:[],static fn($row)=>($row['role']??'')===($_SESSION['id_user']==='dosen_01'?'Dosen':'Administrator Utama'));
+    echo json_encode(array_values(array_reverse($logs)));
     exit;
 }
 
@@ -73,7 +76,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'logout_system') {
 
 // --- API SUNTING PROFIL KUSTOM DINAMIS ---
 if (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
-    app_require_authenticated_user(true, true);
+    app_require_authenticated_user(true);
     $newName = trim($_POST['admin_name'] ?? '');
     $newRole = trim($_POST['admin_role'] ?? '');
     $newAvatar = $_POST['admin_avatar'] ?? '';
@@ -81,7 +84,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
     $accountId = (string)($_SESSION['id_user'] ?? 'admin_01');
     $currentConfig = $profiles[$accountId] ?? $globalConfig;
     if (!empty($newName)) $currentConfig['admin_name'] = $newName;
-    if (!empty($newRole)) $currentConfig['admin_role'] = $newRole;
+    $currentConfig['admin_role']=$accountId==='dosen_01'?'Dosen':'Administrator Utama';
     if (!empty($newAvatar)) $currentConfig['admin_avatar'] = $newAvatar;
     
     $profiles[$accountId] = $currentConfig;
@@ -124,6 +127,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
     }
     
     if ($login_success) {
+        if(isset($_SESSION['id_user'])&&$_SESSION['id_user']!==$id_assigned)unset($_SESSION['konteks_siswa'],$_SESSION['nilai_ujian']);
         session_regenerate_id(true);
         // Ikat Murni ke Session Format Teks/String
         $_SESSION['id_user'] = (string)$id_assigned;
@@ -388,7 +392,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script>
 <script src="app/account-tools.js?v=20261012" defer></script>
 </head>
 <body>
@@ -588,6 +592,8 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                     <option value="Pendidikan Bahasa Inggris" <?php echo $form_context['prodi'] === 'Pendidikan Bahasa Inggris' ? 'selected' : ''; ?>>Pendidikan Bahasa Inggris</option>
                 </select>
             </div>
+            <div class="form-group"><label>Tahun Akademik</label><select name="year" id="academicYear" class="form-control"><?php for($y=2025;$y<=2035;$y++):$v=$y.'/'.($y+1); ?><option value="<?php echo $v; ?>" <?php echo ($form_context['year']??'2026/2027')===$v?'selected':''; ?>><?php echo $v; ?></option><?php endfor; ?></select></div>
+            <div class="form-group"><label>Periode Kuliah</label><select name="period" id="academicPeriod" class="form-control"><option value="Ganjil" <?php echo ($form_context['period']??((int)$form_context['semester']%2?'Ganjil':'Genap'))==='Ganjil'?'selected':''; ?>>Ganjil</option><option value="Genap" <?php echo ($form_context['period']??((int)$form_context['semester']%2?'Ganjil':'Genap'))==='Genap'?'selected':''; ?>>Genap</option></select></div>
             <div class="form-group" id="semesterGroup">
                 <label id="labelSemester">Semester</label>
                 <select name="semester" id="semester" class="form-control"></select>
@@ -1019,13 +1025,14 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         function updateFormLogic() {
             const kelasSelect = document.getElementById('kelas');
             const semesterSelect = document.getElementById('semester');
+            semesterSelect.onchange=()=>{document.getElementById('academicPeriod').value=Number(semesterSelect.value)%2?'Ganjil':'Genap';};
             const selectedKelas = <?php echo json_encode((string)$form_context['kelas']); ?>;
             const selectedSemester = <?php echo json_encode((string)$form_context['semester']); ?>;
             kelasSelect.innerHTML = '';
             semesterSelect.innerHTML = '';
             
             ['1', '2', '3', '4', '5', '6', '7', '8'].forEach(v => {
-                semesterSelect.add(new Option(`Semester ${v} (${v % 2 ? 'Ganjil' : 'Genap'})`, v, false, v === selectedSemester));
+                semesterSelect.add(new Option(`Semester ${v}`, v, false, v === selectedSemester));
             });
             
             ['A', 'B', 'C', 'D', 'E'].forEach(v => {

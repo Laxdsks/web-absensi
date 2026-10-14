@@ -1,6 +1,7 @@
 /* Shared native-only settings: the original web layout and attendance state stay intact. */
 (()=>{
 'use strict';
+if(window.Android?.appRole?.()==='student'||new URLSearchParams(location.search).get('role')==='student')return;
 const desktop=window.AbsensiDesktop,android=window.Android;
 if(!desktop?.getAppIcon&&!android?.getAppIcon)return;
 const native=desktop||android,isAndroid=!desktop;
