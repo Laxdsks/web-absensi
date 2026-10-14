@@ -1,6 +1,6 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261014-workspace-12';
+const WA_BUILD = '20261014-workspace-13';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_db(): mysqli {
@@ -16,7 +16,7 @@ function wa_db(): mysqli {
 }
 
 function wa_schema(mysqli $db): void {
-    try { $v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc(); if(($v['value']??'')==='2')return; } catch(mysqli_sql_exception $ignored) {}
+    try { $v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc(); if(($v['value']??'')==='3')return; } catch(mysqli_sql_exception $ignored) {}
     $tables = [
         "CREATE TABLE IF NOT EXISTS wa_push_devices (device_id CHAR(36) PRIMARY KEY, subscription TEXT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS wa_push_sent (device_id CHAR(36) NOT NULL, session_id CHAR(36) NOT NULL, phase VARCHAR(100) NOT NULL, PRIMARY KEY(device_id,session_id,phase)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
@@ -32,7 +32,7 @@ function wa_schema(mysqli $db): void {
     ];
     foreach ($tables as $sql) $db->query($sql);
     if(!$db->query("SHOW COLUMNS FROM wa_sessions LIKE 'finalized'")->num_rows)$db->query("ALTER TABLE wa_sessions ADD finalized TINYINT NOT NULL DEFAULT 0");
-    $db->query("INSERT INTO wa_meta(k,value) VALUES('schema_version','2') ON DUPLICATE KEY UPDATE value='2'");
+    $db->query("INSERT INTO wa_meta(k,value) VALUES('schema_version','3') ON DUPLICATE KEY UPDATE value='3'");
 }
 
 function wa_query(string $sql, array $values = [], string $types = ''): mysqli_stmt {
@@ -55,6 +55,30 @@ function wa_ctx($value): array {
     return $ctx;
 }
 function wa_ctx_key(array $ctx): string { return hash('sha256', wa_json(wa_ctx($ctx))); }
+function wa_student_data_epoch(): int {
+    wa_query("INSERT IGNORE INTO wa_meta(k,value) VALUES('student_data_epoch','0')");
+    return (int)(wa_one("SELECT value FROM wa_meta WHERE k='student_data_epoch'")['value'] ?? 0);
+}
+function wa_reset_all_student_data(array $device,string $confirmation): array {
+    wa_teacher($device);
+    if ($confirmation !== 'HAPUS SEMUA MAHASISWA') throw new InvalidArgumentException('Ketik HAPUS SEMUA MAHASISWA dengan tepat untuk melanjutkan.');
+    wa_db()->begin_transaction();
+    try {
+        $counts=[];
+        foreach (['siswa','wa_accounts','wa_sessions','wa_marks','wa_documents','wa_push_devices','wa_push_sent'] as $table) {
+            $counts[$table]=(int)(wa_one("SELECT COUNT(*) AS n FROM {$table}")['n'] ?? 0);
+        }
+        wa_query("UPDATE wa_meta SET value=CAST(value AS UNSIGNED)+1 WHERE k='student_data_epoch'");
+        wa_query("INSERT IGNORE INTO wa_meta(k,value) VALUES('student_data_epoch','1')");
+        wa_query("DELETE FROM wa_push_devices WHERE device_id IN (SELECT id FROM wa_devices WHERE role='student')");
+        wa_query("DELETE FROM wa_push_sent WHERE device_id IN (SELECT id FROM wa_devices WHERE role='student')");
+        wa_query("UPDATE wa_devices SET revoked=1 WHERE role='student'");
+        foreach (['wa_accounts','wa_sessions','wa_marks','wa_documents','siswa'] as $table) wa_query("DELETE FROM {$table}");
+        wa_audit($device,'reset-all-student-data','all',['counts'=>$counts]);
+        wa_db()->commit();
+        return ['status'=>'success','deleted'=>$counts,'resetEpoch'=>wa_student_data_epoch()];
+    } catch (Throwable $error) { wa_db()->rollback(); throw $error; }
+}
 function wa_course($value): string { $value = wa_text($value,180); if ($value === '') throw new InvalidArgumentException('Isi mata kuliah.'); return $value; }
 function wa_scope(array $ctx, string $matkul): string { return hash('sha256', wa_json([wa_ctx($ctx), wa_text($matkul,180)])); }
 function wa_nim($value): string { $nim = strtoupper(wa_text($value,50)); if (!preg_match('/^[A-Z0-9][A-Z0-9.-]{3,49}$/', $nim)) throw new InvalidArgumentException('NIM tidak valid.'); return $nim; }
@@ -173,6 +197,7 @@ function wa_snapshot(array $device): array {
     foreach($marks as &$row) { $row['location']=$row['location']?json_decode($row['location'],true):null; $row['slot']=(int)$row['slot']; $row['revision']=(int)$row['revision']; $row['recorded_at']=(int)$row['recorded_at']; } unset($row);
     foreach($documents as &$row) { $row['ctx']=json_decode($row['ctx'],true); $row['content']=json_decode($row['content'],true); $row['revision']=(int)$row['revision']; } unset($row);
     foreach($registrations as &$row) { $row['ctx']=json_decode($row['ctx'],true); $row['approved']=(bool)$row['approved']; } unset($row);
-    return ['tag'=>hash('sha256',wa_json([$profile['device'],$profile['account'],$roster,$sessions,$marks,$documents,$registrations])),'profile'=>$profile,'roster'=>$roster,'sessions'=>$sessions,'marks'=>$marks,'documents'=>$documents,'registrations'=>$registrations,'serverTime'=>wa_now(),'build'=>WA_BUILD];
+    $epoch=wa_student_data_epoch();
+    return ['tag'=>hash('sha256',wa_json([$profile['device'],$profile['account'],$roster,$sessions,$marks,$documents,$registrations,$epoch])),'profile'=>$profile,'roster'=>$roster,'sessions'=>$sessions,'marks'=>$marks,'documents'=>$documents,'registrations'=>$registrations,'resetEpoch'=>$epoch,'serverTime'=>wa_now(),'build'=>WA_BUILD];
 }
 function wa_audit(array $device,string $action,string $reference,array $details): void { wa_query('INSERT INTO wa_audit(device_id,action,reference_id,details,created_at) VALUES(?,?,?,?,?)',[$device['id'],$action,$reference,wa_json($details),wa_now()]); }

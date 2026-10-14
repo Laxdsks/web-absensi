@@ -38,6 +38,7 @@ $semester_input = preg_replace('/^Semester\s+/i', '', $semester_input);
 $semester = ctype_digit($semester_input) && (int)$semester_input >= 1 && (int)$semester_input <= 8 ? (string)(int)$semester_input : '1';
 $kelas_lama = 'Kelas ' . $kelas;
 $semester_lama = 'Semester ' . $semester;
+$semester_tampilan = $semester_lama . (((int)$semester % 2) ? ' (Ganjil)' : ' (Genap)');
 $_SESSION['konteks_siswa'] = ['jenjang' => $jenjang, 'kelas' => $kelas, 'prodi' => $prodi, 'semester' => $semester];
 
 // OCR gambar daftar mahasiswa: hasil selalu ditinjau dan dikoreksi dosen sebelum disimpan.
@@ -130,20 +131,9 @@ if (isset($_GET['hapus_id'])) {
     exit;
 }
 
-// Handle Fitur Hapus Massal Total Satu Kelas (Sapu Bersih Cascading Delete)
-if (isset($_GET['hapus_semua']) && $_GET['hapus_semua'] == '1') {
-    $stmt = mysqli_prepare($koneksi, "DELETE FROM siswa WHERE jenjang='S1' AND prodi=? AND semester IN (?, ?) AND kelas IN (?, ?)");
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sssss', $prodi, $semester, $semester_lama, $kelas, $kelas_lama);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-    }
-    
-    // Bersihkan sesi terkait jika ada
-    if (isset($_SESSION['absen'][$prodi][$semester][$kelas])) unset($_SESSION['absen'][$prodi][$semester][$kelas]);
-    if (isset($_SESSION['nilai_ujian'][$prodi][$semester][$kelas])) unset($_SESSION['nilai_ujian'][$prodi][$semester][$kelas]);
-    
-    header("Location: data_siswa.php?jenjang=".urlencode($jenjang)."&kelas=".urlencode($kelas)."&prodi=".urlencode($prodi)."&semester=".urlencode($semester)."&theme=".urlencode($current_theme)."&status=all_deleted");
+// Old class-scoped GET deletion links are intentionally inert; global resets use the authenticated API and typed confirmation.
+if (isset($_GET['hapus_semua'])) {
+    header("Location: data_siswa.php?jenjang=".urlencode($jenjang)."&kelas=".urlencode($kelas)."&prodi=".urlencode($prodi)."&semester=".urlencode($semester)."&theme=".urlencode($current_theme)."&status=reset_requires_confirmation");
     exit;
 }
 
@@ -382,7 +372,7 @@ if ($stmt) {
     </style>
     <script src="app/vendor/tesseract.min.js" defer></script>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.1.2.js" defer></script>
+    <script src="app/runtime-teacher-1.1.3.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script>
 </head>
@@ -393,7 +383,7 @@ if ($stmt) {
         <div class="card-header-flex">
             <div class="header-title">
                 <h2><i class="fa-solid fa-users-gear"></i> Data & Manajemen Mahasiswa</h2>
-                <p>Jenjang: S1 | Prodi: <?php echo htmlspecialchars($prodi); ?> | <?php echo htmlspecialchars($kelas_lama); ?> | <?php echo htmlspecialchars($semester_lama); ?></p>
+                <p>Jenjang: S1 | Prodi: <?php echo htmlspecialchars($prodi); ?> | <?php echo htmlspecialchars($kelas_lama); ?> | <?php echo htmlspecialchars($semester_tampilan); ?></p>
             </div>
             <div class="header-actions">
                 <a href="index.php?theme=<?php echo urlencode($current_theme); ?>" class="btn-custom btn-secondary" title="Kembali ke Beranda"><i class="fa-solid fa-arrow-left"></i> Beranda</a>
@@ -411,10 +401,7 @@ if ($stmt) {
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="searchInput" placeholder="Cari nama mahasiswa secara real-time..." onkeyup="filterTabelSiswa()">
                 </div>
-                <!-- TOMBOL HAPUS MASSAL TOTAL KELAS (SAPU BERSIH CASCADING DELETE) -->
-                <div>
-                    <a href="data_siswa.php?hapus_semua=1&jenjang=<?php echo urlencode($jenjang); ?>&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&theme=<?php echo urlencode($current_theme); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus seluruh data mahasiswa di prodi, kelas, dan semester ini? Semua riwayat nilai dan absen juga akan ikut terhapus total!');" class="btn-custom btn-danger" title="Hapus Semua Mahasiswa di Kelas Ini"><i class="fa-solid fa-trash-can"></i> Hapus Semua Mahasiswa Kelas Ini</a>
-                </div>
+                <button type="button" class="btn-custom btn-danger" id="deleteAllStudentData" title="Reset seluruh data mahasiswa pada semua prodi, semester, dan kelas"><i class="fa-solid fa-trash-can"></i> Reset Semua Data Mahasiswa</button>
             </div>
 
             <section class="content-card" id="photoImportCard" style="margin:0 0 18px;padding:16px;">

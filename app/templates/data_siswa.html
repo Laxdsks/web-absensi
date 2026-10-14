@@ -221,7 +221,7 @@
     </style>
     <script src="app/vendor/tesseract.min.js" defer></script>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.1.2.js" defer></script>
+    <script src="app/runtime-teacher-1.1.3.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script>
 </head>
@@ -232,7 +232,7 @@
         <div class="card-header-flex">
             <div class="header-title">
                 <h2><i class="fa-solid fa-users-gear"></i> Data & Manajemen Mahasiswa</h2>
-                <p>Jenjang: S1 | Prodi: Pendidikan Teknologi Informasi | Kelas A | Semester 1</p>
+                <p>Jenjang: S1 | Prodi: Pendidikan Teknologi Informasi | Kelas A | Semester 1 (Ganjil)</p>
             </div>
             <div class="header-actions">
                 <a href="index.php?theme=putih" class="btn-custom btn-secondary" title="Kembali ke Beranda"><i class="fa-solid fa-arrow-left"></i> Beranda</a>
@@ -250,10 +250,7 @@
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="searchInput" placeholder="Cari nama mahasiswa secara real-time..." onkeyup="filterTabelSiswa()">
                 </div>
-                <!-- TOMBOL HAPUS MASSAL TOTAL KELAS (SAPU BERSIH CASCADING DELETE) -->
-                <div>
-                    <a href="data_siswa.php?hapus_semua=1&jenjang=S1&kelas=A&prodi=Pendidikan+Teknologi+Informasi&semester=1&theme=putih" onclick="return confirm('Apakah Anda yakin ingin menghapus seluruh data mahasiswa di prodi, kelas, dan semester ini? Semua riwayat nilai dan absen juga akan ikut terhapus total!');" class="btn-custom btn-danger" title="Hapus Semua Mahasiswa di Kelas Ini"><i class="fa-solid fa-trash-can"></i> Hapus Semua Mahasiswa Kelas Ini</a>
-                </div>
+                <button type="button" class="btn-custom btn-danger" id="deleteAllStudentData" title="Reset seluruh data mahasiswa pada semua prodi, semester, dan kelas"><i class="fa-solid fa-trash-can"></i> Reset Semua Data Mahasiswa</button>
             </div>
 
             <section class="content-card" id="photoImportCard" style="margin:0 0 18px;padding:16px;">

@@ -51,13 +51,19 @@ try {
     }
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
     if($action==='delete-account')wa_response(wa_delete_account($device,$input));
+    if($action==='reset-all-student-data')wa_response(wa_reset_all_student_data($device,wa_text($input['confirmation']??'',80)));
     if($action==='push-unsubscribe'){wa_query('DELETE FROM wa_push_devices WHERE device_id=?',[$device['id']]);wa_response(['status'=>'success']);}
     if($action==='push-key')wa_response(['status'=>'success','publicKey'=>wa_push_key()['public']]);
     if($action==='push-subscribe'){wa_push_subscribe($device,$input['subscription']??[]);wa_response(['status'=>'success']);}
     if($action==='dispatch-push'){wa_teacher($device);session_write_close();try{wa_push_pending();}catch(Throwable $ignored){error_log('WA push deferred');}wa_response(['status'=>'success']);}
     if($action==='logout') { wa_revoke_current(); session_unset(); session_destroy(); wa_response(['status'=>'success']); }
     if($action==='snapshot'){ $snapshot=wa_snapshot($device); if(isset($input['knownTag'])&&hash_equals($snapshot['tag'],(string)$input['knownTag']))wa_response(['status'=>'success','unchanged'=>true,'serverTime'=>$snapshot['serverTime']]); wa_response(['status'=>'success','snapshot'=>$snapshot]); }
-    if($action==='sync') { $ops=is_array($input['operations']??null)?$input['operations']:[]; $results=wa_sync($device,$ops); wa_response(['status'=>'success','results'=>$results,'snapshot'=>wa_snapshot($device)]); }
+    if($action==='sync') {
+        $ops=is_array($input['operations']??null)?$input['operations']:[];
+        $epoch=wa_student_data_epoch();
+        if($device['role']==='teacher'&&array_filter($ops,static fn($op)=>(int)($op['resetEpoch']??0)!==$epoch))wa_response(['status'=>'success','resetRequired'=>true,'snapshot'=>wa_snapshot($device)]);
+        $results=wa_sync($device,$ops); wa_response(['status'=>'success','results'=>$results,'snapshot'=>wa_snapshot($device)]);
+    }
     if($action==='audit') { wa_teacher($device); wa_response(['status'=>'success','audit'=>wa_rows('SELECT device_id,action,reference_id,details,created_at FROM wa_audit ORDER BY id DESC LIMIT 500')]); }
     throw new InvalidArgumentException('Fitur aplikasi tidak dikenali.');
 }catch(DomainException $error) { wa_response(['status'=>'error','message'=>$error->getMessage()],403); }

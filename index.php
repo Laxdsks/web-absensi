@@ -22,18 +22,25 @@ $logFile = 'login_logs.json';
 $configFile = 'admin_config.json';
 
 // --- CONFIG DEFAULT GLOBAL ---
-$globalConfig = [
+$defaultConfig = [
     'admin_name' => 'M.Fadillah',
     'admin_role' => 'Administrator Utama',
     'admin_avatar' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/user-tie.svg',
     'app_title' => 'Database & Absensi'
 ];
-if (file_exists($configFile)) {
-    $loadedConfig = json_decode(file_get_contents($configFile), true);
-    if ($loadedConfig) {
-        $globalConfig = array_merge($globalConfig, $loadedConfig);
-    }
-}
+$configStore = file_exists($configFile) ? json_decode(file_get_contents($configFile), true) : [];
+if (!is_array($configStore)) $configStore = [];
+$legacyConfig = isset($configStore['profiles']) ? [] : $configStore;
+$profiles = is_array($configStore['profiles'] ?? null) ? $configStore['profiles'] : [];
+if (!isset($profiles['admin_01']) && $legacyConfig) $profiles['admin_01'] = $legacyConfig;
+$profiles['admin_01'] = array_merge($defaultConfig, is_array($profiles['admin_01'] ?? null) ? $profiles['admin_01'] : []);
+$profiles['dosen_01'] = array_merge($defaultConfig, [
+    'admin_name' => 'Zen', 'admin_role' => 'Dosen',
+    'admin_avatar' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/user.svg'
+], is_array($profiles['dosen_01'] ?? null) ? $profiles['dosen_01'] : []);
+$accountId = (string)($_SESSION['id_user'] ?? 'admin_01');
+$globalConfig = $profiles[$accountId] ?? $profiles['admin_01'];
+$globalConfig['app_title'] = $configStore['app_title'] ?? $globalConfig['app_title'] ?? $defaultConfig['app_title'];
 
 // --- API PENGATURAN TEMA KE SESSION ---
 if (isset($_POST['set_theme_session'])) {
@@ -71,12 +78,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
     $newRole = trim($_POST['admin_role'] ?? '');
     $newAvatar = $_POST['admin_avatar'] ?? '';
     
-    $currentConfig = file_exists($configFile) ? json_decode(file_get_contents($configFile), true) : $globalConfig;
+    $accountId = (string)($_SESSION['id_user'] ?? 'admin_01');
+    $currentConfig = $profiles[$accountId] ?? $globalConfig;
     if (!empty($newName)) $currentConfig['admin_name'] = $newName;
     if (!empty($newRole)) $currentConfig['admin_role'] = $newRole;
     if (!empty($newAvatar)) $currentConfig['admin_avatar'] = $newAvatar;
     
-    file_put_contents($configFile, json_encode($currentConfig));
+    $profiles[$accountId] = $currentConfig;
+    $currentConfig['app_title'] = $configStore['app_title'] ?? $defaultConfig['app_title'];
+    file_put_contents($configFile, json_encode(['profiles' => $profiles, 'app_title' => $currentConfig['app_title']], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
     
     // Perbarui session jika yang aktif adalah user tersebut
     if (isset($_SESSION['nama_user'])) {
@@ -373,7 +383,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.1.2.js" defer></script>
+    <script src="app/runtime-teacher-1.1.3.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
@@ -1015,7 +1025,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             semesterSelect.innerHTML = '';
             
             ['1', '2', '3', '4', '5', '6', '7', '8'].forEach(v => {
-                semesterSelect.add(new Option(`Semester ${v}`, v, false, v === selectedSemester));
+                semesterSelect.add(new Option(`Semester ${v} (${v % 2 ? 'Ganjil' : 'Genap'})`, v, false, v === selectedSemester));
             });
             
             ['A', 'B', 'C', 'D', 'E'].forEach(v => {
