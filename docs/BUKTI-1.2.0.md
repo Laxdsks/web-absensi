@@ -19,6 +19,8 @@ Setelah perbaikan terakhir, 20 pemeriksaan ulang tertarget lulus: dua tes migras
 
 Tes cache kini menunggu marker versi yang tepat, bukan hanya Promise dari browser. Ditemukan dan diperbaiki race pergantian service worker: penyiapan offline dikirim ulang setelah worker baru aktif tanpa memuat ulang lembar yang sedang diedit. Notifikasi mahasiswa ditempatkan di atas agar tidak menutupi menu bawah.
 
+Uji tambahan memakai JavaScript tombol Kembali Android yang benar-benar tertanam di MainActivity: dialog paling atas ditutup dahulu saat peta/detail bertumpuk. Uji peta lengkap kini 7/7 lulus. Fixture sesi kedaluwarsa memakai selisih beberapa detik agar tidak tidak sengaja melintasi tengah malam WIB.
+
 Regresi juga mencakup isolasi akun Zen/pengelola, persetujuan tanpa membuka ulang aplikasi, QR asli PNG/SVG tanpa screenshot, tenggat dan A otomatis, restart/tombol kembali, hapus permanen/reset aman, OCR JPEG 21 mahasiswa, urutan impor, nama/NIM/font/warna/Word/Excel/cetak, musik saat navigasi, cache versi lama, dan onboarding izin Android.
 
 ## Batas yang tidak boleh diklaim sebagai lulus
