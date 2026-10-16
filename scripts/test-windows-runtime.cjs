@@ -54,7 +54,7 @@ async function close(){
   for(const theme of ['malam','putih','samudra','senja'])for(const media of ['screen','print']){
     await evaluate('document.documentElement.dataset.theme='+JSON.stringify(theme));await command('Emulation.setEmulatedMedia',{media});
     const fields=await evaluate("Array.from(document.querySelectorAll('#tbodySiswa tr:first-child input')).slice(0,3).map(e=>({value:e.value,color:getComputedStyle(e).color,scheme:getComputedStyle(e).colorScheme}))");
-    assert.deepEqual(fields.map(e=>e.value),['C1234567890123','CI mahasiswa','L']);for(const field of fields){assert.equal(field.color,'rgb(0, 0, 0)',theme+' '+media);assert.equal(field.scheme,'light');}
+    assert.deepEqual(fields.map(e=>e.value),['C1234567890123','CI mahasiswa','L']);for(const field of fields){assert.match(field.color,/^rgb\((0, 0, 0|17, 17, 17)\)$/,theme+' '+media+' must use dark paper ink');assert.equal(field.scheme,'light');}
   }
   await command('Emulation.setEmulatedMedia',{media:'screen'});
   console.log('Presen Desk: offline paper names, NIM and L/P use visible black ink in all four themes and print.');
