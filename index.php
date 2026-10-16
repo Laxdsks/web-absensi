@@ -189,6 +189,45 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             appTitle: "<?php echo addslashes($globalConfig['app_title']); ?>",
             isLoggedIn: <?php echo $is_logged_in ? 'true' : 'false'; ?>
         };
+
+        // Establish the saved theme before styles paint. The short intro stays
+        // opaque across the one reload needed to initialise the offline bridge.
+        (() => {
+            const root = document.documentElement;
+            root.classList.add('presen-starting');
+            let transfer = false, ready = false;
+            try {
+                const theme = localStorage.getItem('presen-theme');
+                if (['malam', 'putih', 'samudra', 'senja'].includes(theme)) root.dataset.theme = theme;
+                const at = Number(sessionStorage.getItem('presen-intro-transfer'));
+                sessionStorage.removeItem('presen-intro-transfer');
+                transfer = at > 0 && Date.now() - at >= 0 && Date.now() - at < 15000;
+            } catch (_) {}
+            if (transfer) root.classList.add('presen-intro-transfer');
+            window.PresenStartup = {
+                transfer() {
+                    try { sessionStorage.setItem('presen-intro-transfer', String(Date.now())); } catch (_) {}
+                },
+                ready() {
+                    if (ready) return;
+                    ready = true;
+                    const intro = document.getElementById('introOverlay');
+                    if (transfer && intro) {
+                        intro.classList.add('active');
+                        document.getElementById('introContent').classList.add('show-text');
+                    }
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                        root.classList.remove('presen-starting', 'presen-intro-transfer');
+                        if (transfer && intro) requestAnimationFrame(() => {
+                            intro.classList.remove('active');
+                            setTimeout(() => { intro.hidden = true; }, 220);
+                        });
+                    }));
+                }
+            };
+            // A failed asset or offline server must never leave the UI covered.
+            setTimeout(() => window.PresenStartup.ready(), 4000);
+        })();
     </script>
     
     <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
@@ -368,18 +407,22 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         
         .main-card { background: var(--card-bg); backdrop-filter: blur(16px); border: 1px solid var(--card-border); border-radius: 24px; padding: 35px; width: 100%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); z-index: 10; position: relative; }
         
-        /* --- EFEK ANIMASI INTRO SCIFI SINEMATIK --- */
-        #introOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000000; z-index: 10000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s; }
-        #introOverlay.active { opacity: 1; visibility: visible; }
-        .intro-content { text-align: center; font-family: 'Plus Jakarta Sans', sans-serif; position: relative; }
-        .logo-glow { width: 80px; height: 80px; background: transparent; border: 2px solid var(--primary); border-radius: 50%; margin: 0 auto 20px auto; opacity: 0; transform: scale(0.5); transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 30px var(--primary), inset 0 0 20px var(--primary); display: flex; justify-content: center; align-items: center; }
-        .logo-glow::after { content: '\f023'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: var(--primary); font-size: 30px; text-shadow: 0 0 10px var(--primary); transition: content 0.3s; }
-        .intro-content.show-text .logo-glow { opacity: 1; transform: scale(1); }
-        .intro-content.show-text .logo-glow::after { content: '\f09c'; }
-        .intro-text-1 { font-size: 24px; color: #ffffff; letter-spacing: 4px; font-weight: 800; margin-bottom: 8px; opacity: 0; transform: translateY(20px) scale(0.95); transition: opacity 1s ease 0.3s, transform 1s ease 0.3s; text-shadow: 0 0 15px rgba(255,255,255,0.5); }
-        .intro-text-2 { font-size: 14px; color: var(--primary); font-weight: 600; letter-spacing: 1.5px; opacity: 0; transform: translateY(15px); transition: opacity 1s ease 0.6s, transform 1s ease 0.6s; text-shadow: 0 0 10px var(--primary); }
-        .intro-content.show-text .intro-text-1, .intro-content.show-text .intro-text-2 { opacity: 1; transform: translateY(0) scale(1); }
-        
+        /* One restrained intro; no black flash or staggered text repaint. */
+        #introOverlay { position:fixed; inset:0; background:#103451; color:#fff; z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; visibility:hidden; transition:opacity .2s ease,visibility .2s; }
+        #introOverlay[hidden] { display:none; }
+        #introOverlay.active, html.presen-intro-transfer #introOverlay { opacity:1; visibility:visible; }
+        .intro-content { text-align:center; padding:24px; }
+        .logo-glow { width:64px; height:64px; margin:0 auto 20px; border:1px solid #ffffff50; border-radius:18px; display:grid; place-items:center; background:#ffffff12; }
+        .logo-glow::after { content:'\f058'; font-family:'Font Awesome 6 Free'; font-weight:900; font-size:28px; color:#a6e6d8; }
+        .intro-text-1 { font-size:22px; font-weight:800; letter-spacing:.02em; margin-bottom:8px; }
+        .intro-text-2 { font-size:13px; color:#d1e1ed; line-height:1.6; }
+        html.presen-starting *, html.presen-starting *::before, html.presen-starting *::after { transition:none!important; animation:none!important; }
+        html.presen-starting #authOverlay .auth-card { visibility:hidden; }
+        html.presen-starting .main-card, html.presen-starting .top-nav,
+        html.presen-starting .portal-header, html.presen-starting .portal-hero,
+        html.presen-starting .portal-quick, html.presen-starting .portal-footer { visibility:hidden; }
+        @media(prefers-reduced-motion:reduce) { #introOverlay { transition:none; } }
+
         @media screen and (max-width: 768px) {
             .main-card { padding: 25px 20px; width: 92%; border-radius: 18px; margin-top: 50px; }
             .sidebar { width: 100%; right: -100%; padding: 20px 15px; }
@@ -387,31 +430,32 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.1.3.js" defer></script>
+    <script src="app/runtime-teacher-1.2.0.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script>
 <script src="app/account-tools.js?v=20261012" defer></script>
+<script src="app/evidence.js" defer></script><script src="app/monitoring.js" defer></script><script src="app/experience.js" defer></script><link rel="stylesheet" href="app/experience.css">
 </head>
-<body>
+<body class="portal-home">
     <!-- KANVAS PARTIKEL MELAYANG -->
     <canvas id="particleCanvas"></canvas>
     
     <div class="toast-container" id="toastContainer"></div>
     
-    <!-- OVERLAY ANIMASI INTRO SCIFI -->
+    <!-- Intro remains continuous while the signed-in workspace starts. -->
     <div id="introOverlay">
         <div class="intro-content" id="introContent">
             <div class="logo-glow"></div>
-            <div class="intro-text-1">AKSES DITERIMA</div>
-            <div class="intro-text-2" id="introGreeting">Mempersiapkan Sistem...</div>
+            <div class="intro-text-1">Selamat datang</div>
+            <div class="intro-text-2" id="introGreeting">Menyiapkan ruang kerja Anda…</div>
         </div>
     </div>
     
     <!-- OVERLAY LOGIN PRIVAT STANDALONE -->
-    <div id="authOverlay">
+    <div id="authOverlay"<?php if ($is_logged_in && !defined('APP_TEMPLATE_BUILD')) echo ' style="display:none"'; ?>>
         <div class="auth-card">
             <div style="margin-bottom: 25px;">
                 <h2 style="font-size: 22px; margin-bottom: 5px; color: var(--primary);"><i class="fa-solid fa-lock"></i> Masuk ke Sistem</h2>
@@ -849,17 +893,19 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         document.addEventListener('DOMContentLoaded', isiPengaturanAudioAntarmuka, {once:true});
         
         window.onload = function() {
-            initParticleCanvas();
+            if (!document.body.classList.contains('portal-home')) initParticleCanvas();
             applySavedBgWallpaper();
             
             if (window.SERVER_CONFIG.isLoggedIn) {
                 document.getElementById('authOverlay').style.display = 'none';
                 loadLoginLogs();
             } else {
+                document.getElementById('authOverlay').style.display = 'flex';
                 document.getElementById('authOverlay').style.visibility = 'visible';
                 document.getElementById('authOverlay').style.opacity = '1';
             }
             updateFormLogic();
+            window.PresenStartup?.ready();
         };
         window.addEventListener('resize', applyBgWallpaperSizing, {passive:true});
         
@@ -902,34 +948,19 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                     document.getElementById('activeUserForm').value = data.user;
                     
                     const introOverlay = document.getElementById('introOverlay');
-                    const introContent = document.getElementById('introContent');
-                    const introGreeting = document.getElementById('introGreeting');
-                    
-                    const isDosen = data.role.toLowerCase().includes('dosen');
-                    const greetRole = isDosen ? 'Dosen Pengampu' : 'Administrator Utama';
-                    const greetText = isDosen ? 'Selamat Mengajar' : 'Selamat Bekerja';
-                    introGreeting.innerText = `Selamat Datang, ${greetRole} ${data.user} - ${greetText}`;
-                    
+                    introOverlay.hidden = false;
                     introOverlay.classList.add('active');
+                    document.getElementById('introContent').classList.add('show-text');
                     playSciFiChime();
-                    
-                    setTimeout(() => {
-                        introContent.classList.add('show-text');
-                    }, 800);
-                    
-                    setTimeout(() => {
-                        introOverlay.classList.remove('active');
-                        introContent.classList.remove('show-text');
-                        
-                        document.getElementById('authOverlay').style.opacity = '0';
-                        setTimeout(() => {
-                            document.getElementById('authOverlay').style.display = 'none';
-                            loadLoginLogs();
-                            if(window.WATeacher) location.reload();
-                        }, 800);
-                        
-                    }, 3800);
-                    
+                    if (window.WATeacher) {
+                        window.PresenStartup.transfer();
+                        setTimeout(() => location.reload(), matchMedia('(prefers-reduced-motion:reduce)').matches ? 0 : 180);
+                    } else {
+                        document.getElementById('authOverlay').style.display = 'none';
+                        loadLoginLogs();
+                        setTimeout(() => { introOverlay.classList.remove('active'); }, 180);
+                    }
+
                 } else {
                     showToast(data.msg, 'error');
                 }

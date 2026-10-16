@@ -1,6 +1,6 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261016-presen-13-r3';
+const WA_BUILD = '20261016-presen-120-r1';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_db(): mysqli {
@@ -16,10 +16,10 @@ function wa_db(): mysqli {
 }
 
 function wa_schema(mysqli $db): void {
-    try { $v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc(); if(($v['value']??'')==='6')return; } catch(mysqli_sql_exception $ignored) {}
+    try { $v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc(); if(($v['value']??'')==='8')return; } catch(mysqli_sql_exception $ignored) {}
     if((int)($db->query("SELECT GET_LOCK(CONCAT('wa_schema:',DATABASE()),10) AS acquired")->fetch_assoc()['acquired']??0)!==1)throw new RuntimeException('Pembaruan penyimpanan sedang diproses. Coba lagi.');
     try {
-        try {$v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc();if(($v['value']??'')==='6')return;}catch(mysqli_sql_exception $ignored){}
+        try {$v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc();if(($v['value']??'')==='8')return;}catch(mysqli_sql_exception $ignored){}
     $tables = [
         "CREATE TABLE IF NOT EXISTS wa_push_devices (device_id CHAR(36) PRIMARY KEY, subscription TEXT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS wa_push_sent (device_id CHAR(36) NOT NULL, session_id CHAR(36) NOT NULL, phase VARCHAR(100) NOT NULL, PRIMARY KEY(device_id,session_id,phase)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
@@ -43,7 +43,9 @@ function wa_schema(mysqli $db): void {
     if (!$db->query("SHOW COLUMNS FROM siswa LIKE 'academic_period'")->num_rows) $db->query("ALTER TABLE siswa ADD academic_period VARCHAR(6) NOT NULL DEFAULT ''");
     $db->query("UPDATE siswa SET academic_period=IF(MOD(CAST(REPLACE(semester,'Semester ','') AS UNSIGNED),2)=0,'Genap','Ganjil') WHERE academic_period=''");
     if (!$db->query("SHOW COLUMNS FROM wa_accounts LIKE 'approval_status'")->num_rows){$db->query("ALTER TABLE wa_accounts ADD approval_status VARCHAR(12) NOT NULL DEFAULT 'pending'");$db->query("UPDATE wa_accounts SET approval_status='approved' WHERE approved=1");}
-    $db->query("INSERT INTO wa_meta(k,value) VALUES('schema_version','6') ON DUPLICATE KEY UPDATE value='6'");
+    $db->query("CREATE TABLE IF NOT EXISTS wa_evidence (id CHAR(36) PRIMARY KEY, owner_id VARCHAR(60) NOT NULL, account_id CHAR(36) NOT NULL, ctx_key CHAR(64) NOT NULL, session_id CHAR(36) NOT NULL, nim VARCHAR(50) NOT NULL, mime VARCHAR(30) NOT NULL, sha256 CHAR(64) NOT NULL, image_bytes MEDIUMBLOB NOT NULL, width INT NOT NULL, height INT NOT NULL, created_at BIGINT NOT NULL, KEY evidence_owner(owner_id), KEY evidence_session(account_id,session_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    foreach(['attachments','verification'] as $column)if(!$db->query("SHOW COLUMNS FROM wa_marks LIKE '{$column}'")->num_rows)$db->query("ALTER TABLE wa_marks ADD {$column} TEXT NULL");
+    $db->query("INSERT INTO wa_meta(k,value) VALUES('schema_version','8') ON DUPLICATE KEY UPDATE value='8'");
     } finally {$db->query("SELECT RELEASE_LOCK(CONCAT('wa_schema:',DATABASE()))");}
 }
 
@@ -104,7 +106,7 @@ function wa_reset_all_student_data(array $device,string $confirmation): array {
     wa_db()->begin_transaction();
     try {
         $counts=[];
-        foreach (['siswa','wa_accounts','wa_sessions','wa_marks','wa_documents'] as $table)
+        foreach (['siswa','wa_accounts','wa_sessions','wa_marks','wa_documents','wa_evidence'] as $table)
             $counts[$table]=(int)(wa_one("SELECT COUNT(*) AS n FROM {$table} WHERE owner_id=?",[$owner])['n']??0);
         wa_query("UPDATE wa_meta SET value=CAST(value AS UNSIGNED)+1 WHERE k=?",['student_data_epoch:'.$owner]);
         $studentIds=wa_rows("SELECT d.id FROM wa_devices d JOIN wa_accounts a ON a.id=d.account_id WHERE d.role='student' AND a.owner_id=?",[$owner]);
@@ -113,7 +115,7 @@ function wa_reset_all_student_data(array $device,string $confirmation): array {
             wa_query('DELETE FROM wa_push_sent WHERE device_id=?',[$row['id']]);
             wa_query('UPDATE wa_devices SET revoked=1 WHERE id=?',[$row['id']]);
         }
-        foreach (['wa_accounts','wa_sessions','wa_marks','wa_documents','siswa'] as $table) wa_query("DELETE FROM {$table} WHERE owner_id=?",[$owner]);
+        foreach (['wa_evidence','wa_accounts','wa_sessions','wa_marks','wa_documents','siswa'] as $table) wa_query("DELETE FROM {$table} WHERE owner_id=?",[$owner]);
         wa_audit($device,'reset-all-student-data','own-account',['counts'=>$counts]);
         wa_db()->commit();
         return ['status'=>'success','deleted'=>$counts,'resetEpoch'=>wa_student_data_epoch()];
@@ -231,14 +233,15 @@ function wa_snapshot(array $device): array {
         $account=$profile['account']; $ctx=$account['ctx'];
         $roster=[]; $documents=[]; $registrations=[]; $sessions=[]; $marks=[];
         if($account['approved']) {
-            $sessions=array_values(array_filter(wa_rows('SELECT * FROM wa_sessions WHERE ends>=? AND owner_id=?',[wa_now()-7*86400000,$account['owner_id']]),static function($r)use($ctx){return wa_ctx_key(json_decode($r['ctx'],true))===wa_ctx_key($ctx);}));
+            $sessions=array_values(array_filter(wa_rows('SELECT * FROM wa_sessions WHERE owner_id=?',[$account['owner_id']]),static function($r)use($ctx){return wa_ctx_key(json_decode($r['ctx'],true))===wa_ctx_key($ctx);}));
             $seen=[];foreach($sessions as $session){if(isset($seen[$session['scope']]))continue;$seen[$session['scope']]=true;$marks=array_merge($marks,wa_rows('SELECT * FROM wa_marks WHERE scope=? AND nim=?',[$session['scope'],$account['nim']]));}
         }
     }
     foreach($roster as &$row) { $row['semester']=preg_replace('/^Semester\s+/i','',$row['semester']); $row['kelas']=preg_replace('/^Kelas\s+/i','',$row['kelas']); $row['nim']=strtoupper($row['nim']); if(($row['owner_id']??'admin_01')!=='admin_01')$row['owner']=$row['owner_id']; if(($row['academic_year']??'2026/2027')!=='2026/2027'||($row['academic_period']??((int)$row['semester']%2?'Ganjil':'Genap'))!==((int)$row['semester']%2?'Ganjil':'Genap')){$row['year']=$row['academic_year'];$row['period']=$row['academic_period'];} unset($row['owner_id'],$row['academic_year'],$row['academic_period']); } unset($row);
     $teacherKeys=[];foreach(wa_rows("SELECT id,pubkey FROM wa_devices WHERE role='teacher' AND revoked=0") as $key)$teacherKeys[$key['id']]=$key['pubkey'];
     foreach($sessions as &$row) { $row['teacher_pub']=$teacherKeys[$row['teacher_id']]??''; $row['ctx']=json_decode($row['ctx'],true); $row['roster']=$device['role']==='teacher'?json_decode($row['roster'],true):[]; foreach(['slot','starts','deadline','ends','version']as$k)$row[$k]=(int)$row[$k]; } unset($row);
-    foreach($marks as &$row) { $row['location']=$row['location']?json_decode($row['location'],true):null; $row['slot']=(int)$row['slot']; $row['revision']=(int)$row['revision']; $row['recorded_at']=(int)$row['recorded_at']; } unset($row);
+    $availableEvidence=[];foreach(wa_rows('SELECT id,sha256 FROM wa_evidence WHERE owner_id=?',[wa_owner()]) as $photo)$availableEvidence[$photo['id']]=$photo['sha256'];
+    foreach($marks as &$row) { $row['attachments']=json_decode($row['attachments']??'[]',true)?:[];$row['verification']=json_decode($row['verification']??'null',true);$row['evidence_ready']=count($row['attachments'])>0&&!array_filter($row['attachments'],static fn($ref)=>($availableEvidence[$ref['id']]??'')!==$ref['hash']); $row['location']=$row['location']?json_decode($row['location'],true):null; $row['slot']=(int)$row['slot']; $row['revision']=(int)$row['revision']; $row['recorded_at']=(int)$row['recorded_at']; } unset($row);
     foreach($documents as &$row) { $row['ctx']=json_decode($row['ctx'],true); $row['content']=json_decode($row['content'],true); $row['revision']=(int)$row['revision']; } unset($row);
     foreach($registrations as &$row) { $row['ctx']=json_decode($row['ctx'],true); $row['approved']=(bool)$row['approved']; } unset($row);
     $epoch=wa_student_data_epoch();
