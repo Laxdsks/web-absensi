@@ -37,7 +37,7 @@ Foto sakit/izin disimpan pada perangkat dan dikirim saat mahasiswa online lagi. 
 
 ## Tampilan dan panduan
 
-Desain memakai latar kampus ilustratif asli, warna tema yang sudah tersedia, navigasi yang sama dan transisi pendek. Pengaturan **Tampilan** tetap mengatur latar/warna. Format kertas putih, font tabel seragam, nilai, impor, ekspor dan musik tetap dipertahankan. Preferensi perangkat **kurangi gerakan** menonaktifkan animasi. Ikon **?** menyediakan petunjuk kontekstual, termasuk foto/wajah/Monitoring/peta.
+Desain memakai latar kampus ilustratif asli, warna tema yang sudah tersedia, navigasi yang sama dan transisi pendek. Pengaturan **Tampilan** tetap mengatur latar/warna. Format kertas putih, font tabel seragam, nilai, impor, ekspor dan musik tetap dipertahankan. Intro masuk dipertahankan selama inisialisasi dan hanya memudar sekali; tema tersimpan diterapkan sebelum halaman tampil, tanpa animasi ulang beranda setiap sinkronisasi. Preferensi perangkat **kurangi gerakan** menonaktifkan animasi. Ikon **?** menyediakan petunjuk kontekstual, termasuk foto/wajah/Monitoring/peta.
 
 Prinsip gerak diadaptasi dari skill Bang Motion yang dilampirkan pengguna; tidak ada video otomatis atau situs baru. Pembuatan gambar Higgsfield tidak tersedia pada paket akun saat pengerjaan. Video referensi YouTube tidak dapat dibuka dari jaringan lingkungan; desain bukan klaim salinan video tersebut.
 
