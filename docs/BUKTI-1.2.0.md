@@ -15,6 +15,10 @@ Kode aplikasi diperiksa dari PR [#14](https://github.com/Laxdsks/web-absensi/pul
 
 `tests/location-route.test.cjs` memeriksa GPS akurasi tinggi tanpa lokasi cache, penolakan titik kasar, dua perangkat/titik yang berdekatan, urutan awal dosen → tujuan mahasiswa, konfirmasi titik awal jauh, pemilihan manual, koordinat panorama 360°, fullscreen HP, offline, dan tidak ikut cetak. Permintaan rute/tile/panorama luar memakai respons terkendali, sehingga tes ini membuktikan alur dan koordinat aplikasi, bukan ketersediaan layanan Google/OSRM pada setiap perangkat.
 
+Setelah perbaikan terakhir, 20 pemeriksaan ulang tertarget lulus: dua tes migrasi cache, enam tes rute/panorama, sembilan tes bukti/wajah/Monitoring dan tiga tes race sinkronisasi. Pemeriksaan ini mengulang bagian dari 91 tes, bukan 20 fitur baru.
+
+Tes cache kini menunggu marker versi yang tepat, bukan hanya Promise dari browser. Ditemukan dan diperbaiki race pergantian service worker: penyiapan offline dikirim ulang setelah worker baru aktif tanpa memuat ulang lembar yang sedang diedit. Notifikasi mahasiswa ditempatkan di atas agar tidak menutupi menu bawah.
+
 Regresi juga mencakup isolasi akun Zen/pengelola, persetujuan tanpa membuka ulang aplikasi, QR asli PNG/SVG tanpa screenshot, tenggat dan A otomatis, restart/tombol kembali, hapus permanen/reset aman, OCR JPEG 21 mahasiswa, urutan impor, nama/NIM/font/warna/Word/Excel/cetak, musik saat navigasi, cache versi lama, dan onboarding izin Android.
 
 ## Batas yang tidak boleh diklaim sebagai lulus

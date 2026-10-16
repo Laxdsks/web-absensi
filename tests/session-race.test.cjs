@@ -20,7 +20,7 @@ for(const result of ['success','expired'])test('late '+result+' sync does not re
  try{
   await page.goto(BASE+'app/?role=student');await page.locator('#login').waitFor();
   await page.evaluate(snapshot=>WA.change(s=>({...s,token:'old-race-token',profile:snapshot.profile,snapshot})),snapshot);
-  await page.locator('#deleteMyAccount').waitFor();await page.evaluate(()=>{window.pendingRaceSync=WA.sync();});await requested;
+  await page.locator('.student-bottom-nav [data-student-view=account]').click();await page.locator('#deleteMyAccount').waitFor();await page.evaluate(()=>{window.pendingRaceSync=WA.sync();});await requested;
   await page.evaluate(()=>WA.logout());await page.locator('#login').waitFor();release();await page.evaluate(()=>window.pendingRaceSync);
   const state=await page.evaluate(()=>WA.get());assert.equal(state.profile,null,'a late response must not restore the old identity');assert.equal(state.token,null);assert(!state.authExpired,'a revoked old token must not expire a new empty session');assert.deepEqual(state.snapshot.roster,[]);
   await page.locator('#login').waitFor();assert.deepEqual(errors,[]);

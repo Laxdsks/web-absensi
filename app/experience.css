@@ -20,3 +20,5 @@
 @media(max-width:768px){.portal-sheet #topToolbar .p-worknav{order:0;margin:0}.portal-sheet #topToolbar .toolbar-group{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;flex:none;padding-bottom:3px;min-height:40px}.portal-sheet #topToolbar .toolbar-group>*{flex-shrink:0}.portal-sheet #topToolbar .toolbar-group.p-export-tools{order:1;margin-left:0}.portal-sheet #topToolbar>.toolbar-group:first-of-type{order:2}.portal-sheet #topToolbar{gap:7px;max-height:225px}.p-dialog{padding:20px 16px}.p-dialog>.p-close{right:10px;top:10px}.monitor-dialog{width:calc(100vw - 24px)}}
 
 .p-dialog{margin:auto}.p-dialog.monitor-fullscreen,.p-dialog.p-map-fullscreen{margin:0}
+/* Student notices enter from the top and never cover the bottom navigation. */
+.portal-student #notice{top:max(12px,env(safe-area-inset-top));bottom:auto;font-size:12px;line-height:1.5;padding:12px 40px 12px 14px;width:min(420px,calc(100vw - 28px));border-radius:12px;box-shadow:0 8px 24px #052b4929}
