@@ -148,6 +148,11 @@ for role, filename in roles:
     install(ROOT / 'installers' / filename)
     if adb('shell', 'cat', new_marker) != 'new-app-data' or adb('shell', 'cat', marker) != sentinel:
         raise RuntimeError('A same-key APK update lost private application data')
+    if role=='mahasiswa':
+        adb('shell','pm','grant',new,'android.permission.ACCESS_FINE_LOCATION')
+        adb('shell','pm','grant',new,'android.permission.ACCESS_COARSE_LOCATION')
+        adb('shell','settings','put','secure','location_mode','3')
+        adb('emu','geo','fix','118.462','-8.536')
     adb('logcat', '-c')
     launched = adb('shell', 'am', 'start', '-W', '-n', new + '/id.webabsensi.app.MainActivity')
     if 'Status: ok' not in launched:
@@ -167,6 +172,11 @@ for role, filename in roles:
             # Retry within this deadline; a missing login UI still fails the test.
             dump = 'UIAutomator did not finish; retrying within the login deadline.'
             hierarchy = ''
+        if role=='mahasiswa' and 'siapkan aplikasi' in hierarchy.lower():
+            tap_label('^Lanjutkan dan izinkan lokasi$',attempts=3)
+            adb('emu','geo','fix','118.462','-8.536')
+            time.sleep(2)
+            continue
         expected = 'masuk ke sistem' if role == 'dosen' else 'masuk mahasiswa'
         if expected in hierarchy.lower():
             break
@@ -195,7 +205,8 @@ for role, filename in roles:
     adb('shell', 'screencap', '-p', '/sdcard/absensi-' + role + '.png')
     adb('pull', '/sdcard/absensi-' + role + '.png', str(RESULTS / (role + '.png')))
     try:
-        icon_test(new, role)
+        if role=='dosen':icon_test(new, role)
+        elif re.search(r'text="Ikon"',hierarchy):raise RuntimeError('Student APK exposes an icon editor removed by the user')
     except Exception:
         (RESULTS / (role + '-icon-failed-ui.xml')).write_text(ET.tostring(ui(), encoding='unicode'))
         (RESULTS / (role + '-icon-runtime.log')).write_text(adb('logcat', '-d', '-s', 'AndroidRuntime', 'chromium'))

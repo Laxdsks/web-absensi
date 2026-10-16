@@ -211,12 +211,12 @@
         }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.1.2.js" defer></script>
+    <script src="app/runtime-teacher-1.1.3.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script>
 <script src="app/account-tools.js?v=20261012" defer></script>
 </head>
 <body>
@@ -416,6 +416,8 @@
                     <option value="Pendidikan Bahasa Inggris" >Pendidikan Bahasa Inggris</option>
                 </select>
             </div>
+            <div class="form-group"><label>Tahun Akademik</label><select name="year" id="academicYear" class="form-control"><option value="2025/2026" >2025/2026</option><option value="2026/2027" selected>2026/2027</option><option value="2027/2028" >2027/2028</option><option value="2028/2029" >2028/2029</option><option value="2029/2030" >2029/2030</option><option value="2030/2031" >2030/2031</option><option value="2031/2032" >2031/2032</option><option value="2032/2033" >2032/2033</option><option value="2033/2034" >2033/2034</option><option value="2034/2035" >2034/2035</option><option value="2035/2036" >2035/2036</option></select></div>
+            <div class="form-group"><label>Periode Kuliah</label><select name="period" id="academicPeriod" class="form-control"><option value="Ganjil" selected>Ganjil</option><option value="Genap" >Genap</option></select></div>
             <div class="form-group" id="semesterGroup">
                 <label id="labelSemester">Semester</label>
                 <select name="semester" id="semester" class="form-control"></select>
@@ -847,6 +849,7 @@
         function updateFormLogic() {
             const kelasSelect = document.getElementById('kelas');
             const semesterSelect = document.getElementById('semester');
+            semesterSelect.onchange=()=>{document.getElementById('academicPeriod').value=Number(semesterSelect.value)%2?'Ganjil':'Genap';};
             const selectedKelas = "A";
             const selectedSemester = "1";
             kelasSelect.innerHTML = '';

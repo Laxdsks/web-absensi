@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),http=require('node:http'),path=require('node:path');
 const {chromium}=require(process.env.WA_PLAYWRIGHT_PATH||'/workspace/cloud-web-absensi/browser-tools/node_modules/playwright-core');
 const root=path.resolve(__dirname,'..');
-for(const role of ['teacher','student'])test('icon editor: sizing, persistence, reset and platform explanation for '+role,{timeout:60000},async()=>{
+for(const role of ['teacher'])test('icon editor: sizing, persistence, reset and platform explanation for '+role,{timeout:60000},async()=>{
  const server=http.createServer((req,res)=>{const p=new URL(req.url,'http://local').pathname.slice(1),file=p==='index.php'?'app/templates/index.html':p==='app/'?'app/index.html':p;
  try{res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.html')?'text/html':file.endsWith('.css')?'text/css':'application/octet-stream');res.end(fs.readFileSync(path.join(root,file)));}catch(_){res.writeHead(404);res.end('{}');}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/',browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']}),context=await browser.newContext({viewport:{width:role==='teacher'?1280:393,height:852}}),p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));

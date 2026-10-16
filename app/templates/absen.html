@@ -164,8 +164,8 @@
         #tabelRekapNilai td { padding: 5px 4px !important; }
         #tabelRekapNilai .activity-input { width: 100%; max-width: 88px; min-height: 38px; padding: 4px; text-align: center; }
         #tabelRekapNilai .name-value { text-align: left; }
-        .rekap-header-blue { background: #c7dcf5 !important; }
-        .rekap-header-yellow { background: #fff200 !important; }
+        .rekap-header-blue { background: #fff0a6 !important; }
+        .rekap-header-yellow { background: #fff0a6 !important; }
         .rekap-activity-help { margin: 0 0 8px; color: #38bdf8; font-size: 12px; line-height: 1.5; }
         
         #tabelRekapNilai {
@@ -372,14 +372,14 @@
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.1.2.js" defer></script>
+    <script src="app/runtime-teacher-1.1.3.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
     <script src="app/qr-files.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="assets/sheet-fit.css"><script src="assets/sheet-fit.js" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/locations.js?v=20261012" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script><script src="app/locations.js?v=20261012" defer></script>
 <script src="app/account-tools.js?v=20261012" defer></script>
 </head>
 <body>
@@ -447,10 +447,10 @@
     
     <div class="top-toolbar" id="topToolbar" title="Pita Menu Utama">
         <div class="toolbar-group">
-            <a href="data_siswa.php?jenjang=S1&kelas=A&prodi=Pendidikan+Teknologi+Informasi&semester=1&theme=putih" class="btn btn-dark" title="Kembali Ke Halaman Data Siswa Utama">
+            <a href="data_siswa.php?jenjang=S1&kelas=A&prodi=Pendidikan+Teknologi+Informasi&semester=1&year=2026%2F2027&period=Ganjil&theme=putih" class="btn btn-dark" title="Kembali Ke Halaman Data Siswa Utama">
                 <i class="fa-solid fa-arrow-left"></i>
             </a>
-            <a href="ujian.php?jenjang=S1&kelas=A&prodi=Pendidikan+Teknologi+Informasi&semester=1&theme=putih" class="btn btn-warning" title="Buka Lembar Ujian untuk konteks kelas ini">
+            <a href="ujian.php?jenjang=S1&kelas=A&prodi=Pendidikan+Teknologi+Informasi&semester=1&year=2026%2F2027&period=Ganjil&theme=putih" class="btn btn-warning" title="Buka Lembar Ujian untuk konteks kelas ini">
                 <i class="fa-solid fa-file-invoice"></i> Lembar Ujian
             </a>
             <button onclick="mulaiTurInteraktif()" class="btn btn-primary" id="tourBtnGuide" title="Buka Panduan & Tur Interaktif"><i class="fa-solid fa-circle-question"></i> Panduan</button>
@@ -1611,27 +1611,33 @@
         }
 
         function hapusKolomPertemuan() {
-            simpanStateUndo();
             const header = document.getElementById('headerPertemuan');
-            let colspan = parseInt(header.getAttribute('colspan') || 16);
-            if(colspan <= 8) {
+            const current = parseInt(header?.getAttribute('colspan') || '16', 10);
+            if(!header || current <= 8) {
                 showCustomModal('Batas Minimal', 'Batas minimal kolom pertemuan adalah 8.');
                 return;
             }
-            colspan--;
-            header.setAttribute('colspan', colspan);
-            
-            const sub = document.getElementById('subHeaderPertemuan');
-            if(sub.lastElementChild) sub.removeChild(sub.lastElementChild);
-            const numberHeader = document.getElementById('numberHeaderPertemuan');
-            if(numberHeader.lastElementChild) numberHeader.removeChild(numberHeader.lastElementChild);
-            
             const rows = barisDataAbsen();
-            rows.forEach(r => {
-                if(r.cells.length > colspan + 6) {
-                    r.removeChild(r.cells[r.cells.length - 2]);
-                }
+            const hasEntries = rows.some(row => {
+                const cells = row.querySelectorAll('.attendance-cell');
+                return cells.length >= current && cells[cells.length - 1].value.trim() !== '';
             });
+            if(hasEntries && !confirm('Kolom pertemuan paling kanan berisi data. Hapus kolom beserta isinya?')) return;
+            simpanStateUndo();
+            const colspan = current - 1;
+            header.setAttribute('colspan', String(colspan));
+            const sub = document.getElementById('subHeaderPertemuan');
+            const lastDate = sub?.querySelectorAll('.date-entry');
+            lastDate?.[lastDate.length - 1]?.remove();
+            const numberHeader = document.getElementById('numberHeaderPertemuan');
+            const lastNumber = numberHeader?.querySelectorAll('.meeting-number');
+            lastNumber?.[lastNumber.length - 1]?.remove();
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('.attendance-cell');
+                if(cells.length >= current) cells[cells.length - 1].closest('td')?.remove();
+            });
+            window.WAFitSheetText?.();
+            setTimeout(() => void window.WAFlush?.(), 0);
         }
 
         // =====================================================================
@@ -1677,7 +1683,7 @@
                 addCell(sakitCount, 'sakit-count', 'text-align:center;color:#92400e;font-weight:bold;');
                 addCell(izinCount, 'izin-count', 'text-align:center;color:#0369a1;font-weight:bold;');
                 addCell(totalDiisi, 'filled-count', 'text-align:center;');
-                const oldValues = draftNilaiPerNim[nim] || [0, 0, 0, 0, 0];
+                const oldValues = draftNilaiPerNim[nim] || ['', '', '', '', ''];
                 const scores = oldValues.length >= 5 ? oldValues : [0, 0, Math.min(25, Number(oldValues[0]) || 0), oldValues[1] || 0, oldValues[2] || 0];
                 const inputDefs = [
                     ['Bertanya (jumlah)', 0, 999, 1],
@@ -1690,12 +1696,12 @@
                     const cell = document.createElement('td');
                     const input = document.createElement('input');
                     input.type = 'number'; input.min = String(min); input.max = String(max); input.step = String(step);
-                    input.value = String(scores[scoreIndex] ?? 0); input.className = 'activity-input score-input';
+                    input.value = String(scores[scoreIndex] ?? ''); input.className = 'activity-input score-input';
                     input.setAttribute('aria-label', label); input.title = label;
                     input.addEventListener('input', () => {
                         if (scoreIndex === 2 && Number(input.value) > 25) input.value = '25';
                         if (Number(input.value) < 0) input.value = '0';
-                        draftNilaiPerNim[nim] = Array.from(tr.querySelectorAll('.score-input')).map(scoreInput => scoreInput.value || '0');
+                        draftNilaiPerNim[nim] = Array.from(tr.querySelectorAll('.score-input')).map(scoreInput => scoreInput.value);
                         hitungSkorBaris(input);
                     });
                     cell.appendChild(input); tr.appendChild(cell);
@@ -2088,7 +2094,7 @@
                 const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?Math.min(10,fitted)+'px':'7.5pt';
                 cell.style.lineHeight = '9pt';
                 cell.style.color = '#111';
-                if (cell.tagName === 'TH') { cell.style.backgroundColor = '#e2e8f0'; cell.style.fontWeight = 'bold'; }
+                if (cell.tagName === 'TH') { cell.style.backgroundColor = '#fff0a6'; cell.style.fontWeight = 'bold'; }
                 cell.style.setProperty('mso-line-height-rule','exactly');
                 const paragraph = document.createElement('p');
                 paragraph.style.cssText = 'margin:0;mso-margin-top-alt:0pt;mso-margin-bottom-alt:0pt;padding:0;line-height:9pt;mso-line-height-rule:exactly;';
@@ -2126,7 +2132,7 @@
 
         function buatDokumenWordShell(page, title, bodyContent) {
             const orientation = page.orientation === 'landscape' ? 'landscape' : 'portrait';
-            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapeWordHtml(title)}</title><style>@page{size:${page.width} ${page.height};margin:${page.marginSize}}@page WordSection1{size:${page.width} ${page.height};margin:${page.marginSize};mso-page-orientation:${orientation};mso-header-margin:8mm;mso-footer-margin:8mm}div.WordSection1{page:WordSection1}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;font-size:8pt}p{mso-line-height-rule:exactly}table{width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt}th,td{border:1px solid #111;padding:4px 3px;text-align:center;vertical-align:middle;white-space:nowrap;overflow-wrap:normal;font-size:8pt;color:#111}th{font-weight:bold;background:#e2e8f0}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}</style></head><body><div class="WordSection1">${bodyContent}</div></body></html>`;
+            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapeWordHtml(title)}</title><style>@page{size:${page.width} ${page.height};margin:${page.marginSize}}@page WordSection1{size:${page.width} ${page.height};margin:${page.marginSize};mso-page-orientation:${orientation};mso-header-margin:8mm;mso-footer-margin:8mm}div.WordSection1{page:WordSection1}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;font-size:8pt}p{mso-line-height-rule:exactly}table{width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt}th,td{border:1px solid #111;padding:4px 3px;text-align:center;vertical-align:middle;white-space:nowrap;overflow-wrap:normal;font-size:8pt;color:#111;background:#fff}th{font-weight:bold;background:#fff0a6}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff0a6}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}</style></head><body><div class="WordSection1">${bodyContent}</div></body></html>`;
             const width=parseFloat(page.width)*96-2*parseFloat(page.marginSize)*96/25.4;
             return window.WAFitExportHTML?.(markup,width)||markup;
         }
@@ -2148,7 +2154,7 @@
             table.setAttribute('width', String(width));
             table.style.width = width+'px'; table.style.tableLayout = 'fixed'; table.style.borderCollapse = 'collapse';
             table.querySelectorAll('colgroup col').forEach(col => { col.setAttribute('width', String(Math.round(parseFloat(col.style.width || '0') * (col.style.width.endsWith('%')?width/100:1))) + 'px'); });
-            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:nowrap;word-wrap:normal;font-size:9pt;mso-number-format:"\@"}th{font-weight:bold;background:#dbeafe}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff200}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
+            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif;background:#fff;color:#111}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:nowrap;word-wrap:normal;font-size:9pt;color:#111;background:#fff;mso-number-format:"\@"}th{font-weight:bold;background:#fff0a6}th.rekap-header-blue{background:#c7dcf5}th.rekap-header-yellow{background:#fff0a6}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
             return window.WAFitExportHTML?.(markup,width)||markup;
         }
 

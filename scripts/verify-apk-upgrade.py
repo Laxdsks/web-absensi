@@ -33,18 +33,18 @@ for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
         if new_cert != [expected_cert]:
             raise RuntimeError('APK was not signed by the reusable Android 2 identity: ' + name)
     expected_package = 'id.webabsensi.parallel2026.' + ('dosen' if name.startswith('Absensi-Dosen') else 'mahasiswa')
-    if new_package[0] != expected_package or new_package[2] != '1.1.2':
+    if new_package[0] != expected_package or new_package[2] != '1.1.3':
         raise RuntimeError('APK version was not advanced: ' + name)
     previous_v2 = root / 'previous-v2-installers' / name
     if not contents_only and previous_v2.exists():
         previous_cert, previous_package = details(previous_v2)
         if previous_cert != new_cert or previous_package[0] != new_package[0] or int(previous_package[1]) >= int(new_package[1]):
             raise RuntimeError('APK cannot safely update Android 2 version 1.1.0: ' + name)
-    paths = ['app/core-1.1.2.js', 'app/index.html', 'app/icon-settings.js','app/portal.css','app/portal.js','app/appearance.js','app/portal-background.svg','app/student-tools.js','app/app.js', 'app/core.js', 'app/qr-files.js','app/guide.js','app/guide.css','app/guide-images/student-login.png','app/guide-images/student-qr.png', 'app/app.css', 'app-sw.js', 'app/vendor/qr.js', 'app/vendor/scan.js']
+    paths = ['app/core-1.1.3.js', 'app/index.html', 'app/icon-settings.js','app/portal.css','app/portal.js','app/appearance.js','app/portal-background.svg','app/student-tools.js','app/app.js', 'app/core.js', 'app/qr-files.js','app/guide.js','app/guide.css','app/guide-images/student-login.png','app/guide-images/student-qr.png', 'app/app.css', 'app-sw.js', 'app/vendor/qr.js', 'app/vendor/scan.js']
     if name.startswith('Absensi-Dosen'):
-        paths += ['app/workspace.js','app/locations.js','app/account-tools.js','app/templates/data_siswa.html', 'app/vendor/tesseract.min.js', 'app/vendor/worker.min.js', 'app/vendor/eng.traineddata', 'app/templates/absen.html', 'app/templates/ujian.html', 'app/templates/music_player.html', 'assets/app-audio.js', 'assets/sheet-fit.js','assets/sheet-fit.css','assets/offline-bridge.js', 'assets/teacher-tools.js', 'assets/teacher-tools.css', 'app/templates/index.html']
+        paths += ['app/inbox.js','app/grade-assistant.js','app/workspace.js','app/locations.js','app/account-tools.js','app/templates/data_siswa.html', 'app/vendor/tesseract.min.js', 'app/vendor/worker.min.js', 'app/vendor/eng.traineddata', 'app/templates/absen.html', 'app/templates/ujian.html', 'app/templates/music_player.html', 'assets/app-audio.js', 'assets/sheet-fit.js','assets/sheet-fit.css','assets/offline-bridge.js', 'assets/teacher-tools.js', 'assets/teacher-tools.css', 'app/templates/index.html']
     with zipfile.ZipFile(current) as apk:
-        if name.startswith('Absen-Mahasiswa') and any(p in apk.namelist() for p in ['assets/app/workspace.js','assets/app/locations.js','assets/app/account-tools.js','assets/app/templates/absen.html']):
+        if name.startswith('Absen-Mahasiswa') and any(p in apk.namelist() for p in ['assets/app/inbox.js','assets/app/grade-assistant.js','assets/app/workspace.js','assets/app/locations.js','assets/app/account-tools.js','assets/app/templates/absen.html']):
             raise RuntimeError('Student APK includes teacher workspace modules')
         for path in paths:
             if hashlib.sha256(apk.read('assets/' + path)).digest() != hashlib.sha256((root / path).read_bytes()).digest():
@@ -52,4 +52,4 @@ for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
     if contents_only:
         print(name + ': Android 2 identity, build and offline assets verified only; release signing NOT checked.')
     else:
-        print(name + ': reusable Android 2 certificate verified; package differs from the original APK; version 1.1.2 and offline assets verified.')
+        print(name + ': reusable Android 2 certificate verified; package differs from the original APK; version 1.1.3 and offline assets verified.')

@@ -4,6 +4,7 @@ $isStudentImportRequest = (string)($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'i
 require_once __DIR__ . '/auth_guard.php';
 app_require_authenticated_user($isStudentImportRequest);
 require_once 'koneksi.php';
+$data_owner=wa_owner(); if(isset($koneksi)&&$koneksi instanceof mysqli)wa_schema($koneksi);
 if (!isset($koneksi) && isset($conn)) { $koneksi = $conn; }
 
 // Sinkronkan hanya tema yang tersedia agar tema tetap konsisten antarahalaman.
@@ -38,7 +39,10 @@ $semester_input = preg_replace('/^Semester\s+/i', '', $semester_input);
 $semester = ctype_digit($semester_input) && (int)$semester_input >= 1 && (int)$semester_input <= 8 ? (string)(int)$semester_input : '1';
 $kelas_lama = 'Kelas ' . $kelas;
 $semester_lama = 'Semester ' . $semester;
-$_SESSION['konteks_siswa'] = ['jenjang' => $jenjang, 'kelas' => $kelas, 'prodi' => $prodi, 'semester' => $semester];
+$academic_context=wa_page_context(['prodi'=>$prodi,'semester'=>$semester,'kelas'=>$kelas]);
+$data_year=wa_academic_year($academic_context); $data_period=wa_academic_period($academic_context);
+$semester_tampilan = $semester_lama . ' (' . $data_period . ')';
+$_SESSION['konteks_siswa'] = ['jenjang' => $jenjang, 'kelas' => $kelas, 'prodi' => $prodi, 'semester' => $semester, 'year'=>$data_year, 'period'=>$data_period];
 
 // OCR gambar daftar mahasiswa: hasil selalu ditinjau dan dikoreksi dosen sebelum disimpan.
 if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -58,8 +62,8 @@ if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa' && $_SERVER['REQU
     }
     $inserted = 0; $skipped = 0;
     mysqli_begin_transaction($koneksi);
-    $duplicate = mysqli_prepare($koneksi, "SELECT id FROM siswa WHERE nim=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) LIMIT 1");
-    $insert = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk) VALUES ('S1', ?, ?, ?, ?, ?, ?)");
+    $duplicate = mysqli_prepare($koneksi, "SELECT id FROM siswa WHERE owner_id='{$data_owner}' AND academic_year='{$data_year}' AND academic_period='{$data_period}' AND nim=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) LIMIT 1");
+    $insert = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk, owner_id, academic_year, academic_period) VALUES ('S1', ?, ?, ?, ?, ?, ?, '{$data_owner}', '{$data_year}', '{$data_period}')");
     if (!$duplicate || !$insert) {
         mysqli_rollback($koneksi);
         http_response_code(500);
@@ -99,14 +103,14 @@ if (isset($_POST['save_siswa'])) {
     $jk = ($_POST['jk'] ?? 'L') === 'P' ? 'P' : 'L';
     if (!empty($id)) {
         $id = (int)$id;
-        $stmt = mysqli_prepare($koneksi, "UPDATE siswa SET nim=?, nama=?, jk=? WHERE id=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?)");
+        $stmt = mysqli_prepare($koneksi, "UPDATE siswa SET nim=?, nama=?, jk=? WHERE owner_id='{$data_owner}' AND academic_year='{$data_year}' AND academic_period='{$data_period}' AND id=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?)");
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'sssisssss', $nim, $nama, $jk, $id, $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
         }
     } else {
-        $stmt = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk) VALUES ('S1', ?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk, owner_id, academic_year, academic_period) VALUES ('S1', ?, ?, ?, ?, ?, ?, '{$data_owner}', '{$data_year}', '{$data_period}')");
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'ssssss', $kelas, $prodi, $semester, $nim, $nama, $jk);
             mysqli_stmt_execute($stmt);
@@ -120,7 +124,7 @@ if (isset($_POST['save_siswa'])) {
 // Handle Hapus Satuan Mahasiswa
 if (isset($_GET['hapus_id'])) {
     $id_hapus = intval($_GET['hapus_id']);
-    $stmt = mysqli_prepare($koneksi, "DELETE FROM siswa WHERE id=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?)");
+    $stmt = mysqli_prepare($koneksi, "DELETE FROM siswa WHERE owner_id='{$data_owner}' AND academic_year='{$data_year}' AND academic_period='{$data_period}' AND id=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?)");
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'isssss', $id_hapus, $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
         mysqli_stmt_execute($stmt);
@@ -130,26 +134,15 @@ if (isset($_GET['hapus_id'])) {
     exit;
 }
 
-// Handle Fitur Hapus Massal Total Satu Kelas (Sapu Bersih Cascading Delete)
-if (isset($_GET['hapus_semua']) && $_GET['hapus_semua'] == '1') {
-    $stmt = mysqli_prepare($koneksi, "DELETE FROM siswa WHERE jenjang='S1' AND prodi=? AND semester IN (?, ?) AND kelas IN (?, ?)");
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sssss', $prodi, $semester, $semester_lama, $kelas, $kelas_lama);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-    }
-    
-    // Bersihkan sesi terkait jika ada
-    if (isset($_SESSION['absen'][$prodi][$semester][$kelas])) unset($_SESSION['absen'][$prodi][$semester][$kelas]);
-    if (isset($_SESSION['nilai_ujian'][$prodi][$semester][$kelas])) unset($_SESSION['nilai_ujian'][$prodi][$semester][$kelas]);
-    
-    header("Location: data_siswa.php?jenjang=".urlencode($jenjang)."&kelas=".urlencode($kelas)."&prodi=".urlencode($prodi)."&semester=".urlencode($semester)."&theme=".urlencode($current_theme)."&status=all_deleted");
+// Old class-scoped GET deletion links are intentionally inert; global resets use the authenticated API and typed confirmation.
+if (isset($_GET['hapus_semua'])) {
+    header("Location: data_siswa.php?jenjang=".urlencode($jenjang)."&kelas=".urlencode($kelas)."&prodi=".urlencode($prodi)."&semester=".urlencode($semester)."&theme=".urlencode($current_theme)."&status=reset_requires_confirmation");
     exit;
 }
 
 // SINKRONISASI BACKEND EXAK DAN LOGIKA S1 AMAN (=)
 $data_siswa = [];
-$q_str = "SELECT id, nim, nama, jk FROM siswa WHERE jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY id ASC";
+$q_str = "SELECT id, nim, nama, jk FROM siswa WHERE owner_id='{$data_owner}' AND academic_year='{$data_year}' AND academic_period='{$data_period}' AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) ORDER BY id ASC";
 $stmt = isset($koneksi) && $koneksi instanceof mysqli ? mysqli_prepare($koneksi, $q_str) : false;
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'sssss', $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
@@ -382,9 +375,9 @@ if ($stmt) {
     </style>
     <script src="app/vendor/tesseract.min.js" defer></script>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.1.2.js" defer></script>
+    <script src="app/runtime-teacher-1.1.3.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/account-tools.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script>
 </head>
 <body>
     <div class="toast-container" id="toastContainer"></div>
@@ -393,13 +386,13 @@ if ($stmt) {
         <div class="card-header-flex">
             <div class="header-title">
                 <h2><i class="fa-solid fa-users-gear"></i> Data & Manajemen Mahasiswa</h2>
-                <p>Jenjang: S1 | Prodi: <?php echo htmlspecialchars($prodi); ?> | <?php echo htmlspecialchars($kelas_lama); ?> | <?php echo htmlspecialchars($semester_lama); ?></p>
+                <p>Jenjang: S1 | Prodi: <?php echo htmlspecialchars($prodi); ?> | <?php echo htmlspecialchars($kelas_lama); ?> | <?php echo htmlspecialchars($semester_tampilan); ?></p>
             </div>
             <div class="header-actions">
                 <a href="index.php?theme=<?php echo urlencode($current_theme); ?>" class="btn-custom btn-secondary" title="Kembali ke Beranda"><i class="fa-solid fa-arrow-left"></i> Beranda</a>
                 <!-- TOMBOL LEMBAR UJIAN KUNING BARU -->
-                <a href="ujian.php?jenjang=S1&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&kelas=<?php echo urlencode($kelas); ?>&theme=<?php echo urlencode($current_theme); ?>" class="btn-custom btn-warning" title="Buka Lembar Ujian Akhir"><i class="fa-solid fa-file-invoice"></i> Lembar Ujian</a>
-                <a href="absen.php?jenjang=<?php echo urlencode($jenjang); ?>&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&theme=<?php echo urlencode($current_theme); ?>" class="btn-custom btn-success" title="Buka Lembar Absen"><i class="fa-solid fa-clipboard-user"></i> Lembar Absen</a>
+                <a href="ujian.php?jenjang=S1&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&kelas=<?php echo urlencode($kelas); ?>&year=<?php echo rawurlencode($data_year); ?>&period=<?php echo rawurlencode($data_period); ?>&theme=<?php echo urlencode($current_theme); ?>" class="btn-custom btn-warning" title="Buka Lembar Ujian Akhir"><i class="fa-solid fa-file-invoice"></i> Lembar Ujian</a>
+                <a href="absen.php?jenjang=<?php echo urlencode($jenjang); ?>&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&year=<?php echo rawurlencode($data_year); ?>&period=<?php echo rawurlencode($data_period); ?>&theme=<?php echo urlencode($current_theme); ?>" class="btn-custom btn-success" title="Buka Lembar Absen"><i class="fa-solid fa-clipboard-user"></i> Lembar Absen</a>
                 <button onclick="bukaModalTambah()" class="btn-custom btn-primary" title="Tambah Mahasiswa"><i class="fa-solid fa-user-plus"></i> Tambah Mahasiswa</button>
             </div>
         </div>
@@ -411,10 +404,7 @@ if ($stmt) {
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="searchInput" placeholder="Cari nama mahasiswa secara real-time..." onkeyup="filterTabelSiswa()">
                 </div>
-                <!-- TOMBOL HAPUS MASSAL TOTAL KELAS (SAPU BERSIH CASCADING DELETE) -->
-                <div>
-                    <a href="data_siswa.php?hapus_semua=1&jenjang=<?php echo urlencode($jenjang); ?>&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&theme=<?php echo urlencode($current_theme); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus seluruh data mahasiswa di prodi, kelas, dan semester ini? Semua riwayat nilai dan absen juga akan ikut terhapus total!');" class="btn-custom btn-danger" title="Hapus Semua Mahasiswa di Kelas Ini"><i class="fa-solid fa-trash-can"></i> Hapus Semua Mahasiswa Kelas Ini</a>
-                </div>
+                <button type="button" class="btn-custom btn-danger" id="deleteAllStudentData" title="Reset seluruh data mahasiswa pada semua prodi, semester, dan kelas"><i class="fa-solid fa-trash-can"></i> Reset Semua Data Mahasiswa Akun Ini</button>
             </div>
 
             <section class="content-card" id="photoImportCard" style="margin:0 0 18px;padding:16px;">
@@ -471,7 +461,7 @@ if ($stmt) {
                             <td style="text-align: center;"><?php echo strtoupper($s['jk'] ?? 'L'); ?></td>
                             <td style="text-align: center;">
                                 <button onclick="bukaModalEdit('<?php echo $s['id']; ?>', '<?php echo htmlspecialchars($s['nim'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($s['nama'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($s['jk'] ?? 'L', ENT_QUOTES); ?>')" class="btn-custom btn-primary" style="padding: 5px 10px; font-size: 11px;" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                                <a href="data_siswa.php?hapus_id=<?php echo $s['id']; ?>&jenjang=<?php echo urlencode($jenjang); ?>&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&theme=<?php echo urlencode($current_theme); ?>" onclick="return confirm('Yakin ingin menghapus data mahasiswa ini?');" class="btn-custom btn-danger" style="padding: 5px 10px; font-size: 11px;" title="Hapus"><i class="fa-solid fa-trash"></i></a>
+                                <a href="data_siswa.php?hapus_id=<?php echo $s['id']; ?>&jenjang=<?php echo urlencode($jenjang); ?>&kelas=<?php echo urlencode($kelas); ?>&prodi=<?php echo urlencode($prodi); ?>&semester=<?php echo urlencode($semester); ?>&year=<?php echo rawurlencode($data_year); ?>&period=<?php echo rawurlencode($data_period); ?>&theme=<?php echo urlencode($current_theme); ?>" onclick="return confirm('Yakin ingin menghapus data mahasiswa ini?');" class="btn-custom btn-danger" style="padding: 5px 10px; font-size: 11px;" title="Hapus"><i class="fa-solid fa-trash"></i></a>
                             </td>
                         </tr>
                         <?php endforeach; else: ?>
@@ -1450,7 +1440,7 @@ if ($stmt) {
             const button=document.getElementById('btnSimpanOcr'); button.disabled=true;
             try {
                 const form=new FormData(); form.append('aksi','import_siswa'); form.append('rows',JSON.stringify(rows));
-                const response=await fetch('data_siswa.php?aksi=import_siswa&jenjang=S1&kelas=<?php echo rawurlencode($kelas); ?>&prodi=<?php echo rawurlencode($prodi); ?>&semester=<?php echo rawurlencode($semester); ?>&theme=<?php echo rawurlencode($current_theme); ?>',{method:'POST',body:form});
+                const response=await fetch('data_siswa.php?aksi=import_siswa&jenjang=S1&kelas=<?php echo rawurlencode($kelas); ?>&prodi=<?php echo rawurlencode($prodi); ?>&semester=<?php echo rawurlencode($semester); ?>&year=<?php echo rawurlencode($data_year); ?>&period=<?php echo rawurlencode($data_period); ?>&theme=<?php echo rawurlencode($current_theme); ?>',{method:'POST',body:form});
                 const result=await response.json();
                 if (!response.ok || result.status!=='success') throw new Error(result.message || 'Data foto gagal disimpan.');
                 showToast(result.inserted+' mahasiswa ditambahkan; '+result.skipped+' baris dilewati. Daftar akan dimuat ulang.','success');

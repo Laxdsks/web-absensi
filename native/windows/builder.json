@@ -5,6 +5,7 @@
   "directories": {
     "output": "dist/windows"
   },
+  "compression": "normal",
   "files": [
     "native/windows/*.cjs",
     "app/**",
@@ -17,7 +18,8 @@
     "target": [
       "portable"
     ],
-    "signAndEditExecutable": false
+    "signAndEditExecutable": false,
+    "icon": "app/icon.ico"
   },
   "asar": true
 }
