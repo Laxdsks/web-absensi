@@ -1,8 +1,10 @@
-# Aplikasi Absensi 1.1.3
+# Aplikasi Absensi 1.2.0
 
-Panduan ini menjelaskan tiga paket **1.1.3**: **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.1.3.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Lihat [rilis aplikasi terbaru](https://github.com/Laxdsks/web-absensi/releases/latest) untuk versi dan paket yang sudah diterbitkan. Android 2 memakai identitas aplikasi dan kunci yang tetap sejak versi 1.0.2 sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
+Panduan ini menjelaskan tiga paket **1.2.0**: **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.2.0.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Lihat [rilis aplikasi terbaru](https://github.com/Laxdsks/web-absensi/releases/latest) untuk versi dan paket yang sudah diterbitkan. Android 2 memakai identitas aplikasi dan kunci yang tetap sejak versi 1.0.2 sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
 
 APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
+
+Lihat [fitur dan alur Presen 1.2.0](PEMBARUAN-1.2.0.md): foto bukti sakit/izin, wajah lokal dengan persetujuan, Monitoring dan rute/360° di dalam jendela.
 
 ## Awal penggunaan
 
@@ -27,7 +29,7 @@ Mahasiswa dan dosen dapat sama-sama offline setelah login/persetujuan awal:
 2. Aplikasi mahasiswa membuat **QR balasan**; mahasiswa menunjukkannya kepada dosen.
 3. Dosen memindai balasan **sebelum batas waktu habis**. Kehadiran tersimpan di perangkat dosen dan dikirim ke server ketika internet kembali.
 
-Membuat atau memfoto QR saja belum mencatat kehadiran. Dosen harus menerima balasannya. Keterangan S/I memakai alur yang sama; pengiriman dari rumah tetap memerlukan internet atau orang yang membawa QR balasan kepada dosen. Dosen dapat meninjau alasan dan mengoreksi catatan. Keterangan dekat tombol kirim menjelaskan bahwa dosen dapat melihat lokasi saat absensi dikirim. Aplikasi meminta izin lokasi perangkat dan mengambilnya sekali saat mengirim. Jika GPS atau izin gagal, mahasiswa dapat memilih kirim tanpa lokasi. Lokasi, waktu dan akurasi ditampilkan untuk peninjauan; koordinat tidak membuktikan benar/salahnya alasan.
+Membuat atau memfoto QR saja belum mencatat kehadiran. Dosen harus menerima balasannya. Keterangan S/I memakai alur yang sama; pengiriman dari rumah tetap memerlukan internet atau orang yang membawa QR balasan kepada dosen. Dosen dapat meninjau alasan dan mengoreksi catatan. Keterangan dekat tombol kirim menjelaskan bahwa dosen dapat melihat lokasi saat absensi dikirim. Aplikasi meminta izin lokasi perangkat dan mengambilnya sekali saat mengirim. Jika GPS gagal, perbaiki izin/lokasi presisi lalu coba lagi; versi browser menyediakan pilihan kirim tanpa lokasi secara jelas. Lokasi, waktu dan akurasi ditampilkan untuk peninjauan; koordinat tidak membuktikan benar/salahnya alasan.
 
 ## Lembar dan sinkronisasi
 
@@ -95,10 +97,10 @@ Presen Go memiliki menu **Pesan** dan bagian **Pemberitahuan**. Hapus satu pesan
 
 Mahasiswa bisa **Hapus akun** dengan konfirmasi PIN ketika online. Pendaftaran dan akses perangkat dihapus, sehingga NIM dapat dipakai untuk mendaftar kembali. Catatan dan daftar milik dosen tetap ada. Pada menu dosen **Akun mahasiswa terdaftar**, penghapusan memerlukan konfirmasi NIM. Dosen dapat memilih hapus akun saja atau sekaligus membersihkan daftar, absensi, lokasi dan nilai NIM tersebut pada kelas akun ini. Pilihan bersihkan data hanya untuk data percobaan, tidak dapat dibatalkan dan tidak memengaruhi NIM sama pada kelas lain. Selesaikan sinkronisasi sebelum menghapus akun/data. Penerbitan pembaruan tidak menghapus data apa pun secara otomatis.
 
-Perbarui dari versi 1.0.8 atau 1.1.0 dengan memasang APK/EXE 1.1.3 tanpa mencopot aplikasi atau menghapus datanya. Kunci Android 2, applicationId dan folder data Windows tetap sama.
+Perbarui dari versi 1.0.8 atau 1.1.0 dengan memasang APK/EXE 1.2.0 tanpa mencopot aplikasi atau menghapus datanya. Kunci Android 2, applicationId dan folder data Windows tetap sama.
 
 
-## Pembaruan 1.1.3: ruang kerja dan pratinjau
+## Pembaruan 1.2.0: ruang kerja dan pratinjau
 
 Data Mahasiswa, Lembar Absen dan Lembar Ujian memakai navigasi dan warna yang selaras. Arahkan kursor atau ketuk menu untuk melihat pratinjau kelas; tekan **Buka halaman penuh** untuk berpindah. Kelas dan mata kuliah dibawa, dan perubahan lembar disimpan sebelum berpindah. Di HP, panel inspektor dimulai terlipat; tekan Inspektor untuk membukanya.
 
@@ -106,7 +108,7 @@ Pengaturan latar dipusatkan di **Tampilan**, bersama tema dan warna. Pilih foto,
 
 Tekan pin lokasi di kiri nomor baris absensi untuk membuka jendela peta Google Maps. Pilih pertemuan untuk melihat titik yang dicatat saat pengiriman beserta waktu dan akurasi. **Layar penuh** memperbesar jendela; tekan **Ukuran normal** untuk kembali. Peta membutuhkan internet; saat offline koordinat masih tersedia. Jika Google Maps tidak dimuat pada jaringan/perangkat, gunakan **Muat ulang peta** atau **Buka Google Maps**. Ini lokasi saat mengirim absensi, bukan pelacakan langsung. Menu, pin dan jendela peta tidak masuk cetak/PDF, Word atau Excel.
 
-## Perubahan 1.1.3
+## Perubahan 1.2.0
 
 Data, profil, persetujuan, dokumen, dan antrean perubahan dipisahkan per akun dosen. Catatan lama yang sebelumnya dibagikan tetap dimiliki akun administrator awal. Reset permanen hanya menghapus data mahasiswa milik akun yang sedang masuk, mencakup seluruh prodi, semester, kelas, absensi, nilai, dan akun mahasiswa terkait. Konfirmasi ganda wajib diberikan.
 

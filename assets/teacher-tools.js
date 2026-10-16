@@ -39,8 +39,8 @@
     const state = await WA.get();
     if (session.teacher_id !== state.profile.device) throw Error('Tampilkan QR dari perangkat pembuat sesi.');
     sessionQR = session;
-    const qr = qrcode(0, 'M');
-    sessionCode=WA.qr('session', state.profile.certificate, 'challenge', session.challenge);qr.addData(sessionCode); qr.make();
+    sessionCode=WA.qr('session', state.profile.certificate, 'challenge', session.challenge);
+    const qr = qrcode(0, sessionCode.length > 1800 ? 'L' : 'M');qr.addData(sessionCode); qr.make();
     $('#codeTitle').textContent = session.matkul + ' · pertemuan ' + session.slot;
     $('#codeImage').innerHTML = qr.createSvgTag({cellSize:4, margin:6, scalable:true});
     $('#codeDialog').showModal(); clock();

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__.'/app_core.php';
+require_once __DIR__.'/app_evidence.php';
 
 function wa_session_operation(array $device,array $op): array {
     wa_teacher($device);
@@ -71,11 +72,16 @@ function wa_accept_reply(array $device,array $op): array {
     if($mark==='.'&&($at<(int)$session['starts']||$at>(int)$session['deadline']))throw new InvalidArgumentException('Absen hadir berada di luar batas waktu yang ditetapkan dosen.');
     $reason=wa_text($reply['reason']??'',500);
     if($mark!=='.'&&$reason==='')throw new InvalidArgumentException('Isi alasan sakit atau izin.');
+    $attachments=wa_attachment_refs($reply['attachments']??null);
+    if($mark!=='.'&&!$attachments&&!empty($challenge['evidence']))throw new InvalidArgumentException('Lampirkan foto bukti sakit atau izin dari aplikasi versi terbaru.');
+    wa_check_evidence_binding($attachments,$session,$student['nim']);
+    $verification=wa_face_report($reply['verification']??null,(int)($reply['at']??0));
     $location=wa_location($reply['location']??null);
     if($location && abs((int)($reply['at']??0)-$location['at'])>300000)throw new InvalidArgumentException('Lokasi sudah terlalu lama. Ambil lokasi kembali.');
     $old=wa_one('SELECT * FROM wa_marks WHERE scope=? AND slot=? AND nim=? FOR UPDATE',[$session['scope'],$session['slot'],$student['nim']]);
     if($old && $old['mark']!=='' && $old['source']!=='automatic')return ['status'=>'success','duplicate'=>true,'mark'=>$old['mark'],'message'=>'Absen sudah tercatat; perubahan berikutnya dilakukan dosen.'];
     wa_query('INSERT INTO wa_marks(scope,slot,nim,mark,session_id,reason,location,source,review_status,revision,recorded_at,owner_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE mark=VALUES(mark),reason=VALUES(reason),location=VALUES(location),source=VALUES(source),review_status=VALUES(review_status),revision=revision+1,recorded_at=VALUES(recorded_at)',[$session['scope'],$session['slot'],$student['nim'],$mark,$session['id'],$reason,$location?wa_json($location):null,$receipt?'qr-offline':'qr-online',$mark==='.'?'final':'pending',1,$at,$session['owner_id']]);
+    wa_query('UPDATE wa_marks SET attachments=?,verification=? WHERE scope=? AND slot=? AND nim=?',[wa_json($attachments),$verification?wa_json($verification):null,$session['scope'],$session['slot'],$student['nim']]);
     wa_audit($device,$receipt?'scan-reply':'submit-attendance',$session['id'].':'.$student['nim'],['mark'=>$mark,'locationIncluded'=>$location!==null,'receivedAt'=>$at]);
     return ['status'=>'success','mark'=>$mark];
 }
@@ -120,6 +126,7 @@ function wa_delete_account(array $device,array $input): array {
             wa_query('DELETE FROM wa_push_sent WHERE device_id=?',[$row['id']]);
             wa_query('UPDATE wa_devices SET revoked=1 WHERE id=?',[$row['id']]);
         }
+        if($purge)wa_query('DELETE FROM wa_evidence WHERE owner_id=? AND ctx_key=? AND nim=?',[$account['owner_id'],$account['ctx_key'],$account['nim']]);
         wa_query('DELETE FROM wa_accounts WHERE id=?',[$id]);
         wa_audit($device,$purge?'purge-student':'delete-account',$id,['classDataRemoved'=>$purge]);
         wa_db()->commit();
@@ -175,6 +182,7 @@ function wa_operation(array $device,array $op): array {
         if(!array_filter(wa_roster($ctx),static function($s)use($nim){return strtoupper($s['nim'])===$nim;}))throw new InvalidArgumentException('NIM tidak ada dalam kelas.');
         $old=wa_one('SELECT * FROM wa_marks WHERE scope=? AND slot=? AND nim=? FOR UPDATE',[$scope,$slot,$nim]);
         if(isset($op['baseRevision'])&&(int)$op['baseRevision']!==(int)($old['revision']??0))return ['status'=>'conflict','revision'=>(int)($old['revision']??0),'remote'=>$old,'message'=>'Absensi telah berubah pada perangkat lain.'];
+        if($type==='review'&&($op['decision']??'')==='accepted'&&!empty(json_decode($old['attachments']??'[]',true))&&!wa_evidence_ready($old))throw new InvalidArgumentException('Foto bukti belum tersinkron. Tunggu mahasiswa online sebelum menyetujui.');
         $reason=wa_text($op['reason']??($old['reason']??''),500); $review=$type==='review'?wa_text($op['decision']??$op['review_status']??'reviewed',20):'final';
         if(!in_array($review,['reviewed','accepted','rejected','final'],true))throw new InvalidArgumentException('Tinjauan tidak valid.');
         wa_query('INSERT INTO wa_marks(scope,slot,nim,mark,reason,location,source,review_status,revision,recorded_at,owner_id) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE mark=VALUES(mark),reason=VALUES(reason),source=VALUES(source),review_status=VALUES(review_status),revision=revision+1,recorded_at=VALUES(recorded_at)',[$scope,$slot,$nim,$mark,$reason,$old['location']??null,'manual',$review,1,wa_now(),$device['account_id']]);

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__.'/auth_guard.php';
 require_once __DIR__.'/app_attendance.php';
+require_once __DIR__.'/app_evidence.php';
 require_once __DIR__.'/app_push.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -50,6 +51,8 @@ try {
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
+    if($action==='upload-evidence')wa_response(wa_evidence_upload($device,$input));
+    if($action==='read-evidence')wa_response(wa_evidence_read($device,wa_text($input['id']??'',36)));
     if($action==='delete-account')wa_response(wa_delete_account($device,$input));
     if($action==='reset-all-student-data')wa_response(wa_reset_all_student_data($device,wa_text($input['confirmation']??'',80)));
     if($action==='push-unsubscribe'){wa_query('DELETE FROM wa_push_devices WHERE device_id=?',[$device['id']]);wa_response(['status'=>'success']);}

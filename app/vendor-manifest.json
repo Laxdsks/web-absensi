@@ -850,6 +850,41 @@
     "bytes": 5199098
   },
   {
+    "path": "app/vendor/face/face-api.js",
+    "sha256": "0160f7af3a8c78cece45c7ecc765383bad74becfd438bb787cdd627b2d6f2cf6",
+    "bytes": 1333943
+  },
+  {
+    "path": "app/vendor/face/face_landmark_68_tiny_model-weights_manifest.json",
+    "sha256": "9a1a5dd19fd814fd5095c3cb58f8e0d3193b8c5b9a6715b30a69d559aea31ad4",
+    "bytes": 4806
+  },
+  {
+    "path": "app/vendor/face/face_landmark_68_tiny_model.bin",
+    "sha256": "b98e9f2f7da76f8a6dda9741a36ed485b224b889d552de2b2c1bb16217f67bfc",
+    "bytes": 77224
+  },
+  {
+    "path": "app/vendor/face/face_recognition_model-weights_manifest.json",
+    "sha256": "cbaffa501b0b9275a12b63357a6843e7e30c054e1c9151e1a5f879b26e32986b",
+    "bytes": 19615
+  },
+  {
+    "path": "app/vendor/face/face_recognition_model.bin",
+    "sha256": "b413e420d6840b2775fba32008db6f3cddb07d485967fb42cfcf379c16a8c589",
+    "bytes": 6444032
+  },
+  {
+    "path": "app/vendor/face/tiny_face_detector_model-weights_manifest.json",
+    "sha256": "5d1af4849ac48d5b985f4a9b16010c512353ddd6fcc63d50fd0bc9e9e64296e5",
+    "bytes": 3219
+  },
+  {
+    "path": "app/vendor/face/tiny_face_detector_model.bin",
+    "sha256": "b7503ce7df31039b1c43316a9b865cab6a70dd748cc602d3fa28b551503c3871",
+    "bytes": 193321
+  },
+  {
     "path": "app/vendor/fontawesome/css/all.min.css",
     "sha256": "1edb1725a9ea8ca4dcf2f5508cee183218aa1685e47c1b23056717f754f58ebf",
     "bytes": 102025
@@ -1075,6 +1110,41 @@
     "bytes": 4268
   },
   {
+    "path": "app/vendor/leaflet/images/layers-2x.png",
+    "sha256": "066daca850d8ffbef007af00b06eac0015728dee279c51f3cb6c716df7c42edf",
+    "bytes": 1259
+  },
+  {
+    "path": "app/vendor/leaflet/images/layers.png",
+    "sha256": "1dbbe9d028e292f36fcba8f8b3a28d5e8932754fc2215b9ac69e4cdecf5107c6",
+    "bytes": 696
+  },
+  {
+    "path": "app/vendor/leaflet/images/marker-icon-2x.png",
+    "sha256": "00179c4c1ee830d3a108412ae0d294f55776cfeb085c60129a39aa6fc4ae2528",
+    "bytes": 2464
+  },
+  {
+    "path": "app/vendor/leaflet/images/marker-icon.png",
+    "sha256": "574c3a5cca85f4114085b6841596d62f00d7c892c7b03f28cbfa301deb1dc437",
+    "bytes": 1466
+  },
+  {
+    "path": "app/vendor/leaflet/images/marker-shadow.png",
+    "sha256": "264f5c640339f042dd729062cfc04c17f8ea0f29882b538e3848ed8f10edb4da",
+    "bytes": 618
+  },
+  {
+    "path": "app/vendor/leaflet/leaflet.css",
+    "sha256": "a7837102824184820dfa198d1ebcd109ff6d0ff9a2672a074b9a1b4d147d04c6",
+    "bytes": 14806
+  },
+  {
+    "path": "app/vendor/leaflet/leaflet.js",
+    "sha256": "db49d009c841f5ca34a888c96511ae936fd9f5533e90d8b2c4d57596f4e5641a",
+    "bytes": 147552
+  },
+  {
     "path": "app/vendor/licenses/@e965-xlsx-LICENSE",
     "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64",
     "bytes": 11355
@@ -1090,9 +1160,19 @@
     "bytes": 7427
   },
   {
+    "path": "app/vendor/licenses/face-api-LICENSE",
+    "sha256": "9a3442b79acaf4fbc7c2e07b7e2d8f84af9bb3871bf08a69d80304ab00640e9a",
+    "bytes": 1067
+  },
+  {
     "path": "app/vendor/licenses/jsqr-LICENSE",
     "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
     "bytes": 11358
+  },
+  {
+    "path": "app/vendor/licenses/leaflet-LICENSE",
+    "sha256": "53e8dc25862014e4324741ca18fbe3611e11d42ef69f59f86ea8c5389647d4cb",
+    "bytes": 1395
   },
   {
     "path": "app/vendor/licenses/mammoth-LICENSE",

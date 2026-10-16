@@ -1,6 +1,12 @@
 const fs=require('node:fs'),path=require('node:path'),zlib=require('node:zlib'),crypto=require('node:crypto');
 const root=path.join(__dirname,'..'),dest=path.join(root,'app/vendor');fs.rmSync(dest,{recursive:true,force:true});fs.mkdirSync(dest,{recursive:true});
 function copy(pkg,file,name=path.basename(file)){const src=path.join(root,'node_modules',pkg,file),out=path.join(dest,name);fs.mkdirSync(path.dirname(out),{recursive:true});fs.copyFileSync(src,out);}
+for(const file of ['leaflet.js','leaflet.css'])copy('leaflet','dist/'+file,'leaflet/'+file);
+for(const file of fs.readdirSync(path.join(root,'node_modules/leaflet/dist/images')))copy('leaflet','dist/images/'+file,'leaflet/images/'+file);
+copy('leaflet','LICENSE','licenses/leaflet-LICENSE');
+copy('@vladmandic/face-api','dist/face-api.js','face/face-api.js');
+for(const name of ['tiny_face_detector_model','face_landmark_68_tiny_model','face_recognition_model'])for(const suffix of ['.bin','-weights_manifest.json'])copy('@vladmandic/face-api','model/'+name+suffix,'face/'+name+suffix);
+copy('@vladmandic/face-api','LICENSE','licenses/face-api-LICENSE');
 copy('qrcode-generator','qrcode.js','qr.js');copy('jsqr','dist/jsQR.js','scan.js');
 copy('tesseract.js','dist/tesseract.min.js');copy('tesseract.js','dist/worker.min.js');
 for(const f of fs.readdirSync(path.join(root,'node_modules/tesseract.js-core')))if(/\.wasm(?:\.js)?$/.test(f))copy('tesseract.js-core',f);
