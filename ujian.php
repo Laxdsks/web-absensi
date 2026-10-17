@@ -275,7 +275,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.0.js" defer></script>
+    <script src="app/runtime-teacher-1.2.1.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="assets/sheet-fit.css"><script src="assets/sheet-fit.js" defer></script>
 <link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/account-tools.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script>
@@ -645,7 +645,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             table.querySelectorAll('th,td').forEach(cell=>{
                 cell.style.border='1px solid #111';cell.style.padding='3px 6px';cell.style.verticalAlign='middle';cell.style.color='#111';
                 const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?Math.min(fitted,selector==='#examTableBlock table'?10.66:10)+'px':selector==='#examTableBlock table'?'8pt':'7.5pt';cell.style.whiteSpace='nowrap';cell.style.overflowWrap='normal';
-                if(cell.tagName==='TH'){cell.style.textAlign='center';cell.style.fontWeight='bold';cell.style.backgroundColor='#fff0a6';}
+                if(cell.tagName==='TH'){cell.style.textAlign='center';cell.style.fontWeight='bold';cell.style.backgroundColor='#ffffff';}
                 else if(cell.classList.contains('name'))cell.style.textAlign='left';
                 else cell.style.textAlign='center';
             });

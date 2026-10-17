@@ -1,10 +1,10 @@
-# Aplikasi Absensi 1.2.0
+# Aplikasi Absensi 1.2.1
 
-Panduan ini menjelaskan tiga paket **1.2.0**: **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.2.0.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Lihat [rilis aplikasi terbaru](https://github.com/Laxdsks/web-absensi/releases/latest) untuk versi dan paket yang sudah diterbitkan. Android 2 memakai identitas aplikasi dan kunci yang tetap sejak versi 1.0.2 sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
+Panduan ini menjelaskan tiga paket **1.2.1**: **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.2.1.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Lihat [rilis aplikasi terbaru](https://github.com/Laxdsks/web-absensi/releases/latest) untuk versi dan paket yang sudah diterbitkan. Android 2 memakai identitas aplikasi dan kunci yang tetap sejak versi 1.0.2 sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.
 
 APK merupakan paket pemasangan langsung, bukan publikasi Play Store; EXE portable dapat dijalankan tanpa instalasi. Android 8 ke atas dengan Android System WebView yang diperbarui; Windows 10/11 64-bit. Kamera atau printer hanya diperlukan untuk fitur terkait. Sistem dapat meminta izin memasang APK dari sumber ini atau menampilkan pemberitahuan penerbit belum dikenal untuk EXE yang belum ditandatangani penerbit.
 
-Lihat [fitur dan alur Presen 1.2.0](PEMBARUAN-1.2.0.md): foto bukti sakit/izin, wajah lokal dengan persetujuan, Monitoring dan rute/360° di dalam jendela.
+Lihat [pembaruan tampilan 1.2.1](PEMBARUAN-1.2.1.md) serta [fitur dan alur Presen 1.2.0](PEMBARUAN-1.2.0.md): foto bukti sakit/izin, wajah lokal dengan persetujuan, Monitoring dan rute/360° di dalam jendela.
 
 ## Awal penggunaan
 

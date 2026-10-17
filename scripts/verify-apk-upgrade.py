@@ -1,5 +1,6 @@
 """Check Android 2 signing, assets and isolation from the original APKs."""
 import hashlib
+import json
 from pathlib import Path
 import re
 import subprocess
@@ -8,6 +9,7 @@ import zipfile
 
 root = Path(__file__).resolve().parents[1]
 signer = Path(sys.argv[1])
+version = json.loads((root / 'package.json').read_text())['version']
 
 def details(path):
     verified = subprocess.check_output([str(signer), 'verify', '--print-certs', str(path)], text=True)
@@ -33,14 +35,14 @@ for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
         if new_cert != [expected_cert]:
             raise RuntimeError('APK was not signed by the reusable Android 2 identity: ' + name)
     expected_package = 'id.webabsensi.parallel2026.' + ('dosen' if name.startswith('Absensi-Dosen') else 'mahasiswa')
-    if new_package[0] != expected_package or new_package[2] != '1.2.0':
+    if new_package[0] != expected_package or new_package[2] != version:
         raise RuntimeError('APK version was not advanced: ' + name)
     previous_v2 = root / 'previous-v2-installers' / name
     if not contents_only and previous_v2.exists():
         previous_cert, previous_package = details(previous_v2)
         if previous_cert != new_cert or previous_package[0] != new_package[0] or int(previous_package[1]) >= int(new_package[1]):
-            raise RuntimeError('APK cannot safely update Android 2 version 1.1.0: ' + name)
-    paths = ['app/evidence.js','app/experience.js','app/experience.css','app/face-check.js','app/vendor/face/face-api.js','app/vendor/face/face_recognition_model.bin','app/core-1.2.0.js', 'app/index.html', 'app/icon-settings.js','app/portal.css','app/portal.js','app/appearance.js','app/portal-background.svg','app/student-tools.js','app/app.js', 'app/core.js', 'app/qr-files.js','app/guide.js','app/guide.css','app/guide-images/student-login.png','app/guide-images/student-qr.png', 'app/app.css', 'app-sw.js', 'app/vendor/qr.js', 'app/vendor/scan.js']
+            raise RuntimeError('APK cannot safely update the previous Android 2 version: ' + name)
+    paths = ['app/evidence.js','app/experience.js','app/experience.css','app/face-check.js','app/vendor/face/face-api.js','app/vendor/face/face_recognition_model.bin',f'app/core-{version}.js', 'app/index.html', 'app/icon-settings.js','app/portal.css','app/portal.js','app/appearance.js','app/portal-background.svg','app/student-tools.js','app/app.js', 'app/core.js', 'app/qr-files.js','app/guide.js','app/guide.css','app/guide-images/student-login.png','app/guide-images/student-qr.png', 'app/app.css', 'app-sw.js', 'app/vendor/qr.js', 'app/vendor/scan.js']
     if name.startswith('Absensi-Dosen'):
         paths += ['app/vendor/leaflet/leaflet.js','app/vendor/leaflet/leaflet.css','app/monitoring.js','app/inbox.js','app/grade-assistant.js','app/workspace.js','app/locations.js','app/account-tools.js','app/templates/data_siswa.html', 'app/vendor/tesseract.min.js', 'app/vendor/worker.min.js', 'app/vendor/eng.traineddata', 'app/templates/absen.html', 'app/templates/ujian.html', 'app/templates/music_player.html', 'assets/app-audio.js', 'assets/sheet-fit.js','assets/sheet-fit.css','assets/offline-bridge.js', 'assets/teacher-tools.js', 'assets/teacher-tools.css', 'app/templates/index.html']
     with zipfile.ZipFile(current) as apk:
@@ -52,4 +54,4 @@ for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
     if contents_only:
         print(name + ': Android 2 identity, build and offline assets verified only; release signing NOT checked.')
     else:
-        print(name + ': reusable Android 2 certificate verified; package differs from the original APK; version 1.2.0 and offline assets verified.')
+        print(name + ': reusable Android 2 certificate verified; package differs from the original APK; version ' + version + ' and offline assets verified.')

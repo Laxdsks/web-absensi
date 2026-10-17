@@ -285,8 +285,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         #tabelRekapNilai td { padding: 5px 4px !important; }
         #tabelRekapNilai .activity-input { width: 100%; max-width: 88px; min-height: 38px; padding: 4px; text-align: center; }
         #tabelRekapNilai .name-value { text-align: left; }
-        .rekap-header-blue { background: #fff0a6 !important; }
-        .rekap-header-yellow { background: #fff0a6 !important; }
+        .rekap-header-blue { background: #ffffff !important; }
+        .rekap-header-yellow { background: #ffffff !important; }
         .rekap-activity-help { margin: 0 0 8px; color: #38bdf8; font-size: 12px; line-height: 1.5; }
         
         #tabelRekapNilai {
@@ -493,7 +493,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.0.js" defer></script>
+    <script src="app/runtime-teacher-1.2.1.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
@@ -2015,7 +2015,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?Math.min(10,fitted)+'px':'7.5pt';
                 cell.style.lineHeight = '9pt';
                 cell.style.color = '#111';
-                if (cell.tagName === 'TH') { cell.style.backgroundColor = '#fff0a6'; cell.style.fontWeight = 'bold'; }
+                if (cell.tagName === 'TH') { cell.style.backgroundColor = '#ffffff'; cell.style.fontWeight = 'bold'; }
                 cell.style.setProperty('mso-line-height-rule','exactly');
                 const paragraph = document.createElement('p');
                 paragraph.style.cssText = 'margin:0;mso-margin-top-alt:0pt;mso-margin-bottom-alt:0pt;padding:0;line-height:9pt;mso-line-height-rule:exactly;';
@@ -2053,7 +2053,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 
         function buatDokumenWordShell(page, title, bodyContent) {
             const orientation = page.orientation === 'landscape' ? 'landscape' : 'portrait';
-            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapeWordHtml(title)}</title><style>@page{size:${page.width} ${page.height};margin:${page.marginSize}}@page WordSection1{size:${page.width} ${page.height};margin:${page.marginSize};mso-page-orientation:${orientation};mso-header-margin:8mm;mso-footer-margin:8mm}div.WordSection1{page:WordSection1}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;font-size:8pt}p{mso-line-height-rule:exactly}table{width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt}th,td{border:1px solid #111;padding:4px 3px;text-align:center;vertical-align:middle;white-space:nowrap;overflow-wrap:normal;font-size:8pt;color:#111;background:#fff}th{font-weight:bold;background:#fff0a6}th.rekap-header-blue{background:#fff0a6}th.rekap-header-yellow{background:#fff0a6}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}</style></head><body><div class="WordSection1">${bodyContent}</div></body></html>`;
+            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapeWordHtml(title)}</title><style>@page{size:${page.width} ${page.height};margin:${page.marginSize}}@page WordSection1{size:${page.width} ${page.height};margin:${page.marginSize};mso-page-orientation:${orientation};mso-header-margin:8mm;mso-footer-margin:8mm}div.WordSection1{page:WordSection1}*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;font-size:8pt}p{mso-line-height-rule:exactly}table{width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt}th,td{border:1px solid #111;padding:4px 3px;text-align:center;vertical-align:middle;white-space:nowrap;overflow-wrap:normal;font-size:8pt;color:#111;background:#fff}th{font-weight:bold;background:#ffffff}th.rekap-header-blue{background:#ffffff}th.rekap-header-yellow{background:#ffffff}thead{display:table-header-group}tr{page-break-inside:avoid;break-inside:avoid}</style></head><body><div class="WordSection1">${bodyContent}</div></body></html>`;
             const width=parseFloat(page.width)*96-2*parseFloat(page.marginSize)*96/25.4;
             return window.WAFitExportHTML?.(markup,width)||markup;
         }
@@ -2075,7 +2075,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             table.setAttribute('width', String(width));
             table.style.width = width+'px'; table.style.tableLayout = 'fixed'; table.style.borderCollapse = 'collapse';
             table.querySelectorAll('colgroup col').forEach(col => { col.setAttribute('width', String(Math.round(parseFloat(col.style.width || '0') * (col.style.width.endsWith('%')?width/100:1))) + 'px'); });
-            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif;background:#fff;color:#111}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:nowrap;word-wrap:normal;font-size:9pt;color:#111;background:#fff;mso-number-format:"\@"}th{font-weight:bold;background:#fff0a6}th.rekap-header-blue{background:#fff0a6}th.rekap-header-yellow{background:#fff0a6}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
+            const markup = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title}</title><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title}</x:Name><x:WorksheetOptions><x:DisplayGridlines>True</x:DisplayGridlines><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>body{font-family:Arial,sans-serif;background:#fff;color:#111}table{border-collapse:collapse;table-layout:fixed;mso-displayed-decimal-separator:".";mso-displayed-thousand-separator:","}th,td{border:1px solid #000;padding:5px;text-align:center;vertical-align:middle;white-space:nowrap;word-wrap:normal;font-size:9pt;color:#111;background:#fff;mso-number-format:"\@"}th{font-weight:bold;background:#ffffff}th.rekap-header-blue{background:#ffffff}th.rekap-header-yellow{background:#ffffff}tr{page-break-inside:avoid}</style></head><body>${table.outerHTML}</body></html>`;
             return window.WAFitExportHTML?.(markup,width)||markup;
         }
 
