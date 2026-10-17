@@ -134,6 +134,11 @@ for role, filename in roles:
     old_path = adb('shell', 'pm', 'path', old)
     old_hash = adb('shell', 'sha256sum', old_path.removeprefix('package:'))
     install(ROOT / 'previous-v2-installers' / filename)
+    previous_details = adb('shell', 'dumpsys', 'package', new)
+    previous_version = re.search(r'\bversionName=([^\s]+)', previous_details)
+    if not previous_version:
+        raise RuntimeError('Cannot read installed upgrade baseline version')
+    previous_version = previous_version.group(1)
     new_marker = '/data/user/0/' + new + '/files/update-test.txt'
     adb('shell', 'mkdir', '-p', str(Path(new_marker).parent))
     adb('shell', 'sh', '-c', "'printf new-app-data > " + new_marker + "'")
@@ -243,7 +248,7 @@ for role, filename in roles:
     report.append({'custom_icon_editor_and_launcher_tested': True, 'reminder_stop_action_tested': role == 'mahasiswa', 'role': role, 'old_package': old, 'new_package': new,
                    'coinstalled': True, 'old_private_data_retained': True,
                    'same_key_update_retained_data': True, 'login_ui_rendered': True,
-                   'upgrade_from_version': '1.0.8', 'teacher_homepage_original': role == 'dosen',
+                   'upgrade_from_version': previous_version, 'teacher_homepage_original': role == 'dosen',
                    'student_navigation_only': role == 'mahasiswa',
                    'apk_sha256': hashlib.sha256((ROOT / 'installers' / filename).read_bytes()).hexdigest()})
     print(role + ': old/new apps installed together; original data retained; update retained new data; login UI rendered.')
