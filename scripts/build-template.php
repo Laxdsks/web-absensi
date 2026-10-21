@@ -15,6 +15,6 @@ if($page==='index'){
     $html=preg_replace('/isLoggedIn: (?:true|false)/','isLoggedIn: false',$html);
     $html=str_replace(['"isLoggedIn":true','"accountId":"admin_01"','"isAdmin":true'],['"isLoggedIn":false','"accountId":null','"isAdmin":false'],$html);
     $html=preg_replace('/"csrf":"[a-f0-9]{64}"/','"csrf":null',$html);
-    $html=preg_replace('/<section class="p-admin-settings">.*?<\/section>/s','',$html);
+    $html=preg_replace('/^[ \t]*<section class="p-admin-settings">.*?<\/section>/ms','',$html);
 }
 file_put_contents($root.'/app/templates/'.$page.'.html',$html);
