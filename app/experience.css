@@ -216,3 +216,69 @@ dialog.face-dialog[open] { box-shadow:0 1px 0 var(--p-depth-edge) inset,0 24px 7
   .portal-sheet .paper-sheet,.portal-sheet #examSheet,
   .p-dialog { box-shadow:none!important; }
 }
+
+/* Lecturer workspaces: aligned navigation, clear task order and calm surfaces. */
+.portal-data .container { max-width:1240px; }
+.portal-data .card-header-flex { gap:18px; border-radius:18px; }
+.portal-data .header-title { flex:1; min-width:0; text-align:left; }
+.portal-data .header-title h2 { margin:0 0 7px; font-size:clamp(20px,2vw,25px); line-height:1.35; letter-spacing:-.035em; }
+.portal-data .header-title p { margin:0; line-height:1.7; font-size:12px; color:var(--p-muted); }
+.portal-data .header-actions { justify-content:flex-end; }
+.portal-data .p-worknav { margin:0; padding:10px 0 0; border-top:1px solid var(--p-line); border-bottom:0; }
+.portal-data .content-card { border-radius:18px; }
+.portal-data .search-filter-box { margin-bottom:20px; }
+.portal-data .search-input-wrapper { width:100%; }
+.portal-data #searchInput { min-height:46px; font-size:14px; border-radius:11px; }
+.portal-data #photoImportCard { border-radius:13px; background:var(--input-bg,var(--p-surface)); box-shadow:none; }
+.portal-data #photoImportCard>h3 { font-size:15px!important; line-height:1.5; }
+.teacher-import-steps { display:flex; flex-wrap:wrap; gap:10px 22px; list-style:none; padding:0; margin:13px 0 16px; }
+.teacher-import-steps li { display:flex; align-items:center; gap:7px; font:500 11px/1.5 system-ui,sans-serif; color:var(--p-muted); }
+.teacher-import-steps span { display:grid; place-items:center; width:21px; height:21px; border:1px solid var(--p-line); border-radius:50%; color:var(--p-text); }
+.teacher-import-help { margin:0 0 14px; font-size:12px; color:var(--p-muted); }
+.teacher-import-help summary,.teacher-data-management summary { cursor:pointer; line-height:1.6; padding:7px 0; font-weight:600; }
+.teacher-import-help p { margin:9px 0!important; max-width:80ch; }
+.portal-data input[type=file] { font:12px/1.5 system-ui,sans-serif; color:var(--p-muted); }
+.portal-data input[type=file]::file-selector-button { padding:10px 12px; margin-right:10px; border:1px solid var(--p-line); border-radius:8px; background:var(--p-surface); color:var(--p-text); cursor:pointer; }
+.teacher-roster-count { margin:20px 0 12px; color:var(--p-muted); font:600 12px/1.5 system-ui,sans-serif; }
+.portal-data #tabelSiswa { border-collapse:separate; border-spacing:0; }
+.portal-data #tabelSiswa th { text-transform:none; font-size:11px; letter-spacing:.025em; padding:13px 16px; }
+.portal-data #tabelSiswa td { padding:14px 16px; vertical-align:middle; line-height:1.5; }
+.portal-data #tabelSiswa tbody tr:hover { background:var(--input-bg); }
+.portal-data #tabelSiswa td:last-child { white-space:nowrap; }
+.portal-data #tabelSiswa .btn-custom { padding:8px 12px; min-height:38px; background:transparent; color:var(--p-text); border:1px solid var(--p-line); box-shadow:none; margin:2px 3px; }
+.portal-data #tabelSiswa .btn-danger { color:var(--p-text); border-style:dashed; }
+.portal-data #tabelSiswa .btn-danger:hover { border-color:#d05c69; }
+.teacher-data-management { margin-top:24px; padding-top:14px; border-top:1px solid var(--p-line); color:var(--p-muted); font-size:12px; }
+.teacher-data-management p { max-width:75ch; line-height:1.7; }
+.portal-data .teacher-data-management #deleteAllStudentData { background:transparent; border:1px solid #bd6674; color:var(--p-text); min-height:42px; padding:10px 14px; white-space:normal; line-height:1.5; }
+.portal-data .teacher-data-management #deleteAllStudentData:hover { background:#ad3143; color:#fff; }
+.p-ribbon .sheet-tools { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.45fr); }
+.portal-sheet .inspector-panel { padding:16px; border-radius:15px; }
+.portal-sheet .inspector-panel label { font-size:11px!important; line-height:1.6; }
+.portal-sheet .inspector-panel button { min-height:38px; }
+.portal-sheet .inspector-panel input:not([type=range]),.portal-sheet .inspector-panel select { font-size:12px; min-height:38px; }
+.portal-sheet #topToolbar.p-ribbon .sheet-group-label { font-size:10px; letter-spacing:.02em; }
+body:not(.portal-student) .p-dialog { font:14px/1.6 system-ui,sans-serif; }
+body:not(.portal-student) .p-dialog>h2 { font-size:22px; letter-spacing:-.025em; line-height:1.35; margin-top:0; }
+body:not(.portal-student) .p-dialog input,body:not(.portal-student) .p-dialog select,body:not(.portal-student) .p-dialog textarea { border-radius:9px; min-height:42px; }
+@media(max-width:1000px) { .p-ribbon .sheet-tools { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } }
+@media(max-width:768px) {
+  .portal-data .header-title { flex-basis:100%; }
+  .portal-data .header-actions { justify-content:flex-start; }
+  .portal-data .header-actions .btn-custom { flex:0 1 auto; }
+  .portal-data .p-worknav { padding-top:10px; padding-bottom:5px; }
+  .portal-data .content-card,.portal-data .card-header-flex { padding:18px; border-radius:15px; }
+  .portal-data #tabelSiswa th,.portal-data #tabelSiswa td { padding:12px; }
+  .teacher-import-steps { gap:7px 12px; }
+  .teacher-import-steps li { font-size:10px; }
+  .p-ribbon .sheet-tools { grid-template-columns:minmax(0,1fr); }
+}
+@media print { .teacher-data-management,.teacher-import-steps,.teacher-roster-count { display:none!important; } }
+/* The ribbon must remain fixed; decorative surface rules must not move it into document flow. */
+html[data-theme] .portal-sheet #topToolbar.p-ribbon { position:fixed; top:8px; }
+@media(max-width:768px) {
+  html[data-theme] .portal-sheet #topToolbar.p-ribbon { top:4px; }
+  .portal-data .header-actions { flex-wrap:nowrap; }
+  .portal-data .header-actions button:not(.portal-music-control) { width:auto; flex:1; }
+  .portal-data .header-actions .portal-music-control { flex:none; width:42px!important; height:42px!important; }
+}

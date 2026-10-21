@@ -402,7 +402,7 @@ if ($stmt) {
             <div class="search-filter-box">
                 <div class="search-input-wrapper">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInput" placeholder="Cari nama mahasiswa secara real-time..." onkeyup="filterTabelSiswa()">
+                    <input type="text" id="searchInput" placeholder="Cari nama atau NIM mahasiswa…" aria-label="Cari nama atau NIM mahasiswa" onkeyup="filterTabelSiswa()">
                 </div>
                 <button type="button" class="btn-custom btn-danger" id="deleteAllStudentData" title="Reset seluruh data mahasiswa pada semua prodi, semester, dan kelas"><i class="fa-solid fa-trash-can"></i> Reset Semua Data Mahasiswa Akun Ini</button>
             </div>
@@ -563,21 +563,15 @@ if ($stmt) {
 
         // Fitur Pencarian Nama Mahasiswa secara Real-Time
         function filterTabelSiswa() {
-            const input = document.getElementById('searchInput');
-            const filter = input.value.toLowerCase();
-            const table = document.getElementById('tabelSiswa');
-            const tr = table.getElementsByTagName('tr');
-            for (let i = 1; i < tr.length; i++) {
-                const tdNama = tr[i].getElementsByTagName('td')[3];
-                if (tdNama) {
-                    const txtValue = tdNama.textContent || tdNama.innerText;
-                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                        tr[i].style.display = '';
-                    } else {
-                        tr[i].style.display = 'none';
-                    }
-                }
+            const filter = document.getElementById('searchInput').value.trim().toLocaleLowerCase('id-ID');
+            const rows = Array.from(document.querySelectorAll('#tabelSiswa tbody tr')).filter(row=>row.cells.length>=5);
+            let visible=0;
+            for(const row of rows){
+                const value=[row.cells[1].textContent,row.cells[2].textContent].join(' ').toLocaleLowerCase('id-ID');
+                const matches=value.includes(filter);row.hidden=!matches;row.style.display=matches?'':'none';if(matches)visible++;
             }
+            const status=document.getElementById('teacherRosterCount');
+            if(status)status.textContent=filter?`Menampilkan ${visible} dari ${rows.length} mahasiswa`:`${rows.length} mahasiswa di kelas ini`;
         }
 
         const ocrPhoto = {file:null, image:null, source:null, crop:null, turn:0, skew:0, loading:null, ticket:0};

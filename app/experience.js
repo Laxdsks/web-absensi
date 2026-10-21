@@ -27,6 +27,18 @@ function structureToolbar(){
  const music=()=>{const button=document.getElementById('absensiMusicLauncher');if(button)exports.append(button);};music();document.addEventListener('DOMContentLoaded',music,{once:true});
 }
 structureToolbar();
+function structureRoster(){
+ const table=document.getElementById('tabelSiswa');if(!table)return;
+ const parent=table.closest('.content-card'),search=document.getElementById('searchInput');
+ const counter=document.createElement('p');counter.id='teacherRosterCount';counter.className='teacher-roster-count';counter.setAttribute('role','status');table.closest('.table-responsive').before(counter);
+ const reset=document.getElementById('deleteAllStudentData');if(reset){const zone=document.createElement('details');zone.className='teacher-data-management';zone.innerHTML='<summary>Pengelolaan data permanen</summary><p>Reset menghapus seluruh data mahasiswa, akun, absensi, dan nilai pada akun dosen ini di semua prodi, semester, dan kelas. Data dosen lain tetap terpisah.</p>';zone.append(reset);parent.append(zone);}
+ const card=document.getElementById('photoImportCard');if(card){
+  const intro=card.querySelector(':scope > p');if(intro){const help=document.createElement('details');help.className='teacher-import-help';help.innerHTML='<summary>Cara impor & format berkas</summary>';intro.before(help);help.append(intro);}
+  const steps=document.createElement('ol');steps.className='teacher-import-steps';steps.setAttribute('aria-label','Tahapan impor');steps.innerHTML='<li><span>1</span>Pilih berkas</li><li><span>2</span>Periksa hasil</li><li><span>3</span>Simpan daftar</li>';card.querySelector('h3').after(steps);
+ }
+ const update=()=>window.filterTabelSiswa?.();new MutationObserver(update).observe(table.tBodies[0],{childList:true});search?.addEventListener('input',update);update();
+}
+structureRoster();
 // Animate each newly opened surface once. Closing and camera cleanup remain native.
 const motionPreference=matchMedia('(prefers-reduced-motion:reduce)'),boundSurfaces=new WeakSet(),activeMotion=new Set();
 function lift(el,tab=false){

@@ -17,7 +17,7 @@ test('plain paper, grouped responsive tools, restrained depth and student task o
   await p.goto(BASE+'absen.php?'+new URLSearchParams(ctx));await p.waitForFunction(()=>window.WASheetReady&&document.querySelector('#topToolbar.p-ribbon'));
   await t.test('primary actions and all export controls fit 360px through desktop without duplicate functions',async()=>{
    assert.equal(await p.locator('#openAttendanceQR').count(),1);assert.equal(await p.locator('.sheet-structure #tourBtnHapusKolom').count(),1);assert.equal(await p.locator('.sheet-primary #tourBtnRekap').count(),1);
-   for(const width of [360,393,768,1440]){await p.setViewportSize({width,height:900});await p.locator('#topToolbar').evaluate(el=>el.scrollTop=0);await pause(100);const toolbar=await p.locator('#topToolbar').boundingBox();assert(toolbar.x>=0&&toolbar.x+toolbar.width<=width+1);for(const selector of ['[onclick="exportWord()"]','[onclick="exportExcel()"]','#tourBtnPrint','.hide-toolbar-inline']){const el=p.locator('.sheet-exports '+selector);assert(await el.isVisible());const box=await el.boundingBox();assert(box.x>=toolbar.x&&box.x+box.width<=toolbar.x+toolbar.width+1,selector+' must fit');assert(box.y>=toolbar.y&&box.y+box.height<=toolbar.y+toolbar.height+1,selector+' must be visible before scrolling');}}
+   for(const width of [360,393,768,1440]){await p.setViewportSize({width,height:900});await p.locator('#topToolbar').evaluate(el=>el.scrollTop=0);await pause(100);const toolbar=await p.locator('#topToolbar').boundingBox();assert(toolbar.x>=0&&toolbar.x+toolbar.width<=width+1);assert(toolbar.y>=0&&toolbar.y<=9,'ribbon stays at the top instead of consuming its own reserved space');for(const selector of ['[onclick="exportWord()"]','[onclick="exportExcel()"]','#tourBtnPrint','.hide-toolbar-inline']){const el=p.locator('.sheet-exports '+selector);assert(await el.isVisible());const box=await el.boundingBox();assert(box.x>=toolbar.x&&box.x+box.width<=toolbar.x+toolbar.width+1,selector+' must fit');assert(box.y>=toolbar.y&&box.y+box.height<=toolbar.y+toolbar.height+1,selector+' must be visible before scrolling');}}
    await p.locator('.hide-toolbar-inline').click();await p.locator('#topToolbar.hidden-toolbar').waitFor({state:'attached'});await p.evaluate(()=>toggleToolbar());await p.locator('#topToolbar').evaluate(el=>el.scrollTop=0);
   });
   await t.test('dialog uses one short depth effect, stays visible and respects reduced motion',async()=>{
@@ -26,6 +26,14 @@ test('plain paper, grouped responsive tools, restrained depth and student task o
   });
   await t.test('page navigation gives feedback while flushing, then clears it on the new page',async()=>{
    await p.evaluate(()=>window.WAFlush=()=>new Promise(resolve=>window.releasePolishNavigation=resolve));await p.locator('.p-worknav [data-nav="data_siswa.php"]').click();await p.locator('#presenNavigationProgress').waitFor({state:'visible'});await p.evaluate(()=>releasePolishNavigation());await p.waitForURL('**/data_siswa.php?*');assert.equal(await p.locator('#presenNavigationProgress:visible').count(),0);
+  });
+  await t.test('roster finds name and NIM and separates permanent reset from daily actions',async()=>{
+   await p.locator('#teacherRosterCount').waitFor();assert.equal(await p.locator('#deleteAllStudentData').isVisible(),false);
+   assert.equal(await p.locator('.search-filter-box #deleteAllStudentData').count(),0);
+   for(const term of ['UI12101','tampilan uji']){await p.locator('#searchInput').fill(term);assert.equal(await p.locator('#tabelSiswa tbody tr:not([hidden])').count(),1);assert.match(await p.locator('#teacherRosterCount').innerText(),/Menampilkan 1 dari 1/);}
+   await p.locator('#searchInput').fill('TIDAK ADA HASIL');assert.equal(await p.locator('#tabelSiswa tbody tr:not([hidden])').count(),0);assert.match(await p.locator('#teacherRosterCount').innerText(),/Menampilkan 0 dari 1/);
+   await p.locator('#searchInput').fill('');await p.locator('.teacher-data-management summary').click();assert(await p.locator('#deleteAllStudentData').isVisible());
+   for(const width of [360,768,1440]){await p.setViewportSize({width,height:900});assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}
   });
   await t.test('student keeps scan first and account preferences together, including logout back to login',async()=>{
    const sc=await browser.newContext({viewport:{width:393,height:852},hasTouch:true}),sp=await sc.newPage();await sc.route('**/*',r=>new URL(r.request().url()).origin===new URL(BASE).origin?r.continue():r.abort());sp.on('pageerror',e=>errors.push(e.message));await sp.goto(BASE+'app/?role=student');await sp.locator('#login').waitFor();
