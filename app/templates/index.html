@@ -7,7 +7,7 @@
     <title id="appTitleText">Database &amp; Absensi Terpadu</title>
     
     <script>
-        window.SERVER_CONFIG = {"adminName":"M.Fadillah","adminRole":"Administrator Utama","adminAvatar":"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/user-tie.svg","appTitle":"Database \u0026 Absensi","accountId":null,"isAdmin":false,"homeLayout":"left","isLoggedIn":false,"csrf":"5289301b86798e5e85ceeca9247d8a2380cdbcdabdb23ce95609d343964c3f87"};
+        window.SERVER_CONFIG = {"adminName":"M.Fadillah","adminRole":"Administrator Utama","adminAvatar":"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/user-tie.svg","appTitle":"Database \u0026 Absensi","accountId":null,"isAdmin":false,"homeLayout":"left","isLoggedIn":false,"csrf":null};
 
         // Establish the saved theme before styles paint. The short intro stays
         // opaque across the one reload needed to initialise the offline bridge.
@@ -335,12 +335,7 @@
                 <label>Jabatan / Role Sistem</label>
                 <input type="text" id="editAdminRole" class="form-control" value="Administrator Utama" readonly>
             </div>
-                        <section class="p-admin-settings">
-                <h4>Tata letak beranda untuk semua akun</h4>
-                <label>Posisi formulir pilihan kelas<select id="adminHomeLayout" class="form-control"><option value="left">Kiri</option><option value="center">Tengah</option><option value="right">Kanan</option></select></label>
-                <button type="button" class="btn-submit" onclick="saveAdminHomeLayout()">Terapkan untuk semua akun</button>
-                <h4>Persetujuan akun baru</h4><div id="teacherPendingAccounts">Memuat pendaftaran…</div>
-            </section>
+                        
                         <div class="form-group">
                 <label>Ganti Wallpaper Background</label>
                 <input type="file" id="uploadBgFile" accept="image/*" onchange="handleBgUpload(event)" class="form-control" style="font-size: 11px;">
