@@ -1,9 +1,9 @@
-name: Build Android and Windows applications
+name: Build student Android application
 on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, feat/portal-location-accounts]
+    branches: [main]
     paths: ['native/**','app/**','assets/**','package.json','package-lock.json','app-sw.js','scripts/*android*.py','scripts/*windows*.cjs','scripts/verify-apk-upgrade.py','.github/workflows/build-apps.yml']
   workflow_dispatch:
 concurrency:
@@ -55,22 +55,21 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write('WA_ANDROID_KEYSTORE_PATH=' + str(path) + '\n')
           PY
-      - name: Build teacher and student Android apps
+      - name: Build student Android app
         working-directory: native/android
         env:
           WA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_V2_KEYSTORE_PASSWORD }}
           WA_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_V2_KEY_ALIAS }}
           WA_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_V2_KEY_PASSWORD }}
-        run: gradle assembleDosenDebug assembleMahasiswaDebug --no-daemon
+        run: gradle assembleMahasiswaDebug --no-daemon
       - name: Name APK installers
         run: |
           mkdir -p installers
-          cp native/android/app/build/outputs/apk/dosen/debug/*.apk installers/Absensi-Dosen-Android.apk
           cp native/android/app/build/outputs/apk/mahasiswa/debug/*.apk installers/Absen-Mahasiswa-Android.apk
       - name: Verify Android build and offline assets (not an upgrade check)
         run: |
           signers=("$ANDROID_HOME"/build-tools/*/apksigner)
-          python3 scripts/verify-apk-upgrade.py "${signers[-1]}" --contents-only
+          python3 scripts/verify-apk-upgrade.py "${signers[-1]}" --contents-only --student-only
       - name: Resolve signed release APKs
         id: release_apks
         env:
@@ -81,14 +80,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download aplikasi-1.0.0 --pattern '*.apk' --dir previous-installers
-          gh release download aplikasi-1.2.0 --pattern '*.apk' --dir previous-v2-installers
+          gh release download aplikasi-1.0.0 --pattern 'Absen-Mahasiswa-Android.apk' --dir previous-installers
+          gh release download aplikasi-1.2.1 --pattern 'Absen-Mahasiswa-Android.apk' --dir previous-v2-installers
           signers=("$ANDROID_HOME"/build-tools/*/apksigner)
-          python3 scripts/verify-apk-upgrade.py "${signers[-1]}"
+          python3 scripts/verify-apk-upgrade.py "${signers[-1]}" --student-only
       - name: Enable emulator hardware acceleration
         if: steps.release_apks.outputs.ready == 'true'
         run: sudo chmod a+rw /dev/kvm
-      - name: Test separate installation, retained private data and app launch
+      - name: Test separate installation, retained student data and app launch
         if: steps.release_apks.outputs.ready == 'true'
         uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
         with:
@@ -102,8 +101,8 @@ jobs:
         if: steps.release_apks.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Android-Absensi-Dosen-dan-Mahasiswa
-          path: installers/*.apk
+          name: Android-Absen-Mahasiswa
+          path: installers/Absen-Mahasiswa-Android.apk
           if-no-files-found: error
       - name: Keep emulator verification results
         if: always() && steps.release_apks.outputs.ready == 'true'
@@ -115,31 +114,9 @@ jobs:
       - name: Remove temporary Android signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/absensi-v2.keystore"
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-      - run: npm ci --no-audit --no-fund
-      - run: npm run check
-      - run: npm run windows
-      - name: Verify bundled Windows application
-        run: node scripts/verify-windows-bundle.cjs
-      - name: Test packaged Windows offline launch, persistence and real JPEG OCR
-        run: node scripts/test-windows-runtime.cjs
-      - name: Keep Windows installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: Windows-Absensi-Dosen
-          path: dist/windows/*.exe
-          if-no-files-found: error
   release:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.android.outputs.release_ready == 'true'
-    needs: [android, windows]
+    needs: [android]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -149,7 +126,7 @@ jobs:
         with:
           path: installers
           merge-multiple: true
-          pattern: '*-Absensi-Dosen*'
+          pattern: 'Android-Absen-Mahasiswa'
       - name: Publish application installers
         env:
           GH_TOKEN: ${{ github.token }}
@@ -160,20 +137,19 @@ jobs:
           import hashlib, json
           from pathlib import Path
           root = Path('installers')
-          files = sorted([*root.glob('*.apk'), *root.glob('*.exe')])
-          version = json.loads(Path('package.json').read_text())['version']
-          required = {'Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk', 'Absensi-Dosen-Windows-' + version + '.exe'}
+          files = sorted(root.glob('*.apk'))
+          required = {'Absen-Mahasiswa-Android.apk'}
           if {path.name for path in files} != required:
-              raise SystemExit('Release requires both verified Android APKs and the matching Windows installer')
+              raise SystemExit('Release requires the verified student APK')
           with (root / 'SHA256SUMS.txt').open('w') as output:
               for path in files:
                   output.write(hashlib.sha256(path.read_bytes()).hexdigest() + '  ' + path.name + '\n')
           PY
           shopt -s nullglob
-          release_files=(installers/*.apk installers/*.exe installers/SHA256SUMS.txt)
+          release_files=(installers/*.apk installers/SHA256SUMS.txt)
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "${release_files[@]}" --clobber
-            gh release edit "$tag" --notes-file docs/APLIKASI.md
+            gh release edit "$tag" --notes-file docs/PEMBARUAN-1.2.2.md
           else
-            gh release create "$tag" "${release_files[@]}" --target "$GITHUB_SHA" --title "Aplikasi Absensi $version" --notes-file docs/APLIKASI.md
+            gh release create "$tag" "${release_files[@]}" --target "$GITHUB_SHA" --title "Aplikasi Absensi $version" --notes-file docs/PEMBARUAN-1.2.2.md
           fi

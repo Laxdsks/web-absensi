@@ -122,7 +122,7 @@ adb('shell', 'settings', 'put', 'global', 'airplane_mode_on', '1')
 adb('shell', 'am', 'broadcast', '-a', 'android.intent.action.AIRPLANE_MODE', '--ez', 'state', 'true')
 time.sleep(3)
 # Exercise the packaged offline login page without production credentials.
-roles = [('dosen', 'Absensi-Dosen-Android.apk'), ('mahasiswa', 'Absen-Mahasiswa-Android.apk')]
+roles = [('mahasiswa', 'Absen-Mahasiswa-Android.apk')]
 report = []
 for role, filename in roles:
     old, new = 'id.webabsensi.app.' + role, 'id.webabsensi.parallel2026.' + role
@@ -245,7 +245,7 @@ for role, filename in roles:
         print('mahasiswa: foreground reminder exposes a stop action; stop intent removes the service without an account token.')
     if adb('shell', 'cat', marker) != sentinel or adb('shell', 'cat', new_marker) != 'new-app-data':
         raise RuntimeError('Icon editing changed private attendance data')
-    report.append({'custom_icon_editor_and_launcher_tested': True, 'reminder_stop_action_tested': role == 'mahasiswa', 'role': role, 'old_package': old, 'new_package': new,
+    report.append({'custom_icon_editor_and_launcher_tested': role == 'dosen', 'reminder_stop_action_tested': role == 'mahasiswa', 'role': role, 'old_package': old, 'new_package': new,
                    'coinstalled': True, 'old_private_data_retained': True,
                    'same_key_update_retained_data': True, 'login_ui_rendered': True,
                    'upgrade_from_version': previous_version, 'teacher_homepage_original': role == 'dosen',

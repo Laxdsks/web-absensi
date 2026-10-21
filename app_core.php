@@ -1,6 +1,6 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261017-presen-121-r1';
+const WA_BUILD = '20261022-presen-122-r2';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_db(): mysqli {
@@ -16,10 +16,10 @@ function wa_db(): mysqli {
 }
 
 function wa_schema(mysqli $db): void {
-    try { $v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc(); if(($v['value']??'')==='8')return; } catch(mysqli_sql_exception $ignored) {}
+    try { $v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc(); if(($v['value']??'')==='9')return; } catch(mysqli_sql_exception $ignored) {}
     if((int)($db->query("SELECT GET_LOCK(CONCAT('wa_schema:',DATABASE()),10) AS acquired")->fetch_assoc()['acquired']??0)!==1)throw new RuntimeException('Pembaruan penyimpanan sedang diproses. Coba lagi.');
     try {
-        try {$v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc();if(($v['value']??'')==='8')return;}catch(mysqli_sql_exception $ignored){}
+        try {$v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc();if(($v['value']??'')==='9')return;}catch(mysqli_sql_exception $ignored){}
     $tables = [
         "CREATE TABLE IF NOT EXISTS wa_push_devices (device_id CHAR(36) PRIMARY KEY, subscription TEXT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS wa_push_sent (device_id CHAR(36) NOT NULL, session_id CHAR(36) NOT NULL, phase VARCHAR(100) NOT NULL, PRIMARY KEY(device_id,session_id,phase)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
@@ -44,8 +44,9 @@ function wa_schema(mysqli $db): void {
     $db->query("UPDATE siswa SET academic_period=IF(MOD(CAST(REPLACE(semester,'Semester ','') AS UNSIGNED),2)=0,'Genap','Ganjil') WHERE academic_period=''");
     if (!$db->query("SHOW COLUMNS FROM wa_accounts LIKE 'approval_status'")->num_rows){$db->query("ALTER TABLE wa_accounts ADD approval_status VARCHAR(12) NOT NULL DEFAULT 'pending'");$db->query("UPDATE wa_accounts SET approval_status='approved' WHERE approved=1");}
     $db->query("CREATE TABLE IF NOT EXISTS wa_evidence (id CHAR(36) PRIMARY KEY, owner_id VARCHAR(60) NOT NULL, account_id CHAR(36) NOT NULL, ctx_key CHAR(64) NOT NULL, session_id CHAR(36) NOT NULL, nim VARCHAR(50) NOT NULL, mime VARCHAR(30) NOT NULL, sha256 CHAR(64) NOT NULL, image_bytes MEDIUMBLOB NOT NULL, width INT NOT NULL, height INT NOT NULL, created_at BIGINT NOT NULL, KEY evidence_owner(owner_id), KEY evidence_session(account_id,session_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $db->query("CREATE TABLE IF NOT EXISTS wa_teacher_accounts (id CHAR(36) PRIMARY KEY, username VARCHAR(50) NOT NULL UNIQUE, display_name VARCHAR(100) NOT NULL, password_hash VARCHAR(255) NOT NULL, role VARCHAR(12) NOT NULL DEFAULT 'teacher', status VARCHAR(12) NOT NULL DEFAULT 'pending', avatar MEDIUMTEXT NULL, created_at BIGINT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     foreach(['attachments','verification'] as $column)if(!$db->query("SHOW COLUMNS FROM wa_marks LIKE '{$column}'")->num_rows)$db->query("ALTER TABLE wa_marks ADD {$column} TEXT NULL");
-    $db->query("INSERT INTO wa_meta(k,value) VALUES('schema_version','8') ON DUPLICATE KEY UPDATE value='8'");
+    $db->query("INSERT INTO wa_meta(k,value) VALUES('schema_version','9') ON DUPLICATE KEY UPDATE value='9'");
     } finally {$db->query("SELECT RELEASE_LOCK(CONCAT('wa_schema:',DATABASE()))");}
 }
 
@@ -62,6 +63,12 @@ function wa_now(): int { return (int)round(microtime(true) * 1000); }
 function wa_uuid(): string { $b = random_bytes(16); $b[6] = chr((ord($b[6]) & 15) | 64); $b[8] = chr((ord($b[8]) & 63) | 128); $h = bin2hex($b); return substr($h,0,8).'-'.substr($h,8,4).'-'.substr($h,12,4).'-'.substr($h,16,4).'-'.substr($h,20); }
 function wa_id($id): string { if (!is_string($id) || !preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i', $id)) throw new InvalidArgumentException('ID tidak valid.'); return $id; }
 function wa_text($value, int $max = 255): string { if (!is_scalar($value)) throw new InvalidArgumentException('Teks tidak valid.'); $text = trim((string)$value); if (strlen($text) > $max) throw new InvalidArgumentException('Teks terlalu panjang.'); return $text; }
+function wa_teacher_account(string $id): ?array {
+    if($id==='admin_01')return ['id'=>$id,'username'=>'M.Fadillah','display_name'=>'M.Fadillah','role'=>'admin','status'=>'active'];
+    if($id==='dosen_01')return ['id'=>$id,'username'=>'Zen','display_name'=>'Zen','role'=>'teacher','status'=>'active'];
+    return wa_one('SELECT id,username,display_name,role,status,avatar FROM wa_teacher_accounts WHERE id=?',[$id]);
+}
+function wa_active_teacher(string $id): bool { $account=wa_teacher_account($id);return $account!==null&&$account['status']==='active'; }
 function wa_owner(): string { return (string)($GLOBALS['wa_request_owner'] ?? $_SESSION['id_user'] ?? 'admin_01'); }
 function wa_context_owner(array $ctx): string { return (string)($ctx['owner'] ?? 'admin_01'); }
 function wa_teacher_context(array $device,array $ctx): array {
@@ -76,7 +83,7 @@ function wa_ctx($value): array {
     $ctx = ['jenjang'=>'S1', 'prodi'=>wa_text($value['prodi'] ?? '',180), 'semester'=>(string)($value['semester'] ?? ''), 'kelas'=>strtoupper(wa_text($value['kelas'] ?? '',20))];
     if (($value['jenjang'] ?? 'S1') !== 'S1' || !in_array($ctx['prodi'], WA_PRODI,true) || !preg_match('/^[1-8]$/',$ctx['semester']) || !preg_match('/^[A-E]$/',$ctx['kelas'])) throw new InvalidArgumentException('Prodi, semester, jenjang, atau kelas tidak valid.');
     $owner=(string)($value['owner']??'admin_01');
-    if(!in_array($owner,['admin_01','dosen_01'],true))throw new InvalidArgumentException('Pilih dosen penanggung jawab yang valid.');
+    if(!wa_active_teacher($owner))throw new InvalidArgumentException('Pilih dosen penanggung jawab yang valid.');
     if($owner!=='admin_01')$ctx['owner']=$owner;
     $year=(string)($value['year']??'2026/2027'); $natural=(int)$ctx['semester']%2?'Ganjil':'Genap'; $period=(string)($value['period']??$natural);
     if(!preg_match('/^(20[0-9]{2})\/(20[0-9]{2})$/',$year,$years)||(int)$years[2]!==((int)$years[1]+1)||!in_array($period,['Ganjil','Genap'],true))throw new InvalidArgumentException('Tahun akademik atau periode kuliah tidak valid.');
@@ -171,7 +178,7 @@ function wa_device(): ?array {
 }
 function wa_restore_teacher(): void {
     if (isset($_SESSION['id_user']) || empty($_COOKIE['wa_device']) || defined('APP_TEMPLATE_BUILD')) return;
-    try { $device=wa_device(); if ($device && $device['role']==='teacher' && in_array($device['account_id'],['admin_01','dosen_01'],true)) { $_SESSION['id_user']=$device['account_id']; $_SESSION['nama_user']=$device['account_id']==='admin_01'?'M.Fadillah':'Zen'; $_SESSION['role']=$device['account_id']==='admin_01'?'Administrator Utama':'Dosen'; } } catch (Throwable $ignored) { /* A missing database never grants access. */ }
+    try { $device=wa_device(); if ($device && $device['role']==='teacher' && wa_active_teacher($device['account_id'])) { $account=wa_teacher_account($device['account_id']); $_SESSION['id_user']=$device['account_id']; $_SESSION['nama_user']=$account['display_name']; $_SESSION['role']=$account['role']==='admin'?'Administrator Utama':'Dosen'; } } catch (Throwable $ignored) { /* A missing database never grants access. */ }
 }
 function wa_revoke_current(): void { $device=wa_device(); if ($device) wa_query('UPDATE wa_devices SET revoked=1 WHERE id=?',[$device['id']]); wa_cookie(''); }
 function wa_issue_device(string $account, string $role, string $pub): array {
@@ -182,15 +189,16 @@ function wa_issue_device(string $account, string $role, string $pub): array {
     return ['device'=>wa_one('SELECT * FROM wa_devices WHERE id=?',[$id]),'token'=>$token];
 }
 function wa_profile(array $device): array {
-    $account=$device['role']==='student'?wa_one('SELECT id,nim,nama,jk,ctx,approved,approval_status,owner_id FROM wa_accounts WHERE id=?',[$device['account_id']]):['id'=>$device['account_id'],'nama'=>$device['account_id']==='admin_01'?'M.Fadillah':'Zen','approved'=>1];
+    $account=$device['role']==='student'?wa_one('SELECT id,nim,nama,jk,ctx,approved,approval_status,owner_id FROM wa_accounts WHERE id=?',[$device['account_id']]):wa_teacher_account($device['account_id']);
     if (!$account) throw new InvalidArgumentException('Akun tidak ditemukan.');
+    if($device['role']==='teacher'){$account['nama']=$account['display_name'];$account['approved']=$account['status']==='active';}
     if (isset($account['ctx'])) $account['ctx']=json_decode($account['ctx'],true);
     $account['owner_id']=$account['owner_id']??$device['account_id'];
     $account['approved']=(bool)$account['approved'];
     $certificate=wa_seal(['v'=>1,'type'=>'identity','device'=>$device['id'],'account'=>$device['account_id'],'role'=>$device['role'],'pub'=>$device['pubkey'],'nim'=>$account['nim']??null,'name'=>$account['nama'],'ctx'=>$account['ctx']??null,'approved'=>$account['approved']]);
     return ['device'=>$device['id'],'role'=>$device['role'],'account'=>$account,'certificate'=>$certificate,'serverPublicKey'=>wa_signing_key()['public']];
 }
-function wa_teacher(array $device): void { if ($device['role']!=='teacher' || !in_array($device['account_id'],['admin_01','dosen_01'],true)) throw new DomainException('Fitur ini hanya tersedia untuk dosen.'); }
+function wa_teacher(array $device): void { if ($device['role']!=='teacher' || !wa_active_teacher($device['account_id'])) throw new DomainException('Fitur ini hanya tersedia untuk dosen aktif.'); }
 function wa_approved_student(array $device): array { if ($device['role']!=='student') throw new DomainException('Gunakan akun mahasiswa.'); $account=wa_one('SELECT * FROM wa_accounts WHERE id=?',[$device['account_id']]); if (!$account || !$account['approved']) throw new DomainException('Pendaftaran menunggu persetujuan dosen.'); return $account; }
 function wa_roster(array $ctx): array {
     $ctx=wa_ctx($ctx);

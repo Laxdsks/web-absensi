@@ -3,14 +3,7 @@ session_start();
 require_once __DIR__ . '/auth_guard.php';
 $data_owner=wa_owner();
 app_require_authenticated_user();
-// Pastikan file koneksi ada
-if (file_exists('koneksi.php')) {
-    include 'koneksi.php';
-}
-if (!isset($koneksi) && isset($conn)) {
-    $koneksi = $conn;
-}
-if(isset($koneksi)&&$koneksi instanceof mysqli)wa_schema($koneksi);
+$koneksi=defined('APP_TEMPLATE_BUILD')?null:wa_db();
 
 // ==============================================================================
 // KUSTOMISASI TEMA GLOBAL & SINKRONISASI OTOMATIS (ANTI-RESET)
@@ -493,7 +486,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.1.js" defer></script>
+    <script src="app/runtime-teacher-1.2.2.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
@@ -930,7 +923,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         let historyStack = [];
         let redoStack = [];
         let draftNilaiPerNim = Object.create(null);
-        const absenLayoutSettingsKey = new URLSearchParams(location.search).get('app')==='1'?'absen-layout-settings-app-'+encodeURIComponent(['prodi','semester','kelas','matkul'].map(k=>new URLSearchParams(location.search).get(k)||'').join('|')):<?php echo json_encode('absen-layout-settings-S1-' . md5($prodi . '|' . $semester . '|' . $kelas)); ?>;
+        const absenLayoutSettingsKey = new URLSearchParams(location.search).get('app')==='1'?'absen-layout-settings-app-'+encodeURIComponent(['prodi','semester','kelas','matkul'].map(k=>new URLSearchParams(location.search).get(k)||'').join('|')):<?php echo json_encode('absen-layout-settings-S1-' . md5($prodi . '|' . $semester . '|' . $kelas . '|' . $data_owner . '|' . $data_year . '|' . $data_period)); ?>;
         let absenLayoutSettings = {};
         try { absenLayoutSettings = JSON.parse(localStorage.getItem(absenLayoutSettingsKey) || '{}') || {}; } catch (error) { absenLayoutSettings = {}; }
         function simpanPengaturanLayoutAbsen() {
@@ -1314,7 +1307,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             }
         }
 
-        const absenPositionStorageKey = new URLSearchParams(location.search).get('app')==='1'?absenLayoutSettingsKey+'-positions':<?php echo json_encode('absen-layout-S1-' . md5($prodi . '|' . $semester . '|' . $kelas)); ?>;
+        const absenPositionStorageKey = new URLSearchParams(location.search).get('app')==='1'?absenLayoutSettingsKey+'-positions':<?php echo json_encode('absen-layout-S1-' . md5($prodi . '|' . $semester . '|' . $kelas . '|' . $data_owner . '|' . $data_year . '|' . $data_period)); ?>;
 
         function simpanPosisiLembarAbsen() {
             const posisi = {};
@@ -1460,8 +1453,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 
         function inisialisasiInputAbsensi() {
             const tbody = document.getElementById('tbodySiswa');
-            if(!tbody || tbody.dataset.keyboardReady === '1') return;
-            tbody.dataset.keyboardReady = '1';
+            if(!tbody || tbody.presenKeyboardReady) return;
+            tbody.presenKeyboardReady = true;tbody.removeAttribute('data-keyboard-ready');
             tbody.addEventListener('input', function(event) {
                 const input = event.target;
                 if(!input.matches('.attendance-cell')) return;
@@ -1489,10 +1482,11 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                     cells[currentIndex - 1].focus();
                     return;
                 }
-                if((event.key === 'Backspace' || event.key === 'Delete') && input.value === '') {
+                if(event.key === 'Backspace' || event.key === 'Delete') {
+                    event.preventDefault();input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));
                     const previous = cells[currentIndex - 1] || rows[currentRow - 1]?.querySelectorAll('.attendance-cell');
                     const target = previous instanceof NodeList ? previous[previous.length - 1] : previous;
-                    if(target) { event.preventDefault(); target.focus(); }
+                    if(target) { target.focus();target.select(); }
                 }
             });
         }
@@ -1915,6 +1909,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         function cloneUntukEkspor(element) {
             window.WAFitSheetText?.();
             const clone = element.cloneNode(true);
+            const sourceCells=[...element.querySelectorAll('th,td')];clone.querySelectorAll('th,td').forEach((cell,i)=>cell.style.fontSize=getComputedStyle(sourceCells[i]).fontSize);
             const originalInputs=[...element.querySelectorAll('input')].filter(input=>input.type!=='file'&&!input.closest('.sheet-signature-controls,.page-preview-only'));
             clone.querySelectorAll('.p-screen-only, button, input[type="file"], .sheet-signature-controls, .sheet-signature-image[hidden], .btn-hapus-logo, .page-preview-marker, .page-preview-only').forEach(el => el.remove());
             clone.querySelectorAll('input').forEach((input,index) => {
@@ -1985,7 +1980,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 const rows = Array.from(column?.querySelectorAll('.meta-row') || []).map(row => {
                     const label = row.querySelector('.meta-label')?.textContent.trim() || '';
                     const value = row.querySelector('.meta-val')?.textContent.trim() || '';
-                    const field=row.querySelector('.meta-val'),font=Math.min(10.66,parseFloat(getComputedStyle(field).fontSize));return `<span style="white-space:nowrap;font-size:${font}px"><span style="display:inline-block;width:84pt">${escapeWordHtml(label)}</span>&nbsp;<span style="display:inline-block;width:8pt;text-align:center">:</span>&nbsp;<span>${escapeWordHtml(value)}</span></span>`;
+                    const field=row.querySelector('.meta-val'),font=parseFloat(getComputedStyle(field).fontSize);return `<span style="white-space:nowrap;font-size:${font}px"><span style="display:inline-block;width:84pt">${escapeWordHtml(label)}</span>&nbsp;<span style="display:inline-block;width:8pt;text-align:center">:</span>&nbsp;<span>${escapeWordHtml(value)}</span></span>`;
                 }).join('<br>');
                 const style = styleSpasiWord(column);
                 return `<td width="50%" valign="top" style="width:50%;border:0;padding:0 5px 3px 0;vertical-align:top;font-size:8pt;line-height:10pt"><p style="margin:0;mso-margin-top-alt:0pt;mso-margin-bottom-alt:0pt;padding:0;line-height:10pt;mso-line-height-rule:exactly;${style}">${rows}</p></td>`;
@@ -2012,7 +2007,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 cell.style.verticalAlign = 'middle';
                 cell.style.whiteSpace = 'nowrap';
                 cell.style.overflowWrap = 'normal';
-                const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?Math.min(10,fitted)+'px':'7.5pt';
+                const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?fitted+'px':getComputedStyle(document.getElementById('tabelAbsen')).fontSize;
                 cell.style.lineHeight = '9pt';
                 cell.style.color = '#111';
                 if (cell.tagName === 'TH') { cell.style.backgroundColor = '#ffffff'; cell.style.fontWeight = 'bold'; }
@@ -2026,6 +2021,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const tableStyle = styleSpasiWord(tableWrapper);
             if (tableStyle) table.style.cssText += tableStyle + ';';
             const signatureMarkup = Array.from(element.querySelectorAll('.signature-box')).map(box => {
+                const snapshot=window.SheetSignatures?.exportBox(box);
+                if(snapshot)return `<td width="50%" valign="top" style="width:50%;border:0;padding:6px 4px 0;vertical-align:top;text-align:left"><img src="${escapeWordHtml(snapshot.src)}" alt="Tanda tangan dan identitas dosen" width="${snapshot.width}" height="${snapshot.height}" style="display:block;width:${snapshot.width}px;height:${snapshot.height}px;border:0"></td>`;
                 const pieces = Array.from(box.children).map(child => {
                     if (child.classList.contains('signature-space')) {
                         const height = Math.max(0, parseFloat(getComputedStyle(child).height) || 0);
@@ -2070,6 +2067,10 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         }
 
         function buatTabelExcel(element, title) {
+            if(element?.id==='tabelAbsen'){
+                const html=buatDokumenWordAbsen(document.getElementById('paperSheet'),title);
+                return html.replace('xmlns:w="urn:schemas-microsoft-com:office:word"','xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:x="urn:schemas-microsoft-com:office:excel"').replace('Word.Document','Excel.Sheet').replace('</head>','<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Absensi</x:Name><x:WorksheetOptions><x:FitToPage>True</x:FitToPage></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>');
+            }
             const table = cloneUntukEkspor(element);
             const width=Math.max(1600,Math.ceil(element.getBoundingClientRect().width));
             table.setAttribute('width', String(width));

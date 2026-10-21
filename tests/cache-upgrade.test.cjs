@@ -3,7 +3,7 @@
 const{test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),http=require('node:http'),path=require('node:path');
 const{chromium}=require(process.env.WA_PLAYWRIGHT_PATH||'/workspace/cloud-web-absensi/browser-tools/node_modules/playwright-core');
 async function until(page,fn,arg){const end=Date.now()+45000;while(Date.now()<end){if(await page.evaluate(fn,arg))return;await page.waitForTimeout(100);}throw Error('Expected durable cache state was not reached.');}
-const root=path.resolve(__dirname,'..'),version=require('../package.json').version;
+const root=path.resolve(__dirname,'..'),version=require('../package.json').version,build=fs.readFileSync(path.join(root,'app-sw.js'),'utf8').match(/const BUILD='([^']+)'/)[1];
 for(const width of[1280,393])test('upgrade from cached 1.0.5 keeps deleted identities out of all sheets at width '+width,{timeout:120000},async()=>{
  let upgraded=false;const hits=[];
  const legacy={'app-sw.js':'legacy-cache-worker-1.0.5.js','app/core.js':'legacy-core-1.0.5.js','assets/offline-bridge.js':'legacy-offline-bridge-1.0.5.js'};
@@ -18,7 +18,7 @@ for(const width of[1280,393])test('upgrade from cached 1.0.5 keeps deleted ident
  upgraded=true;await p.goto(url('data_siswa'));await p.waitForFunction(()=>window.WASheetReady);assert.equal(await p.locator('#tabelSiswa .student-row').count(),1);assert(hits.includes('app/runtime-teacher-'+version+'.js'));
  await p.goto(url('absen'));await p.waitForFunction(()=>window.WASheetReady);assert.equal(await p.locator('#tbodySiswa .nim-input').count(),1);assert.equal(await p.locator('#tbodySiswa .nim-input').inputValue(),'KEEP123');assert.equal(await p.locator('.attendance-cell').first().inputValue(),'.');assert.equal(await p.locator('#metaLeftBox .meta-val').nth(1).innerText(),'2028/2029');await p.evaluate(()=>bukaRekapNilai());assert.equal(await p.locator('#tbodyRekapNilai tr').count(),1);
  // Activation must not reload an edited page; pending drafts and private cache survive.
- await p.evaluate(()=>WA.prepareOffline());await until(p,async()=>{const cache=await caches.open('wa-public-20261017-presen-121-r1'),ready=await cache.match(new URL('app/offline-ready',WA.ROOT).href);return !!ready&&(await ready.text())==='20261017-presen-121-r1';});
+ await p.evaluate(()=>WA.prepareOffline());await until(p,async expected=>{const cache=await caches.open('wa-public-'+expected),ready=await cache.match(new URL('app/offline-ready',WA.ROOT).href);return !!ready&&(await ready.text())===expected;},build);
  await context.setOffline(true);await p.reload();await p.waitForFunction(()=>window.WASheetReady);assert.equal(await p.locator('body').getAttribute('data-template-origin'),'current','offline navigation must prefer the current build over older cached templates');assert.equal(await p.locator('#tbodySiswa .nim-input').count(),1,'offline HTML receives the current entry point');assert.equal(await p.locator('.attendance-cell').first().inputValue(),'.');
  // Rapid deletion followed by navigation must await the entire durable deletion.
  await p.evaluate(()=>{window.confirm=()=>true;document.querySelector('[name=aksi_hapus_massal_kelas]').form.requestSubmit();document.querySelector('.p-worknav [data-nav="ujian.php"]').click();});try{await p.waitForURL(u=>u.pathname.endsWith('/ujian.php'));}catch(error){console.error('Preview navigation URL:',p.url(),'frames:',p.frames().map(f=>f.url()));throw error;}await p.waitForFunction(()=>window.WASheetReady);assert.equal(await p.locator('#examTableBlock tbody tr').count(),0);

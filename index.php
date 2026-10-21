@@ -1,6 +1,9 @@
 <?php
 session_start();
 require_once __DIR__ . '/auth_guard.php';
+require_once __DIR__ . '/teacher_accounts.php';
+$is_logged_in = app_session_user_is_authenticated();
+if($is_logged_in && empty($_SESSION['wa_csrf']))$_SESSION['wa_csrf']=bin2hex(random_bytes(32));
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -40,9 +43,14 @@ $profiles['dosen_01'] = array_merge($defaultConfig, [
 ], is_array($profiles['dosen_01'] ?? null) ? $profiles['dosen_01'] : []);
 $profiles['dosen_01']['admin_role']='Dosen';
 $profiles['admin_01']['admin_role']='Administrator Utama';
-$accountId = (string)($_SESSION['id_user'] ?? 'admin_01');
-$globalConfig = $profiles[$accountId] ?? $profiles['admin_01'];
+$accountId = $is_logged_in ? (string)$_SESSION['id_user'] : 'guest';
+$globalConfig = $is_logged_in ? ($profiles[$accountId] ?? $profiles['admin_01']) : array_merge($defaultConfig,['admin_name'=>'Pengguna','admin_role'=>'','admin_avatar'=>'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/user.svg']);
+$teacherRecord = $is_logged_in ? wa_teacher_account($accountId) : null;
+if($teacherRecord && !in_array($accountId,['admin_01','dosen_01'],true)){
+    $globalConfig=['admin_name'=>$teacherRecord['display_name'],'admin_role'=>$teacherRecord['role']==='admin'?'Administrator Utama':'Dosen','admin_avatar'=>$teacherRecord['avatar']?:$defaultConfig['admin_avatar']];
+}
 $globalConfig['app_title'] = $configStore['app_title'] ?? $globalConfig['app_title'] ?? $defaultConfig['app_title'];
+$homeLayout = defined('APP_TEMPLATE_BUILD') ? 'left' : teacher_home_layout();
 
 // --- API PENGATURAN TEMA KE SESSION ---
 if (isset($_POST['set_theme_session'])) {
@@ -60,7 +68,7 @@ if (isset($_POST['set_theme_session'])) {
 if (isset($_POST['get_login_logs'])) {
     app_require_authenticated_user(true);
     $logs = file_exists($logFile) ? json_decode(file_get_contents($logFile), true) : [];
-    $logs=array_filter(is_array($logs)?$logs:[],static fn($row)=>($row['role']??'')===($_SESSION['id_user']==='dosen_01'?'Dosen':'Administrator Utama'));
+    $logs=array_filter(is_array($logs)?$logs:[],static fn($row)=>($row['account_id']??null)===$_SESSION['id_user'] || (!isset($row['account_id']) && ($row['role']??'')===($_SESSION['id_user']==='dosen_01'?'Dosen':'Administrator Utama') && in_array($_SESSION['id_user'],['admin_01','dosen_01'],true)));
     echo json_encode(array_values(array_reverse($logs)));
     exit;
 }
@@ -77,19 +85,26 @@ if (isset($_POST['action']) && $_POST['action'] === 'logout_system') {
 // --- API SUNTING PROFIL KUSTOM DINAMIS ---
 if (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
     app_require_authenticated_user(true);
+    if(!hash_equals((string)($_SESSION['wa_csrf']??''),(string)($_POST['csrf']??''))){http_response_code(403);echo json_encode(['status'=>'error','msg'=>'Muat ulang halaman lalu coba lagi.']);exit;}
     $newName = trim($_POST['admin_name'] ?? '');
     $newRole = trim($_POST['admin_role'] ?? '');
     $newAvatar = $_POST['admin_avatar'] ?? '';
+    if(mb_strlen($newName)<2||mb_strlen($newName)>100){http_response_code(422);echo json_encode(['status'=>'error','msg'=>'Nama harus terdiri dari 2 sampai 100 karakter.']);exit;}
     
     $accountId = (string)($_SESSION['id_user'] ?? 'admin_01');
     $currentConfig = $profiles[$accountId] ?? $globalConfig;
     if (!empty($newName)) $currentConfig['admin_name'] = $newName;
-    $currentConfig['admin_role']=$accountId==='dosen_01'?'Dosen':'Administrator Utama';
-    if (!empty($newAvatar)) $currentConfig['admin_avatar'] = $newAvatar;
+    $currentConfig['admin_role']=(wa_teacher_account($accountId)['role']??'teacher')==='admin'?'Administrator Utama':'Dosen';
+    if (!empty($newAvatar)) {
+        if($newAvatar===$currentConfig['admin_avatar']){}
+        else try{$currentConfig['admin_avatar']=teacher_avatar($newAvatar);}catch(InvalidArgumentException $error){http_response_code(422);echo json_encode(['status'=>'error','msg'=>$error->getMessage()]);exit;}
+    }
     
     $profiles[$accountId] = $currentConfig;
     $currentConfig['app_title'] = $configStore['app_title'] ?? $defaultConfig['app_title'];
-    file_put_contents($configFile, json_encode(['profiles' => $profiles, 'app_title' => $currentConfig['app_title']], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    if(!in_array($accountId,['admin_01','dosen_01'],true)){
+        wa_query('UPDATE wa_teacher_accounts SET display_name=?,avatar=? WHERE id=?',[$currentConfig['admin_name'],$currentConfig['admin_avatar'],$accountId]);
+    }else file_put_contents($configFile, json_encode(['profiles' => $profiles, 'app_title' => $currentConfig['app_title']], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
     
     // Perbarui session jika yang aktif adalah user tersebut
     if (isset($_SESSION['nama_user'])) {
@@ -99,6 +114,27 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
     
     echo json_encode(['status' => 'success', 'msg' => 'Profil identitas berhasil diperbarui!', 'data' => $currentConfig]);
     exit;
+}
+if (($_POST['action']??'') === 'register_teacher') {
+    try {$registered=teacher_registration($_POST);echo json_encode(['status'=>'success','msg'=>'Pendaftaran dikirim. Administrator perlu menyetujui akun sebelum dapat masuk.','account'=>$registered]);}
+    catch(Throwable $error){http_response_code($error instanceof DomainException?429:422);echo json_encode(['status'=>'error','msg'=>$error instanceof InvalidArgumentException||$error instanceof DomainException?$error->getMessage():'Pendaftaran belum berhasil.']);}
+    exit;
+}
+if (($_POST['action']??'') === 'teacher_accounts') {
+    app_require_authenticated_user(true,true);
+    header('Content-Type: application/json; charset=utf-8');echo json_encode(['status'=>'success','accounts'=>teacher_pending_accounts()]);exit;
+}
+if (($_POST['action']??'') === 'review_teacher') {
+    app_require_authenticated_user(true,true);
+    if(!hash_equals((string)($_SESSION['wa_csrf']??''),(string)($_POST['csrf']??''))){http_response_code(403);echo json_encode(['status'=>'error','msg'=>'Muat ulang halaman lalu coba lagi.']);exit;}
+    try {teacher_review_account((string)($_POST['id']??''),(string)($_POST['decision']??''));echo json_encode(['status'=>'success']);}
+    catch(Throwable $error){http_response_code(422);echo json_encode(['status'=>'error','msg'=>'Pendaftaran tidak dapat diproses.']);}exit;
+}
+if (($_POST['action']??'') === 'set_home_layout') {
+    app_require_authenticated_user(true,true);
+    if(!hash_equals((string)($_SESSION['wa_csrf']??''),(string)($_POST['csrf']??''))){http_response_code(403);echo json_encode(['status'=>'error','msg'=>'Muat ulang halaman lalu coba lagi.']);exit;}
+    try {teacher_set_home_layout((string)($_POST['layout']??''));echo json_encode(['status'=>'success','layout'=>teacher_home_layout()]);}
+    catch(Throwable $error){http_response_code(422);echo json_encode(['status'=>'error','msg'=>'Posisi formulir tidak valid.']);}exit;
 }
 
 // --- SISTEM AUTENTIKASI KETAT PRIVAT (M.FADILLAH / ZEN) ---
@@ -112,14 +148,19 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
     $role_assigned = '';
     $id_assigned = '';
     $name_assigned = '';
+    try {$registeredAccount=in_array(strtolower($user),['m.fadillah','fall','zen'],true)?null:teacher_login($user,$pass);}catch(DomainException $error){echo json_encode(['status'=>'error','msg'=>$error->getMessage()]);exit;}
+    if($registeredAccount){
+        $login_success=true;$role_assigned=$registeredAccount['role']==='admin'?'Administrator Utama':'Dosen';
+        $id_assigned=$registeredAccount['id'];$name_assigned=$registeredAccount['display_name'];
+    }
     
     // Validasi Hardcode Absolut
-    if (($user === 'M.Fadillah' || $user === 'Fall') && $pass === '28032004Dill') {
+    if (!$login_success && ($user === 'M.Fadillah' || $user === 'Fall') && $pass === '28032004Dill') {
         $login_success = true;
         $role_assigned = 'Administrator Utama';
         $id_assigned = 'admin_01';
         $name_assigned = 'M.Fadillah';
-    } elseif ($user === 'Zen' && $pass === '111315Zen') {
+    } elseif (!$login_success && $user === 'Zen' && $pass === '111315Zen') {
         $login_success = true;
         $role_assigned = 'Dosen';
         $id_assigned = 'dosen_01';
@@ -127,17 +168,25 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
     }
     
     if ($login_success) {
+        $expectedName=$name_assigned;
+        $providedName=trim((string)($_POST['display_name']??''));
+        if($providedName!=='' && mb_strtolower($providedName)!==mb_strtolower($expectedName)){
+            echo json_encode(['status'=>'error','msg'=>'ID akun, nama, atau kata sandi tidak cocok.']);exit;
+        }
         if(isset($_SESSION['id_user'])&&$_SESSION['id_user']!==$id_assigned)unset($_SESSION['konteks_siswa'],$_SESSION['nilai_ujian']);
+        wa_revoke_current();
         session_regenerate_id(true);
         // Ikat Murni ke Session Format Teks/String
         $_SESSION['id_user'] = (string)$id_assigned;
         $_SESSION['nama_user'] = (string)$name_assigned;
         $_SESSION['role'] = (string)$role_assigned;
+        $_SESSION['wa_csrf'] = bin2hex(random_bytes(32));
         
         // Catat Log Login
         $logs = file_exists($logFile) ? json_decode(file_get_contents($logFile), true) : [];
         $logs[] = [
             'nama' => $name_assigned,
+            'account_id' => $id_assigned,
             'role' => $role_assigned,
             'ip' => $ip,
             'waktu' => $date
@@ -154,7 +203,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
 }
 
 // Cek apakah user sudah login
-$is_logged_in = app_session_user_is_authenticated();
 $allowedThemes = ['malam', 'putih', 'samudra', 'senja'];
 $active_theme = $_SESSION['theme'] ?? 'malam';
 if (!in_array($active_theme, $allowedThemes, true)) $active_theme = 'malam';
@@ -182,28 +230,30 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
     <title id="appTitleText"><?php echo htmlspecialchars($globalConfig['app_title']); ?> Terpadu</title>
     
     <script>
-        window.SERVER_CONFIG = {
-            adminName: "<?php echo addslashes($globalConfig['admin_name']); ?>",
-            adminRole: "<?php echo addslashes($globalConfig['admin_role']); ?>",
-            adminAvatar: "<?php echo addslashes($globalConfig['admin_avatar']); ?>",
-            appTitle: "<?php echo addslashes($globalConfig['app_title']); ?>",
-            isLoggedIn: <?php echo $is_logged_in ? 'true' : 'false'; ?>
-        };
+        window.SERVER_CONFIG = <?php echo json_encode([
+            'adminName'=>$globalConfig['admin_name'],'adminRole'=>$globalConfig['admin_role'],
+            'adminAvatar'=>$globalConfig['admin_avatar'],'appTitle'=>$globalConfig['app_title'],
+            'accountId'=>$is_logged_in?($_SESSION['id_user']??null):null,
+            'isAdmin'=>$is_logged_in&&($teacherRecord['role']??'')==='admin',
+            'homeLayout'=>$homeLayout,'isLoggedIn'=>$is_logged_in,'csrf'=>$is_logged_in?$_SESSION['wa_csrf']:null
+        ],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
 
         // Establish the saved theme before styles paint. The short intro stays
         // opaque across the one reload needed to initialise the offline bridge.
         (() => {
             const root = document.documentElement;
             root.classList.add('presen-starting');
-            let transfer = false, ready = false;
+            let transfer = false, freshIntro = false, ready = false;
             try {
                 const theme = localStorage.getItem('presen-theme');
                 if (['malam', 'putih', 'samudra', 'senja'].includes(theme)) root.dataset.theme = theme;
                 const at = Number(sessionStorage.getItem('presen-intro-transfer'));
                 sessionStorage.removeItem('presen-intro-transfer');
                 transfer = at > 0 && Date.now() - at >= 0 && Date.now() - at < 15000;
+                freshIntro = sessionStorage.getItem('presen-intro-seen') !== '1';
             } catch (_) {}
             if (transfer) root.classList.add('presen-intro-transfer');
+            if (freshIntro) root.classList.add('presen-intro-fresh');
             window.PresenStartup = {
                 transfer() {
                     try { sessionStorage.setItem('presen-intro-transfer', String(Date.now())); } catch (_) {}
@@ -212,16 +262,17 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                     if (ready) return;
                     ready = true;
                     const intro = document.getElementById('introOverlay');
-                    if (transfer && intro) {
+                    if ((transfer || freshIntro) && intro) {
                         intro.classList.add('active');
                         document.getElementById('introContent').classList.add('show-text');
                     }
                     requestAnimationFrame(() => requestAnimationFrame(() => {
-                        root.classList.remove('presen-starting', 'presen-intro-transfer');
-                        if (transfer && intro) requestAnimationFrame(() => {
+                        root.classList.remove('presen-starting', 'presen-intro-transfer', 'presen-intro-fresh');
+                        if ((transfer || freshIntro) && intro) requestAnimationFrame(() => {
                             intro.classList.remove('active');
                             setTimeout(() => { intro.hidden = true; }, 220);
                         });
+                        try { sessionStorage.setItem('presen-intro-seen','1'); } catch (_) {}
                     }));
                 }
             };
@@ -410,7 +461,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         /* One restrained intro; no black flash or staggered text repaint. */
         #introOverlay { position:fixed; inset:0; background:#103451; color:#fff; z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; visibility:hidden; transition:opacity .2s ease,visibility .2s; }
         #introOverlay[hidden] { display:none; }
-        #introOverlay.active, html.presen-intro-transfer #introOverlay { opacity:1; visibility:visible; }
+        #introOverlay.active, html.presen-intro-transfer #introOverlay, html.presen-intro-fresh #introOverlay { opacity:1; visibility:visible; }
         .intro-content { text-align:center; padding:24px; }
         .logo-glow { width:64px; height:64px; margin:0 auto 20px; border:1px solid #ffffff50; border-radius:18px; display:grid; place-items:center; background:#ffffff12; }
         .logo-glow::after { content:'\f058'; font-family:'Font Awesome 6 Free'; font-weight:900; font-size:28px; color:#a6e6d8; }
@@ -430,7 +481,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.1.js" defer></script>
+    <script src="app/runtime-teacher-1.2.2.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
@@ -439,7 +490,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
 <script src="app/account-tools.js?v=20261012" defer></script>
 <script src="app/evidence.js" defer></script><script src="app/monitoring.js" defer></script><script src="app/experience.js" defer></script><link rel="stylesheet" href="app/experience.css">
 </head>
-<body class="portal-home">
+<body class="portal-home" data-home-layout="<?php echo htmlspecialchars($homeLayout,ENT_QUOTES,'UTF-8'); ?>">
     <!-- KANVAS PARTIKEL MELAYANG -->
     <canvas id="particleCanvas"></canvas>
     
@@ -464,15 +515,30 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             
             <div id="formLoginAuth">
                 <div class="form-group">
-                    <label>NAMA</label>
-                    <input type="text" id="authLogName" class="form-control" placeholder="Masukkan Nama...">
+                    <label>ID akun</label>
+                    <input type="text" id="authLogName" class="form-control" autocomplete="username" placeholder="ID akun Anda">
                 </div>
                 <div class="form-group">
-                    <label>PASSWORD</label>
-                    <input type="password" id="authLogPass" class="form-control" placeholder="••••••••">
+                    <label>Nama lengkap</label>
+                    <input type="text" id="authLogDisplayName" class="form-control" autocomplete="name" placeholder="Nama yang didaftarkan">
+                </div>
+                <div class="form-group">
+                    <label>Kata sandi</label>
+                    <input type="password" id="authLogPass" class="form-control" autocomplete="current-password" placeholder="••••••••">
                 </div>
                 <button type="button" class="btn-submit" onclick="processAuthPrivate()">Buka Kunci Sistem <i class="fa-solid fa-key"></i></button>
+                <button type="button" class="p-auth-switch" onclick="toggleTeacherRegistration(true)">Belum punya akun? Daftar</button>
             </div>
+            <form id="formRegisterTeacher" hidden onsubmit="registerTeacherAccount(event)">
+                <div class="form-group"><label>ID akun unik<input name="username" class="form-control" minlength="4" maxlength="50" pattern="[A-Za-z][A-Za-z0-9_.-]{3,49}" required autocomplete="username"></label></div>
+                <div class="form-group"><label>Nama lengkap<input name="display_name" class="form-control" maxlength="100" required autocomplete="name"></label></div>
+                <div class="form-group"><label>Jabatan yang diajukan<select name="role" class="form-control"><option value="teacher">Dosen / pengguna biasa</option><option value="admin">Administrator</option></select></label><small>Jabatan administrator hanya aktif setelah disetujui administrator yang sudah ada.</small></div>
+                <div class="form-group"><label>Foto profil<input name="avatar_file" type="file" accept="image/png,image/jpeg,image/webp" class="form-control"></label><small>Foto disimpan di server akun dan ikut tampil saat masuk dari perangkat lain.</small></div>
+                <div class="form-group"><label>Kata sandi<input name="password" type="password" class="form-control" minlength="10" maxlength="128" required autocomplete="new-password"></label></div>
+                <button type="submit" class="btn-submit">Kirim pendaftaran</button>
+                <button type="button" class="p-auth-switch" onclick="toggleTeacherRegistration(false)">Sudah punya akun? Masuk</button>
+                <p id="teacherRegistrationStatus" role="status" aria-live="polite"></p>
+            </form>
         </div>
     </div>
     
@@ -496,8 +562,16 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             </div>
             <div class="form-group">
                 <label>Jabatan / Role Sistem</label>
-                <input type="text" id="editAdminRole" class="form-control" value="<?php echo htmlspecialchars($globalConfig['admin_role']); ?>">
+                <input type="text" id="editAdminRole" class="form-control" value="<?php echo htmlspecialchars($globalConfig['admin_role']); ?>" readonly>
             </div>
+            <?php if($is_logged_in && ($teacherRecord['role']??'')==='admin'): ?>
+            <section class="p-admin-settings">
+                <h4>Tata letak beranda untuk semua akun</h4>
+                <label>Posisi formulir pilihan kelas<select id="adminHomeLayout" class="form-control"><option value="left">Kiri</option><option value="center">Tengah</option><option value="right">Kanan</option></select></label>
+                <button type="button" class="btn-submit" onclick="saveAdminHomeLayout()">Terapkan untuk semua akun</button>
+                <h4>Persetujuan akun baru</h4><div id="teacherPendingAccounts">Memuat pendaftaran…</div>
+            </section>
+            <?php endif; ?>
             <div class="form-group">
                 <label>Ganti Wallpaper Background</label>
                 <input type="file" id="uploadBgFile" accept="image/*" onchange="handleBgUpload(event)" class="form-control" style="font-size: 11px;">
@@ -749,6 +823,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         
         // --- MANIPULASI WALLPAPER BACKGROUND DARI LOCALSTORAGE ---
         function applyBgWallpaperSizing() {
+            if(window.PresenAppearance){window.PresenAppearance.apply();return;}
             let mode = localStorage.getItem('custom_bg_wallpaper_mode') || 'cover';
             let scale = Math.max(1, Math.min(200, parseInt(localStorage.getItem('custom_bg_wallpaper_scale') || '100', 10) || 100));
             const imageWidth = Number(localStorage.getItem('custom_bg_wallpaper_width')) || 0;
@@ -810,6 +885,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         }
 
         function applySavedBgWallpaper() {
+            if(window.PresenAppearance){window.PresenAppearance.apply();return;}
             const savedBg = localStorage.getItem('custom_bg_wallpaper');
             if (savedBg) {
                 document.body.classList.add('has-custom-wallpaper');
@@ -925,15 +1001,17 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         
         function processAuthPrivate() {
             const user = document.getElementById('authLogName').value;
+            const displayName = document.getElementById('authLogDisplayName').value;
             const pass = document.getElementById('authLogPass').value;
             
             if(!user || !pass) {
-                showToast("Nama dan Password wajib diisi!", "error");
+                showToast("Isi ID akun dan kata sandi.", "error");
                 return;
             }
             const formData = new FormData();
             formData.append('action', 'login_privat');
             formData.append('username', user);
+            formData.append('display_name', displayName);
             formData.append('password', pass);
             fetch('index.php', {
                 method: 'POST',
@@ -969,6 +1047,44 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                 showToast('Gagal memproses ke server', 'error');
             });
         }
+        function toggleTeacherRegistration(show) {
+            document.getElementById('formLoginAuth').hidden=show;
+            document.getElementById('formRegisterTeacher').hidden=!show;
+            document.querySelector('#authOverlay .auth-card h2').textContent=show?'Daftar akun':'Masuk ke Sistem';
+        }
+        async function registerTeacherAccount(event) {
+            event.preventDefault();
+            const form=event.target,status=document.getElementById('teacherRegistrationStatus'),button=form.querySelector('[type=submit]');
+            button.disabled=true;status.textContent='Menyiapkan pendaftaran…';
+            try {
+                const fields=new FormData(form),file=fields.get('avatar_file');fields.delete('avatar_file');fields.set('action','register_teacher');
+                if(file?.size){
+                    if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>4*1024*1024)throw Error('Pilih foto JPG, PNG, atau WebP maksimal 4 MB.');
+                    const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas'),scale=Math.min(1,320/Math.max(bitmap.width,bitmap.height));
+                    canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
+                    const avatar=canvas.toDataURL('image/jpeg',.78);if(avatar.length>310000)throw Error('Foto terlalu besar. Coba foto lain.');fields.set('avatar',avatar);
+                }
+                const response=await fetch('index.php',{method:'POST',body:fields,credentials:'same-origin'}),result=await response.json();
+                if(!response.ok||result.status!=='success')throw Error(result.msg||'Pendaftaran gagal.');
+                status.textContent=result.msg;form.reset();
+            }catch(error){status.textContent=error.message||'Pendaftaran belum berhasil.';}finally{button.disabled=false;}
+        }
+        async function saveAdminHomeLayout() {
+            const select=document.getElementById('adminHomeLayout'),body=new FormData();body.set('action','set_home_layout');body.set('layout',select.value);body.set('csrf',window.SERVER_CONFIG.csrf);
+            const result=await fetch('index.php',{method:'POST',body,credentials:'same-origin'}).then(r=>r.json());
+            if(result.status==='success'){document.body.dataset.homeLayout=result.layout;showToast('Tata letak berlaku untuk semua akun.','success');}
+            else showToast(result.msg||'Tata letak belum tersimpan.','error');
+        }
+        async function loadTeacherPendingAccounts() {
+            const box=document.getElementById('teacherPendingAccounts');if(!box)return;
+            const body=new FormData();body.set('action','teacher_accounts');
+            try{const result=await fetch('index.php',{method:'POST',body,credentials:'same-origin'}).then(r=>r.json());if(result.status!=='success')throw Error();
+                box.replaceChildren();if(!result.accounts.length){box.textContent='Tidak ada pendaftaran menunggu.';return;}
+                for(const account of result.accounts){const row=document.createElement('div');row.className='p-teacher-request';const text=document.createElement('span');text.textContent=account.display_name+' · '+account.username+' · '+(account.role==='admin'?'meminta akses administrator':'dosen');row.append(text);
+                    for(const [decision,label] of [['approve','Setujui'],['reject','Tolak']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.onclick=async()=>{button.disabled=true;const request=new FormData();request.set('action','review_teacher');request.set('id',account.id);request.set('decision',decision);request.set('csrf',window.SERVER_CONFIG.csrf);try{const answer=await fetch('index.php',{method:'POST',body:request,credentials:'same-origin'}).then(r=>r.json());if(answer.status!=='success')throw Error(answer.msg||'Keputusan belum tersimpan.');await loadTeacherPendingAccounts();}catch(error){showToast(error.message,'error');button.disabled=false;}};row.append(button);}box.append(row);
+                }
+            }catch(_){box.textContent='Pendaftaran belum dapat dimuat.';}
+        }
         
         function executeLogout() {
             const formData = new FormData();
@@ -993,21 +1109,23 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         
         function openProfileModal() {
             document.getElementById('profileModal').classList.add('active');
+            const layout=document.getElementById('adminHomeLayout');if(layout){layout.value=document.body.dataset.homeLayout||'left';void loadTeacherPendingAccounts();}
         }
         
         function closeProfileModal() {
             document.getElementById('profileModal').classList.remove('active');
         }
         
-        function handleAvatarUpload(event) {
+        async function handleAvatarUpload(event) {
             const file = event.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    uploadedBase64Avatar = e.target.result;
-                    document.getElementById('previewAvatarImg').src = uploadedBase64Avatar;
-                };
-                reader.readAsDataURL(file);
+                try{
+                    if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>4*1024*1024)throw Error('Pilih JPG, PNG, atau WebP maksimal 4 MB.');
+                    const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas'),scale=Math.min(1,320/Math.max(bitmap.width,bitmap.height));
+                    canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
+                    uploadedBase64Avatar=canvas.toDataURL('image/jpeg',.78);
+                    document.getElementById('previewAvatarImg').src=uploadedBase64Avatar;
+                }catch(error){showToast(error.message||'Foto belum dapat dibaca.','error');}
             }
         }
         
@@ -1020,6 +1138,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             }
             const formData = new FormData();
             formData.append('action', 'update_profile');
+            formData.append('csrf', window.SERVER_CONFIG.csrf || '');
             formData.append('admin_name', newName);
             formData.append('admin_role', newRole);
             formData.append('admin_avatar', uploadedBase64Avatar);

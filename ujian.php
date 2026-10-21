@@ -4,7 +4,7 @@ $isGradeSubmission = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && (string)($
 require_once __DIR__ . '/auth_guard.php';
 app_require_authenticated_user($isGradeSubmission);
 header('Cache-Control: private, no-store, max-age=0');
-require_once 'koneksi.php';
+$koneksi=defined('APP_TEMPLATE_BUILD')?null:wa_db();
 $data_owner=wa_owner(); if(isset($koneksi)&&$koneksi instanceof mysqli)wa_schema($koneksi);
 if (!isset($koneksi) && isset($conn)) { $koneksi = $conn; }
 
@@ -275,7 +275,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.1.js" defer></script>
+    <script src="app/runtime-teacher-1.2.2.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="assets/sheet-fit.css"><script src="assets/sheet-fit.js" defer></script>
 <link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/account-tools.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script>
@@ -637,6 +637,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             const source=paper.querySelector(selector);
             if(!source)return '';
             const table=source.cloneNode(true);
+            const sourceCells=[...source.querySelectorAll('th,td')];table.querySelectorAll('th,td').forEach((cell,i)=>cell.style.fontSize=getComputedStyle(sourceCells[i]).fontSize);
             table.querySelectorAll('.page-preview-only').forEach(el=>el.remove());
             table.removeAttribute('id');table.removeAttribute('onclick');table.removeAttribute('aria-label');
             table.style.cssText='width:100%;border-collapse:collapse;table-layout:fixed;margin:0;';
@@ -644,7 +645,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             table.querySelectorAll('[data-edit-key]').forEach(el=>el.removeAttribute('data-edit-key'));
             table.querySelectorAll('th,td').forEach(cell=>{
                 cell.style.border='1px solid #111';cell.style.padding='3px 6px';cell.style.verticalAlign='middle';cell.style.color='#111';
-                const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?Math.min(fitted,selector==='#examTableBlock table'?10.66:10)+'px':selector==='#examTableBlock table'?'8pt':'7.5pt';cell.style.whiteSpace='nowrap';cell.style.overflowWrap='normal';
+                const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?fitted+'px':getComputedStyle(source).fontSize;cell.style.whiteSpace='nowrap';cell.style.overflowWrap='normal';
                 if(cell.tagName==='TH'){cell.style.textAlign='center';cell.style.fontWeight='bold';cell.style.backgroundColor='#ffffff';}
                 else if(cell.classList.contains('name'))cell.style.textAlign='left';
                 else cell.style.textAlign='center';
@@ -663,7 +664,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         }
         function markupMetaUjian() {
             const columns=['#examMetaLeft','#examMetaRight'].map(selector=>[...paper.querySelectorAll(`${selector} .meta-row`)].map(row=>({
-                label:row.querySelector('.meta-label')?.textContent.trim()||'',value:row.querySelector('.meta-value')?.textContent.trim()||'',font:Math.min(10.66,parseFloat(getComputedStyle(row.querySelector('.meta-value')).fontSize))
+                label:row.querySelector('.meta-label')?.textContent.trim()||'',value:row.querySelector('.meta-value')?.textContent.trim()||'',font:parseFloat(getComputedStyle(row.querySelector('.meta-value')).fontSize)
             })));
             const count=Math.max(...columns.map(rows=>rows.length));
             const rows=Array.from({length:count},(_,index)=>{
@@ -677,6 +678,8 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         }
         function markupTandaTanganUjian(id) {
             const box=paper.querySelector(`#${id}`);if(!box)return '<td style="width:50%;border:0"></td>';
+            const snapshot=window.SheetSignatures?.exportBox(box);
+            if(snapshot)return `<td style="width:50%;border:0;padding:4px 5px;vertical-align:top;text-align:left"><img src="${escapeHtmlUjian(snapshot.src)}" alt="Tanda tangan dan identitas dosen" width="${snapshot.width}" height="${snapshot.height}" style="display:block;width:${snapshot.width}px;height:${snapshot.height}px;border:0"></td>`;
             const key=id==='examSupervisorBox'?'supervisor':'lecturer';
             const textFor=field=>escapeHtmlUjian(box.querySelector(`[data-edit-key="${field}"]`)?.textContent.trim()||'');
             const date=id==='examLecturerBox'?`<div style="line-height:1.25">${textFor('lecturer-date')}</div>`:'';

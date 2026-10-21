@@ -3,9 +3,8 @@ session_start();
 $isStudentImportRequest = (string)($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa';
 require_once __DIR__ . '/auth_guard.php';
 app_require_authenticated_user($isStudentImportRequest);
-require_once 'koneksi.php';
-$data_owner=wa_owner(); if(isset($koneksi)&&$koneksi instanceof mysqli)wa_schema($koneksi);
-if (!isset($koneksi) && isset($conn)) { $koneksi = $conn; }
+$koneksi=defined('APP_TEMPLATE_BUILD')?null:wa_db();
+$data_owner=wa_owner();
 
 // Sinkronkan hanya tema yang tersedia agar tema tetap konsisten antarahalaman.
 $allowed_themes = ['malam', 'putih', 'samudra', 'senja'];
@@ -54,9 +53,9 @@ if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa' && $_SERVER['REQU
         exit;
     }
     foreach ($rows as $index => $row) {
-        if (!is_array($row) || trim((string)($row['nim'] ?? '')) === '' || trim((string)($row['nama'] ?? '')) === '' || !in_array(strtoupper(trim((string)($row['jk'] ?? ''))), ['L', 'P'], true)) {
+        if (!is_array($row) || trim((string)($row['nim'] ?? '')) === '' || trim((string)($row['nama'] ?? '')) === '' || !in_array(strtoupper(trim((string)($row['jk'] ?? ''))), ['', 'L', 'P'], true)) {
             http_response_code(422);
-            echo json_encode(['status' => 'error', 'message' => 'Lengkapi NIM, nama, dan L/P pada baris ' . ($index + 1) . ' sebelum menyimpan. Jenis kelamin tidak boleh ditebak dari nama.']);
+            echo json_encode(['status' => 'error', 'message' => 'Lengkapi NIM dan nama pada baris ' . ($index + 1) . ' sebelum menyimpan. L/P boleh kosong dan dapat dilengkapi nanti.']);
             exit;
         }
     }
@@ -75,7 +74,7 @@ if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa' && $_SERVER['REQU
         $nim = trim(substr((string)($row['nim'] ?? ''), 0, 50));
         $nama = trim(substr((string)($row['nama'] ?? ''), 0, 255));
         $jk = strtoupper(trim((string)($row['jk'] ?? '')));
-        if ($nim === '' || $nama === '' || !in_array($jk, ['L', 'P'], true)) { $skipped++; continue; }
+        if ($nim === '' || $nama === '' || !in_array($jk, ['', 'L', 'P'], true)) { $skipped++; continue; }
         mysqli_stmt_bind_param($duplicate, 'ssssss', $nim, $kelas, $kelas_lama, $prodi, $semester, $semester_lama);
         mysqli_stmt_execute($duplicate);
         $found = mysqli_stmt_get_result($duplicate);
@@ -100,7 +99,7 @@ if (isset($_POST['save_siswa'])) {
     $id   = $_POST['id'] ?? '';
     $nim = trim($_POST['nim'] ?? '');
     $nama = trim($_POST['nama'] ?? '');
-    $jk = ($_POST['jk'] ?? 'L') === 'P' ? 'P' : 'L';
+    $jk = in_array($_POST['jk'] ?? '', ['', 'L', 'P'], true) ? ($_POST['jk'] ?? '') : '';
     if (!empty($id)) {
         $id = (int)$id;
         $stmt = mysqli_prepare($koneksi, "UPDATE siswa SET nim=?, nama=?, jk=? WHERE owner_id='{$data_owner}' AND academic_year='{$data_year}' AND academic_period='{$data_period}' AND id=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?)");
@@ -375,7 +374,7 @@ if ($stmt) {
     </style>
     <script src="app/vendor/tesseract.min.js" defer></script>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.1.js" defer></script>
+    <script src="app/runtime-teacher-1.2.2.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/account-tools.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script>
 <script src="app/evidence.js" defer></script><script src="app/monitoring.js" defer></script><script src="app/experience.js" defer></script><link rel="stylesheet" href="app/experience.css">
@@ -403,7 +402,7 @@ if ($stmt) {
             <div class="search-filter-box">
                 <div class="search-input-wrapper">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInput" placeholder="Cari nama mahasiswa secara real-time..." onkeyup="filterTabelSiswa()">
+                    <input type="text" id="searchInput" placeholder="Cari nama atau NIM mahasiswa…" aria-label="Cari nama atau NIM mahasiswa" onkeyup="filterTabelSiswa()">
                 </div>
                 <button type="button" class="btn-custom btn-danger" id="deleteAllStudentData" title="Reset seluruh data mahasiswa pada semua prodi, semester, dan kelas"><i class="fa-solid fa-trash-can"></i> Reset Semua Data Mahasiswa Akun Ini</button>
             </div>
@@ -417,7 +416,7 @@ if ($stmt) {
                     <span id="ocrStatus" aria-live="polite" style="font-size:12px;color:var(--text-muted);"></span>
                 </div>
                 <div id="ocrPhotoPreview" hidden style="margin-top:14px;">
-                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Tabel dipilih otomatis saat dibaca. Bila perlu, seret pada gambar untuk memilih kolom NIM, nama, dan L/P beserta judul kolomnya. Kop, nomor telepon, dan isian pertemuan tidak perlu masuk area. L/P yang tidak tercantum harus diisi sendiri.</p>
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Tabel dipilih otomatis saat dibaca. Bila perlu, seret pada gambar untuk memilih kolom NIM, nama, dan L/P beserta judul kolomnya. Kop, nomor telepon, dan isian pertemuan tidak perlu masuk area. L/P boleh dikosongkan dan diisi nanti.</p>
                     <canvas id="ocrPreviewCanvas" aria-label="Pratinjau foto; seret untuk memilih area tabel" style="display:block;max-width:100%;height:auto;max-height:420px;touch-action:none;cursor:crosshair;border:1px solid var(--card-border);border-radius:8px;"></canvas>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
                         <button type="button" class="btn-custom" onclick="putarFotoOcr(-90)">↶ Putar kiri</button>
@@ -435,7 +434,7 @@ if ($stmt) {
                         </table>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;">
-                        <button type="button" class="btn-custom" onclick="tambahBarisKoreksiOcr()">+ Tambah baris koreksi</button>
+                        <button type="button" class="btn-custom" id="cancelRosterImport" onclick="batalkanImporDaftar()">Batalkan impor</button><button type="button" class="btn-custom" onclick="tambahBarisKoreksiOcr()">+ Tambah baris koreksi</button>
                         <select id="ocrEmptyGender" aria-label="L/P untuk baris yang belum terisi" style="padding:9px;border-radius:8px;background:var(--input-bg);color:var(--text-main);"><option value="">Isi L/P yang kosong…</option><option value="L">Laki-laki (L)</option><option value="P">Perempuan (P)</option></select>
                         <button type="button" class="btn-custom" onclick="isiGenderOcrKosong()">Terapkan L/P</button>
                         <button class="btn-custom btn-success" type="button" id="btnSimpanOcr" onclick="simpanHasilOcr()" style="min-height:42px;"><i class="fa-solid fa-user-check"></i> Simpan baris yang sudah diperiksa</button>
@@ -495,7 +494,7 @@ if ($stmt) {
                 </div>
                 <div class="form-group">
                     <label>Jenis Kelamin (L/P)</label>
-                    <select name="jk" id="formJk">
+                    <select name="jk" id="formJk"><option value="">Kosong / isi nanti</option>
                         <option value="L">Laki-Laki (L)</option>
                         <option value="P">Perempuan (P)</option>
                     </select>
@@ -545,7 +544,7 @@ if ($stmt) {
             document.getElementById('formId').value = '';
             document.getElementById('formNim').value = '';
             document.getElementById('formNama').value = '';
-            document.getElementById('formJk').value = 'L';
+            document.getElementById('formJk').value = '';
             document.getElementById('modalSiswa').classList.add('show');
         }
 
@@ -564,21 +563,15 @@ if ($stmt) {
 
         // Fitur Pencarian Nama Mahasiswa secara Real-Time
         function filterTabelSiswa() {
-            const input = document.getElementById('searchInput');
-            const filter = input.value.toLowerCase();
-            const table = document.getElementById('tabelSiswa');
-            const tr = table.getElementsByTagName('tr');
-            for (let i = 1; i < tr.length; i++) {
-                const tdNama = tr[i].getElementsByTagName('td')[3];
-                if (tdNama) {
-                    const txtValue = tdNama.textContent || tdNama.innerText;
-                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                        tr[i].style.display = '';
-                    } else {
-                        tr[i].style.display = 'none';
-                    }
-                }
+            const filter = document.getElementById('searchInput').value.trim().toLocaleLowerCase('id-ID');
+            const rows = Array.from(document.querySelectorAll('#tabelSiswa tbody tr')).filter(row=>row.cells.length>=5);
+            let visible=0;
+            for(const row of rows){
+                const value=[row.cells[1].textContent,row.cells[2].textContent].join(' ').toLocaleLowerCase('id-ID');
+                const matches=value.includes(filter);row.hidden=!matches;row.style.display=matches?'':'none';if(matches)visible++;
             }
+            const status=document.getElementById('teacherRosterCount');
+            if(status)status.textContent=filter?`Menampilkan ${visible} dari ${rows.length} mahasiswa`:`${rows.length} mahasiswa di kelas ini`;
         }
 
         const ocrPhoto = {file:null, image:null, source:null, crop:null, turn:0, skew:0, loading:null, ticket:0};
@@ -1072,7 +1065,7 @@ if ($stmt) {
             const nimInput=addInput(row.nim||'','NIM baris '+index),namaInput=addInput(row.nama||'','Nama baris '+index);
             if(hasilPindai){[nimInput,namaInput].forEach(input=>{input.style.borderColor='#ef4444';input.title='Cocokkan setiap karakter dengan berkas foto/scan asli sebelum menyimpan.';});}
             nimInput.placeholder='NIM belum terbaca';namaInput.placeholder='Nama belum terbaca';
-            const genderCell=document.createElement('td'),gender=document.createElement('select');gender.setAttribute('aria-label','Jenis kelamin baris '+index);gender.innerHTML='<option value="">Pilih L/P…</option><option value="L">Laki-laki (L)</option><option value="P">Perempuan (P)</option>';gender.value=row.jk||'';gender.style.cssText='min-height:40px;padding:7px;border-radius:8px;background:var(--input-bg);color:var(--text-main);';genderCell.appendChild(gender);tr.appendChild(genderCell);
+            const genderCell=document.createElement('td'),gender=document.createElement('select');gender.setAttribute('aria-label','Jenis kelamin baris '+index);gender.innerHTML='<option value="">Kosong / isi nanti</option><option value="L">Laki-laki (L)</option><option value="P">Perempuan (P)</option>';gender.value=row.jk||'';gender.style.cssText='min-height:40px;padding:7px;border-radius:8px;background:var(--input-bg);color:var(--text-main);';genderCell.appendChild(gender);tr.appendChild(genderCell);
             const confidenceCell=document.createElement('td'),missing=!row.nim||!row.nama;confidenceCell.textContent=(row.source?row.source+' · ':'')+(missing?'lengkapi '+(!row.nim?'NIM':'nama'):Number.isFinite(row.confidence)?row.confidence+'%'+(perluPeriksa?' · cocokkan NIM/Nama dengan asli':''):row.source?'dibaca langsung':'Koreksi manual');if(row.preview){const img=document.createElement('img');img.src=row.preview;img.alt='Baris asli '+(row.sourceRow||index);img.style.cssText='display:block;max-width:320px;max-height:70px;min-width:180px;object-fit:contain;margin:4px auto;background:#fff';confidenceCell.prepend(img);}confidenceCell.style.cssText='text-align:center;'+(missing?'color:#ef4444;font-weight:700;':perluPeriksa?'color:#ef4444;font-weight:700;':row.confidence<80?'color:#f59e0b;':'');tr.appendChild(confidenceCell);
             const actionCell=document.createElement('td'),remove=document.createElement('button');remove.type='button';remove.className='btn-custom btn-danger';remove.textContent='Hapus';remove.onclick=()=>tr.remove();for(const [label,direction] of [['↑',-1],['↓',1]]){const move=document.createElement('button');move.type='button';move.className='btn-custom';move.textContent=label;move.title=direction<0?'Pindahkan baris ke atas':'Pindahkan baris ke bawah';move.onclick=()=>{const sibling=direction<0?tr.previousElementSibling:tr.nextElementSibling;if(sibling){if(direction<0)tbody.insertBefore(tr,sibling);else tbody.insertBefore(sibling,tr);}};actionCell.appendChild(move);}actionCell.appendChild(remove);tr.appendChild(actionCell);tbody.appendChild(tr);
         }
@@ -1081,8 +1074,15 @@ if ($stmt) {
             document.getElementById('ocrReviewPanel').hidden=false;
             const empty=rows.filter(row=>!row.jk).length;
             const ocr=rows.some(row=>Number.isFinite(row.confidence)),missing=rows.filter(row=>!row.nim||!row.nama).length;
-            document.getElementById('ocrReviewHelp').textContent='Periksa semua '+rows.length+' baris berurutan dengan berkas asli sebelum menyimpan. Gunakan ↑/↓ jika perlu memperbaiki urutan. '+(ocr?'Foto/scan dapat salah mengenali huruf atau angka; bingkai merah menandai NIM dan nama yang wajib dicocokkan. NIM yang kosong tidak ditebak. ':'Teks dokumen dibaca langsung tanpa OCR. ')+(missing?missing+' baris perlu dilengkapi NIM atau namanya. ':'')+(empty?empty+' baris tidak memuat L/P; pilih jenis kelamin sendiri, atau gunakan pengisian L/P yang kosong.':'L/P dibaca dari kolom berkas.');
+            document.getElementById('ocrReviewHelp').textContent='Periksa semua '+rows.length+' baris berurutan dengan berkas asli sebelum menyimpan. Gunakan ↑/↓ jika perlu memperbaiki urutan. '+(ocr?'Foto/scan dapat salah mengenali huruf atau angka; bingkai merah menandai NIM dan nama yang wajib dicocokkan. NIM yang kosong tidak ditebak. ':'Teks dokumen dibaca langsung tanpa OCR. ')+(missing?missing+' baris perlu dilengkapi NIM atau namanya. ':'')+(empty?empty+' baris tidak memuat L/P; boleh langsung disimpan kosong, lalu dilengkapi nanti.':'L/P dibaca dari kolom berkas.');
             setOcrStatus(rows.length+' baris mahasiswa ditampilkan untuk diperiksa'+(missing?' ('+missing+' perlu dilengkapi)':'')+'.');
+        }
+        function batalkanImporDaftar() {
+            ocrPhoto.ticket++;ocrPhoto.file=null;ocrPhoto.image=null;ocrPhoto.source=null;ocrPhoto.crop=null;ocrPhoto.loading=null;ocrPhoto.turn=0;ocrPhoto.skew=0;
+            document.getElementById('fotoDaftarMahasiswa').value='';document.getElementById('ocrEmptyGender').value='';document.getElementById('ocrReviewRows').replaceChildren();
+            document.getElementById('ocrReviewPanel').hidden=true;document.getElementById('ocrPhotoPreview').hidden=true;
+            const canvas=document.getElementById('ocrPreviewCanvas');canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+            document.getElementById('ocrSkewAngle').value='0';document.getElementById('ocrSkewLabel').textContent='0°';setOcrStatus('Impor dibatalkan. Daftar mahasiswa yang sudah tersimpan tidak diubah.');
         }
         function tambahBarisKoreksiOcr() { document.getElementById('ocrReviewPanel').hidden=false;tambahBarisOcr({},document.getElementById('ocrReviewRows').rows.length+1); }
         function isiGenderOcrKosong() { const value=document.getElementById('ocrEmptyGender').value;if(!value)return;document.querySelectorAll('#ocrReviewRows select').forEach(select=>{if(!select.value)select.value=value;}); }
@@ -1432,8 +1432,8 @@ if ($stmt) {
             if (!rows.length) { showToast('Tidak ada data lengkap untuk disimpan.', 'error'); return; }
             const seen=new Set();
             for(let i=0;i<rows.length;i++) {
-                const row=rows[i],column=!row.nim?0:!row.nama?1:!row.jk?2:-1;
-                if(column>=0){showToast('Lengkapi NIM, nama, dan L/P pada baris '+(i+1)+' sebelum menyimpan.','error');elements[i].cells[column].querySelector('input,select').focus();return;}
+                const row=rows[i],column=!row.nim?0:!row.nama?1:-1;
+                if(column>=0){showToast('Lengkapi NIM dan nama pada baris '+(i+1)+' sebelum menyimpan.','error');elements[i].cells[column].querySelector('input,select').focus();return;}
                 if(!nimBerkas(row.nim)){showToast('Format NIM pada baris '+(i+1)+' belum terbaca dengan benar. Cocokkan dengan dokumen asli dan masukkan NIM yang valid.','error');elements[i].cells[0].querySelector('input').focus();return;}
                 if(seen.has(row.nim.toUpperCase())){showToast('NIM ganda pada baris '+(i+1)+'. Koreksi atau hapus baris yang sama.','error');elements[i].cells[0].querySelector('input').focus();return;}
                 seen.add(row.nim.toUpperCase());
