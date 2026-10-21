@@ -24,8 +24,14 @@ function attendanceWidths(base){const table=document.getElementById('tabelAbsen'
 function update(){scheduled=false;if(running)return;running=true;try{
  const primary=[...paper.querySelectorAll('#tabelAbsen,#examTableBlock table,#examScaleBlock table')],base=bodySize(),meta=[...paper.querySelectorAll('.meta-label,.meta-val,.meta-value')];
  const items=primary.flatMap(tableItems);[...items,...meta].forEach(restoreSize);paper.style.setProperty('--wa-sheet-body-font',base+'px');items.forEach(el=>el.style.setProperty('font-size',base+'px','important'));
- attendanceWidths(base);const font=commonFont([...items,...meta],base);paper.style.setProperty('--wa-sheet-body-font',font+'px');
- for(const el of items){el.style.setProperty('font-size',font+'px','important');if(text(el))el.title=text(el);}
+ attendanceWidths(base);let font=base;
+ // A shared second pass measures the final input boxes after layout and font changes.
+ // This also handles a scrollbar appearing when the grade window is opened.
+ for(let pass=0;pass<3;pass++){
+  font=commonFont([...items,...meta],font);paper.style.setProperty('--wa-sheet-body-font',font+'px');
+  for(const el of items)el.style.setProperty('font-size',font+'px','important');
+ }
+ for(const el of items)if(text(el))el.title=text(el);
  paper.querySelectorAll('.institution .line,.institution .contact,.header-text>*').forEach(fit);
  const recap=document.querySelector('#tabelRekapNilai');if(recap&&recap.getClientRects().length){prepareTable(recap);const cells=tableItems(recap);cells.forEach(restoreSize);const size=commonFont(cells,12);for(const el of cells)el.style.setProperty('font-size',size+'px','important');}
  window.pastikanJarakTandaTangan?.();
