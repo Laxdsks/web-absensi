@@ -7,14 +7,26 @@ wa_restore_teacher();
 
 function app_session_user_is_authenticated(): bool
 {
-    return isset($_SESSION['id_user'])
-        && in_array((string)$_SESSION['id_user'], ['admin_01', 'dosen_01'], true);
+    if(!isset($_SESSION['id_user']))return false;
+    if(!wa_active_teacher((string)$_SESSION['id_user'])){
+        unset($_SESSION['id_user'],$_SESSION['nama_user'],$_SESSION['role'],$_SESSION['konteks_siswa']);
+        return false;
+    }
+    if(!empty($_COOKIE['wa_device'])){
+        $device=wa_device();
+        if(!$device || $device['role']!=='teacher'||$device['account_id']!==(string)$_SESSION['id_user']){
+            unset($_SESSION['id_user'],$_SESSION['nama_user'],$_SESSION['role'],$_SESSION['konteks_siswa']);
+            return false;
+        }
+    }
+    $GLOBALS['wa_request_owner']=(string)$_SESSION['id_user'];
+    return true;
 }
 
 function app_require_authenticated_user(bool $jsonResponse = false, bool $adminOnly = false): void
 {
     $isAuthenticated = app_session_user_is_authenticated();
-    $isAdmin = isset($_SESSION['id_user']) && (string)$_SESSION['id_user'] === 'admin_01';
+    $isAdmin = $isAuthenticated && (wa_teacher_account((string)$_SESSION['id_user'])['role'] ?? '') === 'admin';
     if ($isAuthenticated && (!$adminOnly || $isAdmin)) {
         return;
     }

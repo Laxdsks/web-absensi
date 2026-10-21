@@ -169,7 +169,7 @@ function wa_operation(array $device,array $op): array {
         if(isset($op['base'])&&!($type==='student-delete'&&!$old)&&($old['nama']??null)!==($op['base']['nama']??null))return ['status'=>'conflict','remote'=>$old,'message'=>'Identitas mahasiswa telah diedit pada perangkat lain.'];
         if($type==='student-delete') { if($old)wa_query('DELETE FROM siswa WHERE id=?',[$old['id']]); wa_audit($device,'delete-student',$nim,['ctx'=>$ctx]); return ['status'=>'success']; }
         $name=wa_text($op['nama']??''); $jk=wa_text($op['jk']??'',1);
-        if($name===''||!in_array($jk,['L','P'],true))throw new InvalidArgumentException('Lengkapi nama dan L/P.');
+        if($name===''||!in_array($jk,['','L','P'],true))throw new InvalidArgumentException('Lengkapi nama; L/P hanya boleh L, P, atau kosong.');
         if($old)wa_query('UPDATE siswa SET nama=?,jk=? WHERE id=?',[$name,$jk,$old['id']]);
         else wa_query("INSERT INTO siswa(jenjang,prodi,semester,kelas,nim,nama,jk,owner_id,academic_year,academic_period) VALUES('S1',?,?,?,?,?,?,?,?,?)",[$ctx['prodi'],$ctx['semester'],$ctx['kelas'],$nim,$name,$jk,$device['account_id'],wa_academic_year($ctx),wa_academic_period($ctx)]);
         wa_audit($device,'save-student',$nim,['ctx'=>$ctx]); return ['status'=>'success'];

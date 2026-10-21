@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__.'/auth_guard.php';
+require_once __DIR__.'/teacher_accounts.php';
 require_once __DIR__.'/app_attendance.php';
 require_once __DIR__.'/app_evidence.php';
 require_once __DIR__.'/app_push.php';
@@ -18,6 +19,12 @@ try {
     if(strlen($raw)>4000000)wa_response(['status'=>'error','message'=>'Permintaan terlalu besar.'],413);
     $input=json_decode($raw,true,64,JSON_THROW_ON_ERROR); if(!is_array($input))throw new InvalidArgumentException('Permintaan tidak terbaca.');
     $action=(string)($input['action']??'');
+    if($action==='teacher-directory'){
+        $teachers=[['id'=>'admin_01','name'=>'M.Fadillah'],['id'=>'dosen_01','name'=>'Zen']];
+        foreach(wa_rows("SELECT id,display_name FROM wa_teacher_accounts WHERE status='active' ORDER BY display_name") as $row)$teachers[]=['id'=>$row['id'],'name'=>$row['display_name']];
+        wa_response(['status'=>'success','teachers'=>$teachers]);
+    }
+    if($action==='home-layout')wa_response(['status'=>'success','layout'=>teacher_home_layout()]);
     if($action==='bootstrap') {
         if(!app_session_user_is_authenticated())wa_response(['status'=>'error','message'=>'Masuk dengan akun dosen terlebih dahulu.'],401);
         $pub=wa_text($input['pubkey']??'',300); wa_pub_pem($pub);
@@ -51,6 +58,15 @@ try {
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
+    if($action==='maps-config'){
+        wa_teacher($device);
+        wa_response(['status'=>'success','embedKey'=>(string)(getenv('GOOGLE_MAPS_BROWSER_KEY')?:wa_one("SELECT value FROM wa_meta WHERE k='google_maps_browser_key'")['value']??'')]);
+    }
+    if($action==='set-maps-config'){
+        wa_teacher($device);if((wa_teacher_account($device['account_id'])['role']??'')!=='admin')throw new DomainException('Hanya administrator yang dapat mengatur Google Maps.');
+        $key=wa_text($input['key']??'',180);if($key!==''&&!preg_match('/^[A-Za-z0-9_-]{20,180}$/D',$key))throw new InvalidArgumentException('Kunci Google Maps tidak valid.');
+        wa_query("INSERT INTO wa_meta(k,value) VALUES('google_maps_browser_key',?) ON DUPLICATE KEY UPDATE value=VALUES(value)",[$key]);wa_response(['status'=>'success']);
+    }
     if($action==='upload-evidence')wa_response(wa_evidence_upload($device,$input));
     if($action==='read-evidence')wa_response(wa_evidence_read($device,wa_text($input['id']??'',36)));
     if($action==='delete-account')wa_response(wa_delete_account($device,$input));

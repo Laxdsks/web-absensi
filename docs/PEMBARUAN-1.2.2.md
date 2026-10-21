@@ -1,0 +1,17 @@
+# Presen 1.2.2
+
+Pembaruan ini memakai website yang sama dan aplikasi **Absen Mahasiswa**. Paket Windows dan APK dosen tidak diperbarui pada versi ini.
+
+- Halaman masuk kembali menampilkan ID akun, nama, dan kata sandi serta intro. Dosen dapat mendaftarkan akun dengan ID, nama, jabatan yang diminta, foto, dan kata sandi. Akun baru aktif setelah administrator menyetujuinya. Foto profil akun disimpan di server sehingga muncul saat masuk dari perangkat lain.
+- Data mahasiswa, absensi, nilai, dokumen, dan persetujuan tetap dipisahkan berdasarkan akun dosen. Halaman data mahasiswa, lembar absen, dan ujian memakai koneksi serta pemilik akun yang sama agar data yang tersimpan muncul konsisten.
+- Administrator dapat menentukan posisi formulir pilihan kelas di beranda untuk semua akun. Dosen lain dapat melihat tata letak baru, tetapi tidak dapat mengubah pengaturan bersama.
+- Kotak pesan dosen memakai daftar dan pencarian yang lebih ringkas, dengan pemberitahuan kecil saat pesan baru masuk. Riwayat absen, foto bukti, dan lokasi tetap mengikuti akun masing-masing.
+- Beranda, navigasi, panel data, dan bilah lembar memakai bayangan berlapis serta respons hover ringan agar hierarki halaman lebih jelas. Pada ponsel geraknya disederhanakan; panduan menghindari tombol yang sedang ditunjuk. Kertas absen dan ujian tetap putih dan efek dekoratif tidak ikut dicetak.
+- Font isi tabel, nomor, judul kolom, dan identitas lembar diseragamkan. Tombol **Muat 35 mahasiswa** memilih ukuran 8 pt dan baris ringkas; pengaturan kelas/mata kuliah yang sama dipakai pada lembar absen dan ujian. Penyesuaian tetap memperhitungkan ruang untuk kop, metadata, dan tanda tangan.
+- Enter bergerak ke pertemuan berikutnya. Delete/Backspace mengosongkan sel lalu bergerak ke pertemuan sebelumnya, termasuk setelah lembar disimpan dan dibuka lagi.
+- Tanda tangan PNG transparan dipasang sebagai lapisan di atas nama, dapat diseret dan diatur posisi/ukurannya. Penempatan disimpan bersama lembar. Blok tanda tangan diekspor sebagai gambar gabungan agar posisi tinta terhadap nama tetap sama pada Word/Excel; teks pada blok gambar tersebut tidak dapat diedit langsung di Office.
+- Impor menerima L/P kosong agar nama dan NIM dapat disimpan dahulu. L/P bisa dilengkapi dari daftar atau lembar absen. Batalkan impor menghapus foto dan hasil sementara, tanpa menghapus daftar tersimpan. OCR tetap memerlukan pemeriksaan visual NIM dan nama terhadap baris sumber.
+- Wallpaper dapat memenuhi layar meskipun fotonya kecil, dengan skala manual hingga 1000%. Gambar raster lain dikonversi agar dapat ditampilkan; penyimpanan gambar besar dapat memakai database perangkat. Logo aplikasi/kampus dapat diganti, diatur ukurannya, dan dipulihkan melalui Tampilan.
+- Peta titik, rute, pilihan titik awal, dan panorama memakai Google Maps. Rute menggunakan GPS dosen yang baru dan tujuan sesuai koordinat mahasiswa. Lokasi GPS yang kasar ditolak; titik awal lebih dari 100 km memerlukan konfirmasi. Rute/panorama resmi memerlukan konfigurasi Google Maps melalui akun administrator; lihat [pengaturan Google Maps](PENGATURAN-GOOGLE-MAPS.md).
+
+Pembaruan website dan pemasangan APK tidak menghapus data produksi. Saat memasang APK mahasiswa yang baru, pasang sebagai pembaruan di atas aplikasi Android 2 dengan identitas paket yang sama; jangan hapus data aplikasi. APK hanya diterbitkan setelah kunci penandatangan Android 2 yang sama tersedia dan uji pemasangan berdampingan serta pembaruan data lulus.

@@ -22,7 +22,8 @@ def details(path):
         raise RuntimeError('APK package metadata is missing')
     return certificates, package.groups()
 
-for name in ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk'):
+names = ('Absen-Mahasiswa-Android.apk',) if '--student-only' in sys.argv[2:] else ('Absensi-Dosen-Android.apk', 'Absen-Mahasiswa-Android.apk')
+for name in names:
     previous = root / 'previous-installers' / name
     current = root / 'installers' / name
     new_cert, new_package = details(current)

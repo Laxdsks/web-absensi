@@ -160,18 +160,17 @@
     const originalOnload=window.onload;
     window.onload=async event=>{
       const state=await WA.get();
-      window.SERVER_CONFIG.isLoggedIn=state.profile?.role==='teacher'||window.SERVER_CONFIG.isLoggedIn;
-      if(state.profile?.role==='teacher'){
-        const id=state.profile.account.id||'admin_01',custom=await WA.get('appearance-profile:'+id),dosen=id==='dosen_01';
-        window.SERVER_CONFIG.adminName=custom?.nama||state.profile.account.nama;
-        window.SERVER_CONFIG.adminRole=dosen?'Dosen':'Administrator Utama';
-        window.SERVER_CONFIG.adminAvatar=custom?.avatar||'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/'+(dosen?'user':'user-tie')+'.svg';
+      const allowed=state.profile?.role==='teacher'&&(!navigator.onLine||window.SERVER_CONFIG.accountId===state.profile.account.id);
+      if(allowed){
+        const id=state.profile.account.id,custom=await WA.get('appearance-profile:'+id);
+        window.SERVER_CONFIG.adminName=state.profile.account.nama;
+        window.SERVER_CONFIG.adminRole=state.profile.account.role==='admin'?'Administrator Utama':'Dosen';
+        window.SERVER_CONFIG.adminAvatar=state.profile.account.avatar||custom?.avatar||window.SERVER_CONFIG.adminAvatar;
       }
       originalOnload?.call(window,event);
     };
     const state=await WA.get();
-    if(state.profile?.role==='teacher') {
-      window.SERVER_CONFIG.isLoggedIn=true;
+    if(state.profile?.role==='teacher'&&(!navigator.onLine||window.SERVER_CONFIG.accountId===state.profile.account.id)) {
       document.getElementById('authOverlay').style.display='none';
     }
   } else {
@@ -184,8 +183,8 @@
     document.getElementById('closeAttendanceQR').onclick=()=>{document.body.classList.remove('wa-qr-open');document.getElementById('attendanceQRPanel').hidden=true;document.getElementById('openAttendanceQR').setAttribute('aria-expanded','false');};
   }
   let state=await WA.get();
-  if(!state.profile&&navigator.onLine) {try {await WA.bootstrap();state=await WA.get();} catch (_) {}}
-  if(!sheet&&state.profile?.role==='teacher') {window.SERVER_CONFIG.isLoggedIn=true;document.getElementById('authOverlay').style.display='none';}
+  if(navigator.onLine&&window.SERVER_CONFIG?.isLoggedIn&&(!state.profile||state.profile.role!=='teacher'||state.profile.account.id!==window.SERVER_CONFIG.accountId)) {try {await WA.bootstrap();state=await WA.get();} catch (_) {}}
+  if(!sheet&&state.profile?.role==='teacher'&&(!navigator.onLine||window.SERVER_CONFIG.accountId===state.profile.account.id)) document.getElementById('authOverlay').style.display='none';
   WA.on(()=>void render());window.addEventListener('online',()=>void render());window.addEventListener('offline',()=>void render());
   await render();
   if(state.profile?.role==='teacher') {void WA.prepareOffline();void WA.sync();}

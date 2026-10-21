@@ -22,3 +22,21 @@
 #tabelAbsen td input.attendance-cell{min-width:12px;padding:0 1px!important}
 #tabelRekapNilai th{font-size:11px}
 @media print{body.cetak-rekap #tabelRekapNilai th,body.cetak-rekap #tabelRekapNilai td{padding:3px 4px!important}}
+
+/* One body size for numbering, headings, identities, marks and sheet metadata. */
+#paperSheet .meta-wrapper,#paperSheet .meta,#paperSheet .meta-label,#paperSheet .meta-val,#paperSheet .meta-value,
+#paperSheet .signature-section,#paperSheet .signature-box,#paperSheet .school-footer-section,
+#paperSheet .summary-title,#paperSheet .summary-row {
+  font-size:var(--wa-sheet-body-font,var(--global-font-size,12px))!important;
+}
+#tabelAbsen th,#tabelAbsen td,#tabelAbsen input,#tabelAbsen small,
+#examTableBlock th,#examTableBlock td,#examTableBlock small,
+#examScaleBlock th,#examScaleBlock td,#examScaleBlock small {
+  font-size:var(--wa-sheet-body-font,12px)!important;line-height:1.25;
+}
+#tabelAbsen .nim-input,#examTableBlock tbody td:nth-child(2){text-align:center!important}
+#paperSheet.wa-fit-35 #tabelAbsen tbody td,#paperSheet.wa-fit-35 #examTableBlock tbody td {padding:1px 4px!important}
+#paperSheet.wa-fit-35 #tabelAbsen tbody td:has(.attendance-cell){padding:1px 2px!important}
+#paperSheet.wa-fit-35 #tabelAbsen td input {height:1.25em!important;min-height:0!important;line-height:1.25}
+#paperSheet.wa-fit-35 #tabelAbsen th,#paperSheet.wa-fit-35 #examTableBlock th {padding:2px 4px!important}
+#paperSheet.wa-fit-35 .signature-section {margin-top:18px}

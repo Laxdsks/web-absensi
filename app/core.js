@@ -12,7 +12,7 @@ const b64=bytes=>btoa(Array.from(new Uint8Array(bytes),v=>String.fromCharCode(v)
 const unb64=s=>Uint8Array.from(atob(s.replaceAll('-','+').replaceAll('_','/')),c=>c.charCodeAt(0));
 const encode=obj=>b64(enc.encode(JSON.stringify(obj)));const decode=s=>JSON.parse(dec.decode(unb64(s)));
 const academicYear=c=>c.year||'2026/2027',academicPeriod=c=>c.period||(Number(c.semester)%2?'Ganjil':'Genap');
-const ctx=c=>({jenjang:'S1',prodi:c.prodi,semester:String(c.semester),kelas:String(c.kelas).replace(/^Kelas /,'').toUpperCase(),...((c.owner||activeOwner)==='dosen_01'?{owner:'dosen_01'}:{}),...(academicYear(c)!=='2026/2027'||academicPeriod(c)!==(Number(c.semester)%2?'Ganjil':'Genap')?{year:academicYear(c),period:academicPeriod(c)}:{})});
+const ctx=c=>({jenjang:'S1',prodi:c.prodi,semester:String(c.semester),kelas:String(c.kelas).replace(/^Kelas /,'').toUpperCase(),...((c.owner||activeOwner)!=='admin_01'?{owner:c.owner||activeOwner}:{}),...(academicYear(c)!=='2026/2027'||academicPeriod(c)!==(Number(c.semester)%2?'Ganjil':'Genap')?{year:academicYear(c),period:academicPeriod(c)}:{})});
 const sameCtx=(a,b)=>JSON.stringify(ctx(a))===JSON.stringify(ctx(b));
 async function scope(c,course=''){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(JSON.stringify([ctx(c),course.trim()])))),v=>v.toString(16).padStart(2,'0')).join('');}
 async function keys(){let value=await get('keys');if(!value){const pair=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);value={privateKey:pair.privateKey,pub:b64(await crypto.subtle.exportKey('spki',pair.publicKey))};await change(old=>old||value,'keys');value=await get('keys');}return value;}

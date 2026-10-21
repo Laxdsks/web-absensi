@@ -34,6 +34,8 @@ def main():
     output = ROOT / 'installers'
     output.mkdir(exist_ok=True)
     for apk in manifest['apks']:
+        if apk['installer'] != 'Absen-Mahasiswa-Android.apk':
+            continue
         if Path(apk['path']).name != apk['path'] or Path(apk['installer']).name != apk['installer']:
             raise RuntimeError('Invalid APK artifact path')
         url = 'https://raw.githubusercontent.com/Laxdsks/web-absensi/' + commit + '/' + apk['path']
