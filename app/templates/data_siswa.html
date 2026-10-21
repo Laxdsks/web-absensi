@@ -919,7 +919,7 @@
         }
         function batalkanImporDaftar() {
             ocrPhoto.ticket++;ocrPhoto.file=null;ocrPhoto.image=null;ocrPhoto.source=null;ocrPhoto.crop=null;ocrPhoto.loading=null;ocrPhoto.turn=0;ocrPhoto.skew=0;
-            document.getElementById('fotoDaftarMahasiswa').value='';document.getElementById('ocrReviewRows').replaceChildren();
+            document.getElementById('fotoDaftarMahasiswa').value='';document.getElementById('ocrEmptyGender').value='';document.getElementById('ocrReviewRows').replaceChildren();
             document.getElementById('ocrReviewPanel').hidden=true;document.getElementById('ocrPhotoPreview').hidden=true;
             const canvas=document.getElementById('ocrPreviewCanvas');canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
             document.getElementById('ocrSkewAngle').value='0';document.getElementById('ocrSkewLabel').textContent='0°';setOcrStatus('Impor dibatalkan. Daftar mahasiswa yang sudah tersimpan tidak diubah.');
