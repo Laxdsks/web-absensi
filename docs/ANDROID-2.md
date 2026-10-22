@@ -20,7 +20,7 @@ Cadangan JSON versi lama **bukan migrasi lengkap**. Cadangan tidak menyertakan k
 
 ## Menyimpan kunci dan mengaktifkan build berikutnya
 
-Kunci penandatangan baru dan kata sandinya tidak dimasukkan ke APK, repository, atau percakapan. Cadangannya berupa arsip AES-256 **Cadangan-Kunci-Android-2-PRIVATE.zip** dan file kata sandi terpisah **Password-Cadangan-PRIVATE.txt**. Simpan arsip dan kata sandinya secara terpisah di penyimpanan terenkripsi atau pengelola kata sandi. Jangan unggah keduanya sebagai file repository atau lampiran publik. Kehilangan kunci ini akan menghalangi pembaruan Android 2.
+Kunci penandatangan dan kata sandinya tidak dimasukkan ke APK atau repository. Dokumen lama menyebut arsip AES-256 **Cadangan-Kunci-Android-2-PRIVATE.zip** dan file **Password-Cadangan-PRIVATE.txt**. Pemeriksaan pada 22 Oktober 2026 belum menemukan arsip, kunci, atau tautan unduh cadangan tersebut dalam ruang kerja dan riwayat yang dapat diakses. Penyebutan nama berkas pada dokumen ini bukan bukti cadangan sudah diberikan kepada pengguna. Log CI rilis 1.2.1 menunjukkan publikasi memakai APK yang sudah ditandatangani dari commit artefak, bukan kunci privat yang tersedia di CI. Kunci baru tidak dapat menggantikan kunci lama untuk memperbarui aplikasi terpasang. Simpan arsip dan kata sandinya secara terpisah di penyimpanan terenkripsi atau pengelola kata sandi. Jangan unggah keduanya sebagai file repository atau lampiran publik. Kehilangan kunci ini akan menghalangi pembaruan Android 2.
 
 Untuk mengaktifkan build APK berikutnya, pemilik repository perlu melakukan ini karena akses pengelolaan Secrets tidak tersedia di sesi Codex:
 

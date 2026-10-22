@@ -1,0 +1,32 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {chromium}=require(process.env.WA_PLAYWRIGHT_PATH||'/workspace/cloud-web-absensi/browser-tools/node_modules/playwright-core');
+const BASE=process.env.WA_TEST_URL||'http://127.0.0.1:8000/';if(!['localhost','127.0.0.1'].includes(new URL(BASE).hostname))throw Error('Setup tests use only the isolated local server.');
+test('Google setup explains ownership and costs, saves keys and tests official embeds without changing attendance',{timeout:90000},async t=>{
+ const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']}),context=await browser.newContext({viewport:{width:1280,height:900}}),p=await context.newPage(),errors=[];let originalKey='';
+ await context.route('**/*',route=>new URL(route.request().url()).origin===new URL(BASE).origin?route.continue():route.fulfill({contentType:'text/html',body:'<!doctype html><p>Google test fixture: actual Google access is not verified.</p>'}));p.on('pageerror',e=>errors.push(e.message));
+ try{
+  await p.goto(BASE+'index.php');await p.waitForFunction(()=>window.WA);const source=fs.readFileSync(path.join(__dirname,'../index.php'),'utf8');await p.evaluate(password=>WA.login('teacher',{username:'M.Fadillah',password}),source.match(/\$pass === '([^']+)'/)[1]);await p.reload();await p.waitForFunction(()=>window.WA);await p.locator('#authOverlay').waitFor({state:'hidden'});originalKey=await p.evaluate(async()=>{const config=await WA.api('maps-config');await WA.api('set-maps-config',{key:''});return config.embedKey;});
+  await p.locator('[data-appearance]').first().click();const section=p.locator('.p-maps-settings');await section.waitFor({state:'visible'});
+  await t.test('setup links go to Google, explain billing and copy the exact allowed website',async()=>{
+   await section.locator('summary').click();const links=await section.locator('a').evaluateAll(els=>els.map(e=>({href:e.href,target:e.target,rel:e.rel})));assert(links.length>=5);assert(links.every(e=>['console.cloud.google.com','developers.google.com'].includes(new URL(e.href).host)&&e.target==='_blank'&&e.rel.includes('noopener')));assert.match(await section.innerText(),/akun penagihan/);assert.match(await section.innerText(),/Layanan tambahan dapat berbiaya/);
+   await p.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.copiedMapsDomain=value;}}}));await p.locator('#pMapsCopyDomain').click();assert.equal(await p.evaluate(()=>window.copiedMapsDomain),'https://datasiswasekolah.42web.io/*');
+   await section.locator('#pMapsTest').click();assert.equal(await p.locator('.p-maps-test').count(),0);assert.match(await p.locator('#presenAppearanceDialog>[role=status]').innerText(),/Tempel kunci/);
+  });
+  const fixture='presen_maps_setup_local_test_key_1234567890';
+  await t.test('saving is distinct from verification and invalid input cannot replace a saved key',async()=>{
+   await p.locator('#pMapsKey').fill(fixture);await p.locator('#pMapsSave').click();await p.locator('#presenAppearanceDialog>[role=status]').getByText(/Pengaturan Google Maps disimpan/).waitFor();assert.equal(await p.evaluate(async()=>(await WA.api('maps-config')).embedKey),fixture);assert.match(await section.locator('.p-maps-state').innerText(),/perlu diuji/);
+   await p.locator('#pMapsKey').fill('invalid!');await p.locator('#pMapsSave').click();await p.locator('#presenAppearanceDialog>[role=status]').getByText(/tidak valid/).waitFor();assert.equal(await p.evaluate(async()=>(await WA.api('maps-config')).embedKey),fixture);await p.locator('#pMapsKey').fill(fixture);
+  });
+  await t.test('example place, route and panorama stay in one window with explicit coordinates and no attendance writes',async()=>{
+   const records=()=>WA.api('snapshot').then(r=>Object.fromEntries(['roster','marks','sessions','documents','registrations'].map(k=>[k,r.snapshot[k]]))),before=await p.evaluate(records),url=p.url();await p.locator('#pMapsTest').click();const modal=p.locator('.p-maps-test'),frame=modal.locator('iframe');assert.match(await modal.innerText(),/bukan posisi mahasiswa/);
+   for(const mode of ['place','directions','streetview']){await modal.locator(`[data-map-mode=${mode}]`).click();const u=new URL(await frame.getAttribute('src'));assert.equal(u.origin,'https://www.google.com');assert.equal(u.pathname,'/maps/embed/v1/'+mode);assert.equal(u.searchParams.get('key'),fixture);if(mode==='directions'){assert.equal(u.searchParams.get('origin'),'-8.53,118.43');assert.equal(u.searchParams.get('destination'),'-8.54059,118.43617');}else assert.equal(u.searchParams.get(mode==='place'?'q':'location'),'-8.54059,118.43617');assert.equal(p.url(),url);}
+   assert.equal(await frame.getAttribute('referrerpolicy'),'strict-origin-when-cross-origin');assert(!(await frame.getAttribute('sandbox')).includes('allow-top-navigation'));
+   await p.setViewportSize({width:360,height:800});const box=await modal.boundingBox();assert(box.x>=0&&box.x+box.width<=361);assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await p.emulateMedia({media:'print'});assert.equal(await modal.isVisible(),false);await p.emulateMedia({media:'screen'});await modal.locator(':scope>.p-close').click();assert.deepEqual(await p.evaluate(records),before);
+  });
+  await t.test('offline setup never claims the map was checked, and regular lecturer UI has no key editor',async()=>{
+   await p.evaluate(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false}));await p.locator('#pMapsTest').click();assert.equal(await p.locator('.p-maps-test').count(),0);assert.match(await p.locator('#presenAppearanceDialog>[role=status]').innerText(),/memerlukan internet/);await p.evaluate(()=>delete navigator.onLine);
+   await p.locator('#presenAppearanceDialog>.p-close').click();await p.evaluate(()=>WA.change(s=>({...s,profile:{...s.profile,account:{...s.profile.account,role:'teacher'}}})));await p.locator('[data-appearance]').first().click();assert.equal(await p.locator('.p-maps-settings').isVisible(),false);assert.equal(await p.locator('#pMapsKey').inputValue(),'');
+  });
+  assert.deepEqual(errors,[]);
+ }finally{try{await p.evaluate(key=>WA.api('set-maps-config',{key}),originalKey);}catch(_){}await browser.close();}
+});
