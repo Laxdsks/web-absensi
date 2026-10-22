@@ -29,6 +29,8 @@ instrument('testSeedStaleWorker')
 write_sentinel(NEW,'current-data-retained');install(new)
 assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
 instrument('testOnlineAfterStaleWorker')
+instrument('testMissingRuntimeRecovery')
+(OUT/'online-after-stale-worker.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
 instrument('testRelaunchSavedStudent')
 packages=adb('shell','pm','list','packages');assert 'package:'+OLD in packages and 'package:'+NEW in packages
@@ -51,5 +53,5 @@ assert adb('shell','cat',sentinel(OLD))=='original-data-retained'
 assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
 adb('shell','am','force-stop',NEW);adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity');time.sleep(4)
 crashes=adb('logcat','-d','-s','AndroidRuntime:E');assert 'FATAL EXCEPTION' not in crashes,crashes[-1500:]
-report={'package':NEW,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFrom123RetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'headerOnlyBlankPageReproducedOn123':True,'staleServiceWorkerBypassedOnline':True,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
+report={'package':NEW,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFrom123RetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'headerOnlyBlankPageReproducedOn123':True,'staleServiceWorkerBypassedOnline':True,'missingJavaScriptShowsNativeRecovery':True,'retryRetainsAccountAndHistory':True,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
 (OUT/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))

@@ -42,7 +42,7 @@ final class StudentShell {
   activity.addContentView(recovery,new android.view.ViewGroup.LayoutParams(-1,-1));
  }
  void open(){
-  if(destroyed)return;handler.removeCallbacksAndMessages(null);ready=false;openedAt=android.os.SystemClock.elapsedRealtime();
+  if(destroyed)return;if(handshake!=null){handshake.stopLoading();handshake.destroy();handshake=null;}handler.removeCallbacksAndMessages(null);ready=false;openedAt=android.os.SystemClock.elapsedRealtime();
   title.setText("Membuka Presen Go");detail.setText("Memulihkan tampilan akun…\nVersi "+BuildConfig.VERSION_NAME);retry.setVisibility(View.GONE);update.setVisibility(View.GONE);recovery.setVisibility(View.VISIBLE);
   // Do not clear WebStorage, IndexedDB, cookies, photos or the pending attendance outbox.
   // loadDataWithBaseURL bypasses old navigation responses but retains the same storage origin.

@@ -5,6 +5,11 @@ import android.app.Instrumentation;
 import android.content.Intent;
 import android.test.InstrumentationTestCase;
 import android.view.ViewGroup;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import android.webkit.*;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -59,6 +64,21 @@ public class StudentLifecycleTest extends InstrumentationTestCase {
   assertEquals("Stale worker cannot replace app document", "false",js("Boolean(window.__staleShell)"));
   js("PresenExperience.view('history')");until("document.querySelector('#history')?.innerText.includes('Mata Kuliah Tersimpan')");
  }
+ public void testMissingRuntimeRecovery()throws Exception{
+  launch();until("document.querySelector('#scanSession')");
+  getInstrumentation().runOnMainSync(()->{
+   try{web().getSettings().setJavaScriptEnabled(false);Field field=MainActivity.class.getDeclaredField("studentShell");field.setAccessible(true);Object shell=field.get(activity);Method open=shell.getClass().getDeclaredMethod("open");open.setAccessible(true);open.invoke(shell);}catch(Exception error){throw new RuntimeException(error);}
+  });
+  Thread.sleep(14500);
+  final String[] nativeText={""};getInstrumentation().runOnMainSync(()->nativeText[0]=nativeText(activity.findViewById(android.R.id.content)));
+  assertTrue("Native recovery replaces a blank runtime",nativeText[0].contains("Tampilan belum dapat dibuka"));
+  assertTrue("Recovery promises no destructive reset",nativeText[0].contains("Data akun dan riwayat tetap tersimpan"));
+  getInstrumentation().runOnMainSync(()->{web().getSettings().setJavaScriptEnabled(true);clickRetry(activity.findViewById(android.R.id.content));});
+  until("document.querySelector('#scanSession') && document.querySelector('.student-identity')?.innerText.includes('NIMREOPEN123')");
+  js("PresenExperience.view('history')");until("document.querySelector('#history')?.innerText.includes('Mata Kuliah Tersimpan')");
+ }
+ private String nativeText(View view){if(view.getVisibility()!=View.VISIBLE)return "";String text=view instanceof TextView?((TextView)view).getText().toString():"";if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)text+=" "+nativeText(group.getChildAt(i));}return text;}
+ private void clickRetry(View view){if(view instanceof Button&&((Button)view).getText().toString().equals("Muat ulang tampilan")){view.performClick();return;}if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)clickRetry(group.getChildAt(i));}}
  public void testRelaunchSavedStudent()throws Exception{
   launch();until("document.querySelector('#scanSession') && document.querySelector('.student-identity')?.innerText.includes('NIMREOPEN123')");
   js("localStorage.setItem('wa-student-draft-11111111-1111-4111-8111-111111111111','{broken')");

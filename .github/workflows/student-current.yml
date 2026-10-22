@@ -70,7 +70,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-snapshot -gpu swiftshader_indirect -no-boot-anim -camera-back none -camera-front none -memory 1536 -cores 2 -skin 480x800
           script: python3 scripts/test-student-current.py
       - uses: actions/upload-artifact@v4
-        if: steps.candidate.outputs.ready == 'true'
+        if: always() && steps.candidate.outputs.ready == 'true'
         with:
           name: Presen-Go-signed-and-verified
           path: |
