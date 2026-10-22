@@ -10,6 +10,7 @@ def sentinel(package):return '/data/user/0/'+package+'/files/presen-install-sent
 def write_sentinel(package,text):
     adb('shell','mkdir','-p','/data/user/0/'+package+'/files')
     adb('shell','sh','-c',"'printf %s "+text+' > '+sentinel(package)+"'")
+if not adb('get-serialno').startswith('emulator-') or adb('shell','getprop','ro.kernel.qemu')!='1':raise RuntimeError('This fixture is restricted to an isolated emulator.')
 old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.4.apk'
 if hashlib.sha256(old.read_bytes()).hexdigest()!='6b86ff328d2b73be29b1972d0f3bf53fe337f2b45d1485834b2f6e782507d9c6':raise RuntimeError('Unexpected original APK.')
 previous=ROOT/'previous-current-installers/Presen-Go-1.2.3.apk'
@@ -53,5 +54,9 @@ assert adb('shell','cat',sentinel(OLD))=='original-data-retained'
 assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
 adb('shell','am','force-stop',NEW);adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity');time.sleep(4)
 crashes=adb('logcat','-d','-s','AndroidRuntime:E');assert 'FATAL EXCEPTION' not in crashes,crashes[-1500:]
-report={'package':NEW,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFrom123RetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'headerOnlyBlankPageReproducedOn123':True,'staleServiceWorkerBypassedOnline':True,'missingJavaScriptShowsNativeRecovery':True,'retryRetainsAccountAndHistory':True,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
+# Only after persistence has been checked: clear this isolated emulator fixture to test a first installation.
+assert 'Success' in adb('shell','pm','clear',NEW)
+adb('shell','svc','wifi','enable');time.sleep(5)
+instrument('testFreshReadOnlyApiHandshake')
+report={'package':NEW,'freshNativeReadOnlyApiVerified':True,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFrom123RetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'headerOnlyBlankPageReproducedOn123':True,'staleServiceWorkerBypassedOnline':True,'missingJavaScriptShowsNativeRecovery':True,'retryRetainsAccountAndHistory':True,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
 (OUT/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))

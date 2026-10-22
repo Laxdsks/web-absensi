@@ -79,6 +79,11 @@ public class StudentLifecycleTest extends InstrumentationTestCase {
  }
  private String nativeText(View view){if(view.getVisibility()!=View.VISIBLE)return "";String text=view instanceof TextView?((TextView)view).getText().toString():"";if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)text+=" "+nativeText(group.getChildAt(i));}return text;}
  private void clickRetry(View view){if(view instanceof Button&&((Button)view).getText().toString().equals("Muat ulang tampilan")){view.performClick();return;}if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)clickRetry(group.getChildAt(i));}}
+ public void testFreshReadOnlyApiHandshake()throws Exception{
+  launch();until("window.WA && !document.querySelector('#studentStartup')");
+  js("window.__apiReady=false;window.__apiError='';(async()=>{for(let i=0;i<12&&!window.__apiReady;i++){try{const response=await WA.api('teacher-directory');window.__apiReady=Array.isArray(response.teachers)&&!(await WA.get()).profile;}catch(error){window.__apiError=error.message;}if(!window.__apiReady)await new Promise(r=>setTimeout(r,1000));}})()");
+  until("window.__apiReady");
+ }
  public void testRelaunchSavedStudent()throws Exception{
   launch();until("document.querySelector('#scanSession') && document.querySelector('.student-identity')?.innerText.includes('NIMREOPEN123')");
   js("localStorage.setItem('wa-student-draft-11111111-1111-4111-8111-111111111111','{broken')");
