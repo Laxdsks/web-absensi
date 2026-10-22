@@ -10,9 +10,21 @@ def sentinel(package):return '/data/user/0/'+package+'/files/presen-install-sent
 def write_sentinel(package,text):
     adb('shell','mkdir','-p','/data/user/0/'+package+'/files')
     adb('shell','sh','-c',"'printf %s "+text+' > '+sentinel(package)+"'")
-old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.2.apk'
+old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.3.apk'
 if hashlib.sha256(old.read_bytes()).hexdigest()!='6b86ff328d2b73be29b1972d0f3bf53fe337f2b45d1485834b2f6e782507d9c6':raise RuntimeError('Unexpected original APK.')
-adb('root');time.sleep(2);install(old);write_sentinel(OLD,'original-data-retained');install(new)
+previous=ROOT/'previous-current-installers/Presen-Go-1.2.2.apk'
+tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.3-tests.apk'
+adb('root');time.sleep(2);install(old);write_sentinel(OLD,'original-data-retained')
+adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
+install(previous);install(tests)
+def instrument(method):
+    result=adb('shell','am','instrument','-w','-r','-e','class','id.webabsensi.app.StudentLifecycleTest#'+method,NEW+'.test/android.test.InstrumentationTestRunner')
+    (OUT/(method+'.txt')).write_text(result)
+    if 'OK (1 test)' not in result:raise RuntimeError('Saved-student Android verification failed: '+result[-2000:])
+instrument('testSeedSavedStudent')
+write_sentinel(NEW,'current-data-retained');install(new)
+assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
+instrument('testRelaunchSavedStudent')
 packages=adb('shell','pm','list','packages');assert 'package:'+OLD in packages and 'package:'+NEW in packages
 assert adb('shell','cat',sentinel(OLD))=='original-data-retained'
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable');adb('logcat','-c')
@@ -24,7 +36,7 @@ for _ in range(18):
         adb('shell','uiautomator','dump','--compressed','/sdcard/presen-current-ui.xml')
         xml=adb('shell','cat','/sdcard/presen-current-ui.xml');tree=ET.fromstring(xml)
         labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in tree.iter('node'))
-        if any(s in labels.lower() for s in ['absen','mahasiswa','presen','lokasi','kamera','daftar','masuk']):rendered=True;break
+        if any(s in labels.lower() for s in ['mahasiswa uji buka ulang','nimreopen123','mata kuliah tersimpan']):rendered=True;break
     except (subprocess.CalledProcessError,ET.ParseError):pass
 if not rendered:raise RuntimeError('Bundled student screen did not render while offline.')
 (OUT/'offline-launch.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
@@ -33,5 +45,5 @@ assert adb('shell','cat',sentinel(OLD))=='original-data-retained'
 assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
 adb('shell','am','force-stop',NEW);adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity');time.sleep(4)
 crashes=adb('logcat','-d','-s','AndroidRuntime:E');assert 'FATAL EXCEPTION' not in crashes,crashes[-1500:]
-report={'package':NEW,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'nativeCrashes':False,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
+report={'package':NEW,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFrom122RetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
 (OUT/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))

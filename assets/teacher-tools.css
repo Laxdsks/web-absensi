@@ -12,3 +12,5 @@
 #attendanceQRPanel{margin:10px auto;padding:14px 18px;border:1px solid var(--card-border,#64748b);border-radius:10px;background:var(--sidebar-bg,var(--ui-panel,#0f172a));width:min(900px,calc(100% - 28px));box-sizing:border-box;scroll-margin-top:12px}#attendanceQRPanel[hidden]{display:none!important}
 
 body.wa-qr-open{padding-top:12px}body.wa-qr-open .top-toolbar{position:relative;top:auto;left:auto;transform:none;margin:0 auto}body.wa-qr-open .inspector-panel,body.wa-qr-open .inspector-toggle-btn,body.wa-qr-open .toolbar-toggle-btn{display:none!important}
+
+.qr-compatibility{display:flex;align-items:center;gap:9px;font-size:12px;margin:12px 0}.qr-compatibility input{width:18px;height:18px;padding:0;flex:none}#teacherTools #codeImage{background:#fff;line-height:0}#teacherTools #codeImage svg{width:min(100%,560px);height:auto;max-height:65dvh}

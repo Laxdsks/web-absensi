@@ -110,3 +110,13 @@ html[data-theme=malam] .portal-student .absent,html[data-theme=samudra] .portal-
 .portal-student .student-class-grid label:has(select[name=jenjang]) { grid-column:auto; }
 .portal-student .student-class-grid label:has(select[name=prodi]) { grid-row:2; }
 .portal-student #studentSession form { grid-template-columns:1fr; }
+
+/* Camera pixels stay uncropped; the guide is only an overlay. */
+.student-scan-camera{position:relative;overflow:hidden;border:1px solid var(--p-line);border-radius:14px;background:#071725}
+.portal-student .student-scan-camera #camera{display:block;width:100%;max-height:45dvh;min-height:180px;object-fit:contain;border-radius:0}
+.student-scan-guide{position:absolute;inset:15%;border:2px solid #ffffffb0;border-radius:16px;pointer-events:none}
+.student-scan-status{padding:11px 13px;border-radius:10px;background:var(--input-bg);font-size:13px;line-height:1.5}
+.student-scan-status[data-state=error]{border-left:3px solid #dc6971}
+.student-scan-status[data-state=success],.student-scan-receipt{border-left:3px solid #15916d}
+.student-scan-receipt{display:flex;gap:9px;align-items:center;padding:12px;background:var(--input-bg);border-radius:10px;font-size:13px;line-height:1.5}
+.student-scan-receipt .p-icon{flex:none}
