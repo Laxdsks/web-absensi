@@ -48,6 +48,14 @@ jobs:
         run: python3 scripts/deploy_hosting.py
       - name: Verify application and teacher access on live hosting
         run: python3 scripts/verify_hosting.py --preserve-baseline "$RUNNER_TEMP/attendance-baseline.json"
+      - name: Prepare browser login verification
+        run: |
+          npm install --prefix "$RUNNER_TEMP/login-browser" --no-save playwright@1.56.1
+          "$RUNNER_TEMP/login-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verify actual browser login on live hosting
+        env:
+          WA_PLAYWRIGHT_PATH: ${{ runner.temp }}/login-browser/node_modules/playwright
+        run: node scripts/check_hosting_login.cjs
       - name: Remove temporary verification baseline
         if: always()
         run: rm -f "$RUNNER_TEMP/attendance-baseline.json"

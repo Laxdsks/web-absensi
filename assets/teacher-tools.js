@@ -156,7 +156,7 @@
     } finally {rendering=false;}
   }
   if(!sheet) {
-    window.WATeacher={prepare:async()=>{await WA.bootstrap();void WA.prepareOffline();}};
+    window.WATeacher={prepare:async()=>{await WA.bootstrap({renew:true});void WA.prepareOffline();}};
     const originalOnload=window.onload;
     window.onload=async event=>{
       const state=await WA.get();
