@@ -8,9 +8,26 @@ test('one floating inbox, consistent identity fonts, grade review and embedded b
   await context.route('**/*',route=>{const u=new URL(route.request().url());if(u.host==='router.project-osrm.org')return route.fulfill({contentType:'application/json',body:JSON.stringify({code:'Ok',routes:[{distance:8500,duration:1100,geometry:{type:'LineString',coordinates:[[118.4,-8.5],[118.462,-8.536]]}}]})});if(u.host==='nominatim.openstreetmap.org')return route.fulfill({contentType:'application/json',body:JSON.stringify({address:{city:'Dompu',state:'Nusa Tenggara Barat',country:'Indonesia'}})});return u.origin===new URL(BASE).origin?route.continue():route.abort();});
   await p.goto(BASE+'index.php');await p.waitForFunction(()=>!!window.WA);const source=fs.readFileSync(path.join(__dirname,'../index.php'),'utf8');await p.evaluate(f=>WA.login('teacher',f),{username:'M.Fadillah',password:source.match(/\$pass === '([^']+)'/)[1]});
   const ctx={jenjang:'S1',prodi:'Pendidikan Bahasa Inggris',semester:'4',kelas:'C',year:'2027/2028',period:'Genap'},course='UI fixture',id='00000000-0000-4000-8000-000000000123';
-  await p.evaluate(async({ctx,course,id})=>{const s=await WA.get(),scope=await WA.scope(ctx,course);await WA.change(()=>({...s,token:null,selection:{...ctx,matkul:course},outbox:[],snapshot:{roster:[{...ctx,id:1,nim:'C722202401001',nama:'ABUBAKAR ALIF THORIF',jk:'L'},{...ctx,id:2,nim:'C722202401002',nama:'AFDAL',jk:'L'}],sessions:[],documents:[],marks:[{scope,nim:'C722202401001',slot:1,mark:'.',location:{lat:-8.536,lon:118.462,accuracy:25,at:Date.now(),battery:84}}],registrations:[{id,nim:'NEW123',nama:'Mahasiswa baru',ctx,jk:'P',approved:false}]}}));},{ctx,course,id});
+  await p.evaluate(async({ctx,course,id})=>{const s=await WA.get(),scope=await WA.scope(ctx,course);await WA.change(()=>({...s,token:null,selection:{...ctx,matkul:course},outbox:[],snapshot:{roster:[{...ctx,id:1,nim:'C722202401001',nama:'ABUBAKAR ALIF THORIF',jk:'L'},{...ctx,id:2,nim:'C722202401002',nama:'AFDAL',jk:'L'}],sessions:[],documents:[],marks:[{scope,nim:'C722202401001',slot:1,mark:'.',location:{lat:-8.536,lon:118.462,accuracy:25,at:Date.now(),battery:84}}],registrations:[{id,nim:'NEW123',nama:'Mahasiswa baru',ctx,jk:'P',approved:false,created_at:Date.UTC(2026,9,22)}]}}));},{ctx,course,id});
   await t.test('inbox follows every teacher page, supports approval/rejection, fullscreen and stays out of print',async()=>{
    for(const page of['index','data_siswa','absen','ujian']){await p.goto(BASE+page+'.php?'+new URLSearchParams({...ctx,matkul:course}));await p.waitForFunction(()=>!!window.PresenInbox);await p.locator('#presenInboxLauncher').waitFor({state:'visible'});assert.equal(await p.locator('#presenInboxLauncher').count(),1);await p.locator('#presenInboxLauncher').click();await p.locator('#presenInboxDialog').waitFor();assert.match(await p.locator('#presenInboxDialog').innerText(),/Mahasiswa baru/);assert.equal(await p.locator('[data-approve]').count(),1);await p.locator('#presenInboxDialog [data-expand]').click();assert(await p.locator('#presenInboxDialog').evaluate(e=>e.classList.contains('p-inbox-fullscreen')));await p.locator('#presenInboxDialog [data-expand]').click();await p.emulateMedia({media:'print'});assert.equal(await p.locator('#presenInboxDialog').isVisible(),false);await p.emulateMedia({media:'screen'});await p.locator('#presenInboxDialog>.p-close').click();}
+   await p.locator('#presenInboxLauncher').click();
+   for(const width of [1280,390]){
+    await p.setViewportSize({width,height:900});
+    for(const folder of ['registration','accounts']){
+     await p.locator('[data-folder="'+folder+'"]').first().click();
+     const group=p.locator('#presenInboxDialog details').nth(folder==='registration'?0:2);await group.evaluate(e=>e.open=true);
+     const identity=group.locator('.p-registration-identity');
+     assert.equal(await identity.locator('.p-registration-nim').innerText(),'NEW123');
+     assert.equal(await identity.locator('time').innerText(),'Tanggal daftar: 22/10/2026');
+     const geometry=await identity.evaluate(e=>{const b=e.querySelector('b').getBoundingClientRect(),date=e.querySelector('time').getBoundingClientRect();return{bottom:b.bottom,dateTop:date.top,right:date.right,width:innerWidth};});
+     assert(geometry.dateTop>=geometry.bottom+3,'Date has a separate line and gap: '+JSON.stringify(geometry));
+     assert(geometry.right<=geometry.width,'Date stays inside the mobile dialog');
+     if(folder==='registration'){const out=path.join(__dirname,'results/inbox-date');fs.mkdirSync(out,{recursive:true});await p.locator('#presenInboxDialog').screenshot({path:path.join(out,'registration-'+width+'.png')});}
+    }
+   }
+   await p.setViewportSize({width:1280,height:900});await p.locator('[data-folder="registration"]').first().click();
+   await p.locator('#presenInboxDialog>.p-close').click();
    await p.locator('#presenInboxLauncher').click();await p.locator('[data-reject="'+id+'"]').click();await p.waitForFunction(async id=>(await WA.get()).outbox.some(x=>x.type==='reject'&&x.account===id),id);assert((await p.evaluate(()=>WA.get())).outbox.some(x=>x.type==='reject'&&x.account===id));await p.locator('#presenInboxDialog>.p-close').click();
   });
   await p.goto(BASE+'absen.php?'+new URLSearchParams({...ctx,matkul:course}));await p.waitForFunction(()=>window.WASheetReady);

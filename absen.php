@@ -441,7 +441,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             .paper-sheet { transform:none !important; zoom:1 !important; background:#fff !important; background-image:none !important; box-shadow: none !important; border-radius: 0 !important; width:var(--wa-print-width,210mm) !important; min-height: auto !important; height: auto !important; max-height: none !important; overflow: visible !important; padding: var(--global-padding-sheet) !important; font-size: var(--global-font-size) !important; }
             .page-preview-marker, .page-preview-only, .btn-hapus-logo { display: none !important; }
             
-            .header-divider-line { border-bottom: 3px solid #000 !important; }
+            .header-divider-line { border-bottom: 4px double #000 !important; }
             .summary-box { border: 1px solid #000 !important; }
             .summary-title { border-bottom: 1px solid #000 !important; }
             
@@ -449,7 +449,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             table.attendance-table td input { border: none !important; background: transparent !important; font-size: var(--global-font-size) !important; box-shadow: none !important; }
             tr, .school-footer-section, .signature-section { page-break-inside: avoid; break-inside: avoid; }
             .selectable-element { outline: none !important; border: none !important; }
-            [contenteditable="true"] { border-bottom: none !important; background: transparent !important; }
+            [contenteditable="true"] { border-bottom-color:transparent !important; background: transparent !important; }
         }
         /* Sorot area sebenarnya tanpa mengubah posisi atau ukuran dokumen. */
         .tour-spotlight-backdrop { position:fixed; inset:0; width:100vw; height:100vh; z-index:100001; background:rgba(0,0,0,.76); backdrop-filter:none; display:none; }
