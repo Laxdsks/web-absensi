@@ -62,12 +62,24 @@ def api(action, **values):
     return result
 
 
-def login_teacher():
+def login_teacher(allow_previous=False):
     source = (ROOT / "index.php").read_text()
     user = re.search(r"\$user === '([^']+)'", source).group(1)
     password = re.search(r"\$pass === '([^']+)'", source).group(1)
     form = urllib.parse.urlencode({"action": "login_privat", "username": user, "password": password}).encode()
     body, _ = request("index.php", form, {"Content-Type": "application/x-www-form-urlencoded"})
+    if json.loads(body).get("status") != "success" and allow_previous:
+        # Before a credential rotation, the server still runs the parent revision.
+        # Use it only to record the baseline; post-deployment checks must use the new login.
+        previous = subprocess.run(["git", "show", "HEAD^:index.php"], cwd=ROOT,
+                                  capture_output=True, text=True, check=False)
+        if previous.returncode == 0:
+            old_user = re.search(r"\$user === '([^']+)'", previous.stdout)
+            old_password = re.search(r"\$pass === '([^']+)'", previous.stdout)
+            if old_user and old_password:
+                form = urllib.parse.urlencode({"action": "login_privat", "username": old_user.group(1),
+                                               "password": old_password.group(1)}).encode()
+                body, _ = request("index.php", form, {"Content-Type": "application/x-www-form-urlencoded"})
     if json.loads(body).get("status") != "success":
         raise RuntimeError("Teacher login did not complete on the deployed hosting.")
     private = subprocess.run(["openssl", "genpkey", "-algorithm", "EC", "-pkeyopt", "ec_paramgen_curve:P-256"], capture_output=True, check=True).stdout
@@ -98,7 +110,7 @@ def main():
     args = parser.parse_args()
     if args.record_baseline:
         try:
-            login_teacher()
+            login_teacher(allow_previous=True)
             snapshot = api("snapshot")["snapshot"]
             with args.record_baseline.open("x") as output:
                 os.chmod(args.record_baseline, 0o600)
