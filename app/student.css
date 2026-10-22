@@ -120,3 +120,8 @@ html[data-theme=malam] .portal-student .absent,html[data-theme=samudra] .portal-
 .student-scan-status[data-state=success],.student-scan-receipt{border-left:3px solid #15916d}
 .student-scan-receipt{display:flex;gap:9px;align-items:center;padding:12px;background:var(--input-bg);border-radius:10px;font-size:13px;line-height:1.5}
 .student-scan-receipt .p-icon{flex:none}
+
+/* Date controls must fit the two phone columns instead of using intrinsic widths. */
+.portal-student .student-history-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+.portal-student .student-history-filters label{min-width:0}
+.portal-student .student-history-filters input,.portal-student .student-history-filters select{box-sizing:border-box;width:100%;min-width:0;max-width:100%}

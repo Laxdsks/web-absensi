@@ -80,7 +80,7 @@ jobs:
           retention-days: 30
   release:
     needs: android
-    if: needs.android.outputs.publish_ready == 'true'
+    if: needs.android.outputs.publish_ready == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
