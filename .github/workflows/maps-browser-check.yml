@@ -1,0 +1,42 @@
+name: Inspect live Google Maps rendering
+on:
+  pull_request:
+    branches: [main]
+    paths: ['scripts/verify_maps_browser.cjs', '.github/workflows/maps-browser-check.yml']
+  workflow_dispatch:
+    inputs:
+      samples:
+        description: Comma-separated map samples to inspect
+        default: place,directions,streetview,streetview-reference
+  workflow_run:
+    workflows: ['Publish PHP application to hosting']
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  maps:
+    if: >-
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+      (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install browser verifier
+        run: |
+          npm install --prefix "$RUNNER_TEMP/maps-browser" --no-save playwright@1.56.1
+          "$RUNNER_TEMP/maps-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Observe real maps without changing attendance or settings
+        env:
+          WA_PLAYWRIGHT_PATH: ${{ runner.temp }}/maps-browser/node_modules/playwright
+          WA_MAP_EVIDENCE: ${{ runner.temp }}/maps-evidence
+          WA_MAP_SAMPLES: ${{ inputs.samples || (github.event_name == 'workflow_run' && 'place,directions,streetview') || 'streetview-nearby' }}
+        run: node scripts/verify_maps_browser.cjs
+      - name: Keep sanitized report and example-map screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maps-rendering-evidence
+          path: ${{ runner.temp }}/maps-evidence
+          retention-days: 7
