@@ -36,14 +36,13 @@ write_sentinel(NEW,'current-data-retained');install(new)
 assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
 instrument('testOnlineAfterStaleWorker')
 instrument('testMissingRuntimeRecovery')
-(OUT/'online-after-stale-worker.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
 instrument('testRelaunchSavedStudent')
 packages=adb('shell','pm','list','packages');assert 'package:'+OLD in packages and 'package:'+NEW in packages
 assert adb('shell','cat',sentinel(OLD))=='original-data-retained'
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable');adb('logcat','-c')
-adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity')
-rendered=False
+launch_result=adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity');(OUT/'manual-launch.txt').write_text(launch_result)
+rendered=False;labels='';xml=''
 for _ in range(18):
     time.sleep(2)
     try:
@@ -52,7 +51,11 @@ for _ in range(18):
         labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in tree.iter('node'))
         if any(s in labels.lower() for s in ['mahasiswa uji buka ulang','nimreopen123','mata kuliah tersimpan']):rendered=True;break
     except (subprocess.CalledProcessError,ET.ParseError):pass
-if not rendered:raise RuntimeError('Bundled student screen did not render while offline.')
+if not rendered:
+    (OUT/'manual-launch-ui.xml').write_text(xml)
+    (OUT/'manual-launch-failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+    logs=adb('logcat','-d','-s','AndroidRuntime:E','chromium:E','WebView:E');(OUT/'manual-launch-logcat.txt').write_text(logs)
+    raise RuntimeError('Bundled student screen did not render while offline. UI: '+labels+'\nLaunch: '+launch_result+'\nDiagnostics: '+logs[-10000:])
 (OUT/'offline-launch.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 write_sentinel(NEW,'current-data-retained');install(new)
 assert adb('shell','cat',sentinel(OLD))=='original-data-retained'

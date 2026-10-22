@@ -11,14 +11,13 @@ import android.webkit.*;
 import android.widget.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.function.Function;
+import android.content.res.AssetManager;
 
 /** A coherent signed UI on the original HTTPS origin, independent of HTTP/SW caches. */
 final class StudentShell {
  private final Activity activity;
  private final WebView web;
  private final String host,entry;
- private final Function<Uri,WebResourceResponse> assets;
  private final Handler handler=new Handler(Looper.getMainLooper());
  private final LinearLayout recovery;
  private final TextView title,detail;
@@ -26,20 +25,21 @@ final class StudentShell {
  private WebView handshake;
  private boolean destroyed,ready;
  private long openedAt;
- StudentShell(Activity activity,WebView web,String host,Function<Uri,WebResourceResponse> assets){
-  this.activity=activity;this.web=web;this.host=host;this.assets=assets;entry="https://"+host+"/app/?role=student";
+ StudentShell(Activity activity,WebView web,String host){
+  this.activity=activity;this.web=web;this.host=host;entry="https://"+host+"/app/?role=student";
   // A service worker has its own request client; WebViewClient alone does not cover it.
-  ServiceWorkerController.getInstance().setServiceWorkerClient(new ServiceWorkerClient(){
-   @Override public WebResourceResponse shouldInterceptRequest(WebResourceRequest request){
-    return "GET".equals(request.getMethod())&&host.equals(request.getUrl().getHost())?assets.apply(request.getUrl()):null;
-   }
-  });
+  ServiceWorkerController.getInstance().setServiceWorkerClient(new BundledWorkerClient(host,activity.getApplicationContext().getAssets()));
   recovery=new LinearLayout(activity);recovery.setOrientation(LinearLayout.VERTICAL);recovery.setGravity(Gravity.CENTER);recovery.setPadding(32,32,32,32);recovery.setBackgroundColor(0xffedf2f8);
   title=new TextView(activity);title.setTextSize(22);title.setTextColor(0xff15304a);title.setGravity(Gravity.CENTER);recovery.addView(title);
   detail=new TextView(activity);detail.setTextSize(15);detail.setTextColor(0xff486276);detail.setGravity(Gravity.CENTER);detail.setPadding(0,20,0,20);recovery.addView(detail);
   retry=new Button(activity);retry.setText("Muat ulang tampilan");retry.setOnClickListener(v->open());recovery.addView(retry);
   update=new Button(activity);update.setText("Perbarui komponen tampilan Android");update.setOnClickListener(v->{String pkg=WebView.getCurrentWebViewPackage()==null?"com.google.android.webview":WebView.getCurrentWebViewPackage().packageName;try{activity.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://play.google.com/store/apps/details?id="+pkg)));}catch(Exception ignored){Toast.makeText(activity,"Buka Play Store, lalu perbarui Android System WebView dan Chrome.",Toast.LENGTH_LONG).show();}});recovery.addView(update);
   activity.addContentView(recovery,new android.view.ViewGroup.LayoutParams(-1,-1));
+ }
+ private static final class BundledWorkerClient extends ServiceWorkerClient {
+  private final String host;private final AssetManager assets;
+  BundledWorkerClient(String host,AssetManager assets){this.host=host;this.assets=assets;}
+  @Override public WebResourceResponse shouldInterceptRequest(WebResourceRequest request){return "GET".equals(request.getMethod())&&"https".equals(request.getUrl().getScheme())&&host.equals(request.getUrl().getHost())?BundledResources.read(assets,request.getUrl()):null;}
  }
  void open(){
   if(destroyed)return;if(handshake!=null){handshake.stopLoading();handshake.destroy();handshake=null;}handler.removeCallbacksAndMessages(null);ready=false;openedAt=android.os.SystemClock.elapsedRealtime();
@@ -75,6 +75,7 @@ final class StudentShell {
   handshake=new WebView(activity);handshake.getSettings().setJavaScriptEnabled(true);handshake.getSettings().setAllowFileAccess(false);handshake.getSettings().setAllowContentAccess(false);handshake.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
   handshake.setWebViewClient(new WebViewClient(){
    @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest request){return !"https".equals(request.getUrl().getScheme())||!host.equals(request.getUrl().getHost());}
+   @Override public boolean onRenderProcessGone(WebView v,RenderProcessGoneDetail detail){if(handshake==v)handshake=null;v.destroy();return true;}
    @Override public void onPageFinished(WebView v,String url){if(!destroyed)web.evaluateJavascript("window.dispatchEvent(new Event('online'))",null);}
   });
   handshake.loadUrl("https://"+host+"/app_api.php?native_handshake=1");handler.postDelayed(()->{if(handshake!=null){handshake.stopLoading();handshake.destroy();handshake=null;}},20000);
