@@ -35,7 +35,7 @@ const source=fs.readFileSync(path.join(__dirname,'../index.php'),'utf8'),usernam
   try{const flags=await page.evaluate(()=>({accepted:!!window.__loginAccepted,initialized:!!window.__loginInitialized}));accepted||=flags.accepted;initialized||=flags.initialized;}catch(_){}
   console.error(JSON.stringify({stage,loginHTTP,bootstrapHTTP,accepted,initialized,errorType:error.name}));process.exitCode=1;
  }finally{
-  try{await page.evaluate(async()=>{if(window.WA&&(await WA.get()).token)await WA.api('logout');});}catch(_){}
+  try{await page.evaluate(async()=>{await fetch('index.php',{method:'POST',credentials:'same-origin',body:new URLSearchParams({action:'logout_system'})});});}catch(_){}
   await browser.close();
  }
 })().catch(error=>{console.error('Browser verification failed: '+error.name);process.exitCode=1;});
