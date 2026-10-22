@@ -17,6 +17,8 @@ tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.3-tests.apk'
 adb('root');time.sleep(2);install(old);write_sentinel(OLD,'original-data-retained')
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
 install(previous);install(tests)
+adb('shell','pm','grant',NEW,'android.permission.ACCESS_COARSE_LOCATION')
+adb('shell','pm','grant',NEW,'android.permission.ACCESS_FINE_LOCATION')
 def instrument(method):
     result=adb('shell','am','instrument','-w','-r','-e','class','id.webabsensi.app.StudentLifecycleTest#'+method,NEW+'.test/android.test.InstrumentationTestRunner')
     (OUT/(method+'.txt')).write_text(result)
