@@ -6,7 +6,7 @@ if(!['datasiswasekolah.42web.io','localhost','127.0.0.1'].includes(new URL(BASE)
 const source=fs.readFileSync(path.join(__dirname,'../index.php'),'utf8');
 const username=source.match(/\$user === '([^']+)'/)[1],password=source.match(/\$pass === '([^']+)'/)[1];
 const output=process.env.WA_MAP_EVIDENCE||path.join(process.cwd(),'maps-evidence');fs.mkdirSync(output,{recursive:true});
-const safe=text=>String(text).replace(/AIza[\w-]{20,}/g,'[REDACTED]').replace(/([?&](?:key|token|signature)=)[^&\s"<>]+/gi,'$1[REDACTED]');
+const safe=text=>String(text).replaceAll(password,'[REDACTED_PASSWORD]').replace(/AIza[\w-]{20,}/g,'[REDACTED]').replace(/([?&](?:key|token|signature)=)[^&\s"<>]+/gi,'$1[REDACTED]');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.WA_CHROMIUM_PATH?{executablePath:process.env.WA_CHROMIUM_PATH}:{})});
  const context=await browser.newContext({serviceWorkers:'block',viewport:{width:1280,height:1000}}),page=await context.newPage(),report={modes:[],console:[]};
@@ -21,7 +21,7 @@ const safe=text=>String(text).replace(/AIza[\w-]{20,}/g,'[REDACTED]').replace(/(
   stage='configuration';
   report.savedConfiguration=await page.evaluate(async()=>{const c=await WA.api('maps-config');return {embedConfigured:!!c.embedKey,javascriptConfigured:!!c.javascriptKey};});
   assert(report.savedConfiguration.embedConfigured,'Maps Embed key is not saved.');assert(!report.savedConfiguration.javascriptConfigured,'Optional paid JavaScript key must stay empty.');
-  await page.locator('[data-appearance]').first().click();await page.locator('#pMapsTest').click();
+  await page.evaluate(()=>{PresenAppearance.open();});await page.locator('#pMapsTest').click();
   const iframe=page.locator('.p-maps-test-frame');await iframe.scrollIntoViewIfNeeded();
   for(const mode of ['place','directions','streetview']){
    stage=mode;
@@ -41,6 +41,6 @@ const safe=text=>String(text).replace(/AIza[\w-]{20,}/g,'[REDACTED]').replace(/(
  finally{
   try{await page.evaluate(()=>fetch('index.php',{method:'POST',credentials:'same-origin',body:new URLSearchParams({action:'logout_system'})}));}catch(_){}
   report.console=[...new Set(report.console)].slice(-15);
-  fs.writeFileSync(path.join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));await browser.close();
+  const sanitized=safe(JSON.stringify(report,null,2));fs.writeFileSync(path.join(output,'report.json'),sanitized);console.log(sanitized);await browser.close();
  }
 })().catch(error=>{console.error(safe(error.name));process.exitCode=1;});
