@@ -23,7 +23,12 @@ adb('shell','pm','grant',NEW,'android.permission.ACCESS_FINE_LOCATION')
 def instrument(method):
     result=adb('shell','am','instrument','-w','-r','-e','class','id.webabsensi.app.StudentLifecycleTest#'+method,NEW+'.test/android.test.InstrumentationTestRunner')
     (OUT/(method+'.txt')).write_text(result)
-    if 'OK (1 test)' not in result:raise RuntimeError('Saved-student Android verification failed: '+result[-2000:])
+    if 'OK (1 test)' not in result:
+        logs=adb('logcat','-d','-s','AndroidRuntime:E','chromium:E','WebView:E')
+        (OUT/'android-failure-logcat.txt').write_text(logs)
+        (OUT/'failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+        raise RuntimeError('Saved-student Android verification failed: '+result[-2000:]+'\nAndroid diagnostics:\n'+logs[-12000:])
+    print('PASS signed Android: '+method,flush=True)
 instrument('testSeedSavedStudent')
 adb('shell','svc','wifi','enable');time.sleep(5)
 instrument('testSeedStaleWorker')
