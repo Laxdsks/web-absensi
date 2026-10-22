@@ -1,4 +1,4 @@
-Pembaruan mahasiswa saat ini: **[Presen Go 1.2.3](https://github.com/Laxdsks/web-absensi/releases/download/presen-go-1.2.3/Presen-Go-1.2.3.apk)**. Pasang langsung sebagai pembaruan Presen Go 1.2.2 agar akun dan riwayat perangkat tetap tersimpan. [Petunjuk versi 1.2.3](PRESEN-GO-1.2.3.md) menjelaskan kamera QR, foto sakit/izin, dan penggunaan offline. Dosen memakai [web absensi](https://datasiswasekolah.42web.io/).
+Pembaruan mahasiswa saat ini: **[Presen Go 1.2.4](https://github.com/Laxdsks/web-absensi/releases/download/presen-go-1.2.4/Presen-Go-1.2.4.apk)**. Pasang langsung sebagai pembaruan Presen Go 1.2.2 atau 1.2.3 agar akun dan riwayat perangkat tetap tersimpan. [Petunjuk versi 1.2.4](PRESEN-GO-1.2.4.md) menjelaskan pemulihan layar kosong, pembaruan dengan data tersimpan, dan penggunaan offline. Dosen memakai [web absensi](https://datasiswasekolah.42web.io/).
 
 Bagian berikut menyimpan dokumentasi paket lama untuk pengguna yang masih memerlukannya.
 

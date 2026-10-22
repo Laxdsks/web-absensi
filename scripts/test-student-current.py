@@ -10,10 +10,11 @@ def sentinel(package):return '/data/user/0/'+package+'/files/presen-install-sent
 def write_sentinel(package,text):
     adb('shell','mkdir','-p','/data/user/0/'+package+'/files')
     adb('shell','sh','-c',"'printf %s "+text+' > '+sentinel(package)+"'")
-old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.3.apk'
+if not adb('get-serialno').startswith('emulator-') or adb('shell','getprop','ro.kernel.qemu')!='1':raise RuntimeError('This fixture is restricted to an isolated emulator.')
+old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.4.apk'
 if hashlib.sha256(old.read_bytes()).hexdigest()!='6b86ff328d2b73be29b1972d0f3bf53fe337f2b45d1485834b2f6e782507d9c6':raise RuntimeError('Unexpected original APK.')
-previous=ROOT/'previous-current-installers/Presen-Go-1.2.2.apk'
-tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.3-tests.apk'
+previous=ROOT/'previous-current-installers/Presen-Go-1.2.3.apk'
+tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.4-tests.apk'
 adb('root');time.sleep(2);install(old);write_sentinel(OLD,'original-data-retained')
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
 install(previous);install(tests)
@@ -22,16 +23,26 @@ adb('shell','pm','grant',NEW,'android.permission.ACCESS_FINE_LOCATION')
 def instrument(method):
     result=adb('shell','am','instrument','-w','-r','-e','class','id.webabsensi.app.StudentLifecycleTest#'+method,NEW+'.test/android.test.InstrumentationTestRunner')
     (OUT/(method+'.txt')).write_text(result)
-    if 'OK (1 test)' not in result:raise RuntimeError('Saved-student Android verification failed: '+result[-2000:])
+    if 'OK (1 test)' not in result:
+        logs=adb('logcat','-d','-s','AndroidRuntime:E','chromium:E','WebView:E')
+        (OUT/'android-failure-logcat.txt').write_text(logs)
+        (OUT/'failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+        raise RuntimeError('Saved-student Android verification failed: '+result[-2000:]+'\nAndroid diagnostics:\n'+logs[-12000:])
+    print('PASS signed Android: '+method,flush=True)
 instrument('testSeedSavedStudent')
+adb('shell','svc','wifi','enable');time.sleep(5)
+instrument('testSeedStaleWorker')
 write_sentinel(NEW,'current-data-retained');install(new)
 assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
+instrument('testOnlineAfterStaleWorker')
+instrument('testMissingRuntimeRecovery')
+adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
 instrument('testRelaunchSavedStudent')
 packages=adb('shell','pm','list','packages');assert 'package:'+OLD in packages and 'package:'+NEW in packages
 assert adb('shell','cat',sentinel(OLD))=='original-data-retained'
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable');adb('logcat','-c')
-adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity')
-rendered=False
+launch_result=adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity');(OUT/'manual-launch.txt').write_text(launch_result)
+rendered=False;labels='';xml=''
 for _ in range(18):
     time.sleep(2)
     try:
@@ -40,12 +51,20 @@ for _ in range(18):
         labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in tree.iter('node'))
         if any(s in labels.lower() for s in ['mahasiswa uji buka ulang','nimreopen123','mata kuliah tersimpan']):rendered=True;break
     except (subprocess.CalledProcessError,ET.ParseError):pass
-if not rendered:raise RuntimeError('Bundled student screen did not render while offline.')
+if not rendered:
+    (OUT/'manual-launch-ui.xml').write_text(xml)
+    (OUT/'manual-launch-failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+    logs=adb('logcat','-d','-s','AndroidRuntime:E','chromium:E','WebView:E');(OUT/'manual-launch-logcat.txt').write_text(logs)
+    raise RuntimeError('Bundled student screen did not render while offline. UI: '+labels+'\nLaunch: '+launch_result+'\nDiagnostics: '+logs[-10000:])
 (OUT/'offline-launch.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 write_sentinel(NEW,'current-data-retained');install(new)
 assert adb('shell','cat',sentinel(OLD))=='original-data-retained'
 assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
 adb('shell','am','force-stop',NEW);adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity');time.sleep(4)
 crashes=adb('logcat','-d','-s','AndroidRuntime:E');assert 'FATAL EXCEPTION' not in crashes,crashes[-1500:]
-report={'package':NEW,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFrom122RetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
+# Only after persistence has been checked: clear this isolated emulator fixture to test a first installation.
+assert 'Success' in adb('shell','pm','clear',NEW)
+adb('shell','svc','wifi','enable');time.sleep(5)
+instrument('testFreshReadOnlyApiHandshake')
+report={'package':NEW,'freshNativeReadOnlyApiVerified':True,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFrom123RetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'headerOnlyBlankPageReproducedOn123':True,'staleServiceWorkerBypassedOnline':True,'missingJavaScriptShowsNativeRecovery':True,'retryRetainsAccountAndHistory':True,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
 (OUT/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))

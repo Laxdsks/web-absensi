@@ -1,7 +1,7 @@
 name: Build and publish current Presen Go
 on:
   push:
-    branches: [main, build/student-current, build/student-123]
+    branches: [main, build/student-current, build/student-124]
     paths: ['native/android/**', '.github/workflows/student-current.yml', 'scripts/verify-student-current.py', 'scripts/test-student-current.py']
   workflow_dispatch:
 permissions:
@@ -44,7 +44,7 @@ jobs:
         id: candidate
         run: |
           python3 scripts/verify-student-current.py
-          if test -f native/android/prebuilt/Presen-Go-1.2.3.apk; then
+          if test -f native/android/prebuilt/Presen-Go-1.2.4.apk; then
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             echo 'ready=false' >> "$GITHUB_OUTPUT"
@@ -55,7 +55,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download aplikasi-1.2.1 --pattern 'Absen-Mahasiswa-Android.apk' --dir previous-v2-installers
-          gh release download presen-go-1.2.2 --pattern 'Presen-Go-1.2.2.apk' --dir previous-current-installers
+          gh release download presen-go-1.2.3 --pattern 'Presen-Go-1.2.3.apk' --dir previous-current-installers
       - name: Enable emulator hardware acceleration
         if: steps.candidate.outputs.ready == 'true'
         run: sudo chmod a+rw /dev/kvm
@@ -70,11 +70,11 @@ jobs:
           emulator-options: -no-window -no-audio -no-snapshot -gpu swiftshader_indirect -no-boot-anim -camera-back none -camera-front none -memory 1536 -cores 2 -skin 480x800
           script: python3 scripts/test-student-current.py
       - uses: actions/upload-artifact@v4
-        if: steps.candidate.outputs.ready == 'true'
+        if: always() && steps.candidate.outputs.ready == 'true'
         with:
           name: Presen-Go-signed-and-verified
           path: |
-            native/android/prebuilt/Presen-Go-1.2.3.apk
+            native/android/prebuilt/Presen-Go-1.2.4.apk
             native/android/prebuilt/SHA256SUMS.txt
             tests/results/student-current/
           retention-days: 30
@@ -90,9 +90,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view presen-go-1.2.3 >/dev/null 2>&1; then
-            gh release upload presen-go-1.2.3 native/android/prebuilt/Presen-Go-1.2.3.apk native/android/prebuilt/SHA256SUMS.txt --clobber
-            gh release edit presen-go-1.2.3 --notes-file docs/PRESEN-GO-1.2.3.md
+          if gh release view presen-go-1.2.4 >/dev/null 2>&1; then
+            gh release upload presen-go-1.2.4 native/android/prebuilt/Presen-Go-1.2.4.apk native/android/prebuilt/SHA256SUMS.txt --clobber
+            gh release edit presen-go-1.2.4 --notes-file docs/PRESEN-GO-1.2.4.md
           else
-            gh release create presen-go-1.2.3 native/android/prebuilt/Presen-Go-1.2.3.apk native/android/prebuilt/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'Presen Go 1.2.3 — Absen Mahasiswa Android' --notes-file docs/PRESEN-GO-1.2.3.md
+            gh release create presen-go-1.2.4 native/android/prebuilt/Presen-Go-1.2.4.apk native/android/prebuilt/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'Presen Go 1.2.4 — Absen Mahasiswa Android' --notes-file docs/PRESEN-GO-1.2.4.md
           fi
