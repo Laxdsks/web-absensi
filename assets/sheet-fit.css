@@ -2,6 +2,8 @@
 /* Paper is always light, even when the surrounding controls use a dark theme.
    Otherwise Chromium's dark form defaults paint white ink on the white sheet. */
 #paperSheet,#paper{color-scheme:light}
+/* Formatting changes settle immediately so print and saved layout use final geometry. */
+#paperSheet{transition:box-shadow .18s ease}
 #paperSheet input,#paperSheet textarea,#paperSheet select,#paper input,#paper textarea,#paper select{color:inherit}
 #paperSheet .meta-label,#paperSheet .meta-val,#paper .meta-label,#paperSheet .meta-value,#paper .meta-value{white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important;min-width:0}
 #paperSheet .meta-val,#paperSheet .meta-value,#paper .meta-value{display:block;max-width:100%;padding:0 2px}
@@ -41,9 +43,9 @@
 #tabelAbsen tbody td:nth-child(2),#tabelAbsen tbody td:nth-child(3) {padding:var(--wa-row-padding,2px) 7px!important}
 #tabelAbsen tbody td:has(.attendance-cell){padding:var(--wa-row-padding,2px) 2px!important}
 #tabelAbsen td input {height:1.3em!important;min-height:0!important;line-height:1.3!important}
-#paperSheet .signature-section {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:24px;margin-top:var(--wa-signature-gap,24px)}
-#paperSheet .signature-box {width:100%;max-width:none;min-width:0}
-#paperSheet .signature-box:last-child {justify-self:end;max-width:230px}
+#paperSheet .signature-section {display:inline-block;vertical-align:top;width:100%;font-size:0!important;margin-top:var(--wa-signature-gap,24px)}
+#paperSheet .signature-box {display:inline-block;width:calc(50% - 12px);max-width:none;min-width:0;vertical-align:top;font-size:var(--wa-sheet-body-font,12px)!important}
+#paperSheet .signature-box:last-child {float:right;max-width:230px}
 #paperSheet.wa-scale-images .logo-box {width:calc(var(--logo-size,58px) * var(--wa-image-scale,1));height:calc(var(--logo-size,58px) * var(--wa-image-scale,1))}
 #paperSheet.wa-scale-images .sheet-header {grid-template-columns:calc(72px * var(--wa-image-scale,1)) minmax(0,1fr) calc(72px * var(--wa-image-scale,1))}
 #paperSheet.wa-scale-images .logo-slot {width:calc(64px * var(--wa-image-scale,1));height:calc(64px * var(--wa-image-scale,1))}
@@ -66,5 +68,6 @@
  #paperSheet .signature-box{display:inline-block!important;width:calc(50% - 12px)!important;max-width:none;vertical-align:top;font-size:var(--wa-sheet-body-font,12px)!important}
  #paperSheet .signature-box:last-child{float:right;max-width:230px}
 }
+#paperSheet .wa-signature-flow>.signature-box {transform:translateX(var(--wa-signature-x,0px))!important;margin-top:var(--wa-signature-offset,0px)!important}
 /* The exam has one formatting group; let it use the full available ribbon. */
 #topToolbar .sheet-tools:has(>.sheet-format:only-child){grid-template-columns:minmax(0,1fr)}
