@@ -4,6 +4,10 @@ on:
     branches: [main]
     paths: ['scripts/verify_maps_browser.cjs', '.github/workflows/maps-browser-check.yml']
   workflow_dispatch:
+    inputs:
+      samples:
+        description: Comma-separated map samples to inspect
+        default: place,directions,streetview,streetview-reference
 permissions:
   contents: read
 jobs:
@@ -21,6 +25,7 @@ jobs:
         env:
           WA_PLAYWRIGHT_PATH: ${{ runner.temp }}/maps-browser/node_modules/playwright
           WA_MAP_EVIDENCE: ${{ runner.temp }}/maps-evidence
+          WA_MAP_SAMPLES: ${{ inputs.samples || 'streetview-nearby' }}
         run: node scripts/verify_maps_browser.cjs
       - name: Keep sanitized report and example-map screenshots
         if: always()

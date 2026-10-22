@@ -6,6 +6,8 @@ if(!['datasiswasekolah.42web.io','localhost','127.0.0.1'].includes(new URL(BASE)
 const source=fs.readFileSync(path.join(__dirname,'../index.php'),'utf8');
 const username=source.match(/\$user === '([^']+)'/)[1],password=source.match(/\$pass === '([^']+)'/)[1];
 const output=process.env.WA_MAP_EVIDENCE||path.join(process.cwd(),'maps-evidence');fs.mkdirSync(output,{recursive:true});
+const samples=(process.env.WA_MAP_SAMPLES||'place,directions,streetview,streetview-reference').split(',');
+assert(samples.every(x=>['place','directions','streetview','streetview-reference','streetview-nearby'].includes(x)),'Unknown map sample.');
 const safe=text=>String(text).replaceAll(password,'[REDACTED_PASSWORD]').replace(/AIza[\w-]{20,}/g,'[REDACTED]').replace(/([?&](?:key|token|signature)=)[^&\s"<>]+/gi,'$1[REDACTED]');
 (async()=>{
  // This disposable CI browser has no GPU. Software WebGL is enabled only for
@@ -26,11 +28,11 @@ const safe=text=>String(text).replaceAll(password,'[REDACTED_PASSWORD]').replace
   assert(report.savedConfiguration.embedConfigured,'Maps Embed key is not saved.');assert(!report.savedConfiguration.javascriptConfigured,'Optional paid JavaScript key must stay empty.');
   await page.evaluate(()=>{PresenAppearance.open();});await page.locator('#pMapsTest').click();
   const iframe=page.locator('.p-maps-test-frame');await iframe.scrollIntoViewIfNeeded();
-  for(const mode of ['place','directions','streetview','streetview-reference']){
+  for(const mode of samples){
    stage=mode;
-   const apiMode=mode==='streetview-reference'?'streetview':mode;
+   const apiMode=mode.startsWith('streetview')?'streetview':mode;
    const responsePromise=page.waitForResponse(r=>{const u=new URL(r.url());return u.hostname==='www.google.com'&&u.pathname==='/maps/embed/v1/'+apiMode;},{timeout:35000}).catch(()=>null);
-   if(mode==='streetview-reference')await iframe.evaluate(element=>{const u=new URL(element.src);u.searchParams.set('location','46.414382,10.013988');element.src=u.href;});
+   if(['streetview-reference','streetview-nearby'].includes(mode))await iframe.evaluate((element,sample)=>{const old=new URL(element.src),u=new URL('https://www.google.com/maps/embed/v1/streetview');u.search=new URLSearchParams({key:old.searchParams.get('key'),language:'id',location:sample==='streetview-nearby'?'-8.54059,118.43617':'46.414382,10.013988',...(sample==='streetview-nearby'?{radius:'500',source:'outdoor'}:{})});element.src=u.href;},mode);
    else await page.locator('[data-map-mode="'+mode+'"]').click();
    const response=await responsePromise;
    await page.waitForTimeout(apiMode==='streetview'?20000:10000);await iframe.scrollIntoViewIfNeeded();
