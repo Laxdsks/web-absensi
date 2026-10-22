@@ -35,8 +35,36 @@
   font-size:var(--wa-sheet-body-font,12px)!important;line-height:1.25;
 }
 #tabelAbsen .nim-input,#examTableBlock tbody td:nth-child(2){text-align:center!important}
-#paperSheet.wa-fit-35 #tabelAbsen tbody td,#paperSheet.wa-fit-35 #examTableBlock tbody td {padding:1px 4px!important}
-#paperSheet.wa-fit-35 #tabelAbsen tbody td:has(.attendance-cell){padding:1px 2px!important}
-#paperSheet.wa-fit-35 #tabelAbsen td input {height:1.25em!important;min-height:0!important;line-height:1.25}
-#paperSheet.wa-fit-35 #tabelAbsen th,#paperSheet.wa-fit-35 #examTableBlock th {padding:2px 4px!important}
-#paperSheet.wa-fit-35 .signature-section {margin-top:18px}
+
+/* The chosen point size stays editable; row density is an independent setting. */
+#tabelAbsen tbody td,#examTableBlock tbody td {padding:var(--wa-row-padding,2px) 6px!important}
+#tabelAbsen tbody td:nth-child(2),#tabelAbsen tbody td:nth-child(3) {padding:var(--wa-row-padding,2px) 7px!important}
+#tabelAbsen tbody td:has(.attendance-cell){padding:var(--wa-row-padding,2px) 2px!important}
+#tabelAbsen td input {height:1.3em!important;min-height:0!important;line-height:1.3!important}
+#paperSheet .signature-section {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:24px;margin-top:var(--wa-signature-gap,24px)}
+#paperSheet .signature-box {width:100%;max-width:none;min-width:0}
+#paperSheet .signature-box:last-child {justify-self:end;max-width:230px}
+#paperSheet.wa-scale-images .logo-box {width:calc(var(--logo-size,58px) * var(--wa-image-scale,1));height:calc(var(--logo-size,58px) * var(--wa-image-scale,1))}
+#paperSheet.wa-scale-images .sheet-header {grid-template-columns:calc(72px * var(--wa-image-scale,1)) minmax(0,1fr) calc(72px * var(--wa-image-scale,1))}
+#paperSheet.wa-scale-images .logo-slot {width:calc(64px * var(--wa-image-scale,1));height:calc(64px * var(--wa-image-scale,1))}
+#paperSheet.wa-scale-images .signature-space {height:calc(var(--wa-base-signature-height,72px) * var(--wa-image-scale,1))}
+.sheet-layout-dialog label{display:block;margin:16px 0;font-weight:600}
+.sheet-layout-dialog input[type=range]{display:block;width:100%;margin-top:8px}
+.sheet-layout-dialog .sheet-layout-check{display:flex;gap:10px;align-items:start}
+.sheet-layout-dialog input[type=checkbox]{width:20px;min-height:20px;flex:none}
+@media print {
+ #paperSheet {transform:none!important;zoom:1!important;transition:none!important;animation:none!important;flex-shrink:0!important}
+ #paperSheet *,#paperSheet *::before,#paperSheet *::after{transition:none!important;animation:none!important}
+ #paperSheet .table-responsive {overflow:visible!important}
+ #paperSheet .signature-section{break-inside:avoid!important;page-break-inside:avoid!important}
+ #paperSheet .signature-box{break-inside:avoid!important;page-break-inside:avoid!important}
+}
+@media print {
+ /* An atomic inline block keeps both complete signatures together in Chromium.
+    A fragmented grid/flex row can print its titles on one page and names on the next. */
+ #paperSheet .signature-section{display:inline-block!important;width:100%;font-size:0!important;vertical-align:top}
+ #paperSheet .signature-box{display:inline-block!important;width:calc(50% - 12px)!important;max-width:none;vertical-align:top;font-size:var(--wa-sheet-body-font,12px)!important}
+ #paperSheet .signature-box:last-child{float:right;max-width:230px}
+}
+/* The exam has one formatting group; let it use the full available ribbon. */
+#topToolbar .sheet-tools:has(>.sheet-format:only-child){grid-template-columns:minmax(0,1fr)}
