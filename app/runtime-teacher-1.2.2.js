@@ -23,7 +23,7 @@ function accountKey(profile){return profile?.role+':'+(profile?.account?.id||pro
 async function archiveAccount(){const s=await get();if(s.profile)await change(()=>s,'account-state:'+accountKey(s.profile));}
 async function adoptAccount(result){const previous=await get();const switched=previous.profile&&accountKey(previous.profile)!==accountKey(result.snapshot.profile);if(switched)await archiveAccount();const saved=switched?await get('account-state:'+accountKey(result.snapshot.profile)):previous;activeOwner=result.snapshot.profile.role==='teacher'?(result.snapshot.profile.account.id||'admin_01'):(result.snapshot.profile.account.ctx.owner||'admin_01');result.snapshot.receivedAt=Date.now();await change(()=>({...fresh(),...(saved?.profile?saved:{}),token:result.token,profile:result.snapshot.profile,snapshot:result.snapshot,outbox:saved?.profile&&accountKey(saved.profile)===accountKey(result.snapshot.profile)?saved.outbox:[]}));}
 async function login(role,fields){if(!navigator.onLine)throw Error('Masuk pertama kali memerlukan internet.');const k=await keys();let result;if(role==='teacher'){const body=new URLSearchParams({action:'login_privat',username:fields.username,password:fields.password});const response=await fetch(new URL('index.php',ROOT),{method:'POST',body,credentials:'same-origin'});const content=await response.json();if(content.status!=='success')throw Error(content.message||content.msg||'Nama atau kata sandi tidak cocok.');result=await api('bootstrap',{pubkey:k.pub});}else result=await api(fields.register?'register':'student-login',{...fields,ctx:ctx(fields.ctx),pubkey:k.pub});await adoptAccount(result);void prepareOffline();return result;}
-async function bootstrap(){if(bootstrapping)return bootstrapping;return bootstrapping=(async()=>{const k=await keys(),result=await api('bootstrap',{pubkey:k.pub});await adoptAccount(result);return result;})().finally(()=>{bootstrapping=null;});}
+async function bootstrap({renew=false}={}){if(bootstrapping){if(!renew)return bootstrapping;try{await bootstrapping;}catch(_){/* The guest request may have started before login. */}}const request=(async()=>{const k=await keys(),result=await api('bootstrap',{pubkey:k.pub},'');await adoptAccount(result);return result;})();bootstrapping=request;try{return await request;}finally{if(bootstrapping===request)bootstrapping=null;}}
 function applyOp(s,o){const p=s.snapshot;
 if(o.type==='session'){const i=p.sessions.findIndex(x=>x.id===o.session.id);if(i<0)p.sessions.push(o.session);else p.sessions[i]=o.session;if(o.session.deadline>now(s))p.marks=p.marks.filter(m=>!(m.scope===o.session.scope&&m.slot===o.session.slot&&m.source==='automatic'));}
 if(o.type==='student-upsert'||o.type==='student-delete'){const i=p.roster.findIndex(x=>sameCtx(x,o.ctx)&&x.nim===o.nim);if(o.type==='student-delete'){if(i>=0)p.roster.splice(i,1);}else{const row={...ctx(o.ctx),nim:o.nim,nama:o.nama,jk:o.jk,id:i>=0?p.roster[i].id:o.id};if(i<0)p.roster.push(row);else p.roster[i]=row;}}
@@ -281,7 +281,7 @@ document.addEventListener('sheet-signature-changed',()=>{stash();void flush();})
     } finally {rendering=false;}
   }
   if(!sheet) {
-    window.WATeacher={prepare:async()=>{await WA.bootstrap();void WA.prepareOffline();}};
+    window.WATeacher={prepare:async()=>{await WA.bootstrap({renew:true});void WA.prepareOffline();}};
     const originalOnload=window.onload;
     window.onload=async event=>{
       const state=await WA.get();

@@ -26,6 +26,9 @@ try {
     }
     if($action==='home-layout')wa_response(['status'=>'success','layout'=>teacher_home_layout()]);
     if($action==='bootstrap') {
+        // Login establishes a PHP session and cookie. A bearer left in IndexedDB
+        // belongs to the previous device/account and must not override that cookie.
+        unset($_SERVER['HTTP_AUTHORIZATION']);
         if(!app_session_user_is_authenticated())wa_response(['status'=>'error','message'=>'Masuk dengan akun dosen terlebih dahulu.'],401);
         $pub=wa_text($input['pubkey']??'',300); wa_pub_pem($pub);
         $device=wa_device();

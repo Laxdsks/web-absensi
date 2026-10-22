@@ -139,6 +139,9 @@ if (($_POST['action']??'') === 'set_home_layout') {
 
 // --- SISTEM AUTENTIKASI KETAT PRIVAT (M.FADILLAH / ZEN) ---
 if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    try {
     $user = trim($_POST['username'] ?? '');
     $pass = trim($_POST['password'] ?? '');
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
@@ -193,6 +196,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
         exit;
     } else {
         echo json_encode(['status' => 'error', 'msg' => 'Kredensial Salah atau Akses Ditolak!']);
+        exit;
+    }
+    } catch(Throwable $error) {
+        error_log('WA teacher login failed: '.get_class($error));
+        http_response_code(503);
+        echo json_encode(['status'=>'error','msg'=>'Layanan login sedang tidak tersedia. Coba lagi sebentar; data akun tetap tersimpan.']);
         exit;
     }
 }
@@ -508,18 +517,21 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                 <p style="font-size: 12px; color: var(--text-muted);">Gunakan akun administrator atau dosen yang terdaftar.</p>
             </div>
             
-            <div id="formLoginAuth">
+            <form id="formLoginAuth" onsubmit="event.preventDefault();processAuthPrivate()">
                 <div class="form-group">
                     <label for="authLogName">ID akun</label>
                     <input type="text" id="authLogName" class="form-control" autocomplete="username" placeholder="ID akun Anda">
                 </div>
                 <div class="form-group">
                     <label for="authLogPass">Kata sandi</label>
-                    <input type="password" id="authLogPass" class="form-control" autocomplete="current-password" placeholder="••••••••">
+                    <div class="auth-password-field">
+                        <input type="password" id="authLogPass" class="form-control" autocomplete="current-password" placeholder="••••••••">
+                        <button type="button" id="toggleLoginPassword" class="auth-password-toggle" aria-label="Tampilkan kata sandi" aria-controls="authLogPass" aria-pressed="false" onclick="setLoginPasswordVisibility()"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                    </div>
                 </div>
-                <button type="button" class="btn-submit" onclick="processAuthPrivate()">Buka Kunci Sistem <i class="fa-solid fa-key"></i></button>
+                <button type="submit" class="btn-submit">Buka Kunci Sistem <i class="fa-solid fa-key"></i></button>
                 <button type="button" class="p-auth-switch" onclick="toggleTeacherRegistration(true)">Belum punya akun? Daftar</button>
-            </div>
+            </form>
             <form id="formRegisterTeacher" hidden onsubmit="registerTeacherAccount(event)">
                 <div class="form-group"><label>ID akun unik<input name="username" class="form-control" minlength="4" maxlength="50" pattern="[A-Za-z][A-Za-z0-9_.-]{3,49}" required autocomplete="username"></label></div>
                 <div class="form-group"><label>Nama lengkap<input name="display_name" class="form-control" maxlength="100" required autocomplete="name"></label></div>
@@ -981,7 +993,8 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             const icon = type === 'success' ? '<i class="fa-solid fa-circle-check" style="color:#10b981;"></i>' : '<i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i>';
-            toast.innerHTML = `${icon} <span>${message}</span>`;
+            toast.innerHTML = icon;
+            const label=document.createElement('span');label.textContent=String(message);toast.appendChild(label);
             container.appendChild(toast);
             setTimeout(() => toast.classList.add('show'), 10);
             setTimeout(() => {
@@ -990,51 +1003,64 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             }, 3000);
         }
         
-        function processAuthPrivate() {
-            const user = document.getElementById('authLogName').value;
+        function setLoginPasswordVisibility() {
+            const input=document.getElementById('authLogPass'),button=document.getElementById('toggleLoginPassword');
+            const visible=input.type==='password';
+            input.type=visible?'text':'password';
+            button.setAttribute('aria-pressed',String(visible));
+            button.setAttribute('aria-label',visible?'Sembunyikan kata sandi':'Tampilkan kata sandi');
+            button.querySelector('i').className=visible?'fa-solid fa-eye-slash':'fa-solid fa-eye';
+        }
+        async function processAuthPrivate() {
+            const form=document.getElementById('formLoginAuth'),button=form.querySelector('.btn-submit');
+            if(button.disabled)return;
+            const user = document.getElementById('authLogName').value.trim();
             const pass = document.getElementById('authLogPass').value;
             
             if(!user || !pass) {
                 showToast("Isi ID akun dan kata sandi.", "error");
                 return;
             }
-            const formData = new FormData();
-            formData.append('action', 'login_privat');
-            formData.append('username', user);
-            formData.append('password', pass);
-            fetch('index.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(async data => {
-                if (data.status === 'success') {
+            button.disabled=true;form.setAttribute('aria-busy','true');
+            let stage='login';
+            try {
+                // Match the request format checked on live hosting; never save the password.
+                const response=await fetch('index.php',{method:'POST',credentials:'same-origin',cache:'no-store',body:new URLSearchParams({action:'login_privat',username:user,password:pass})});
+                let data;
+                try {data=await response.json();}
+                catch (_) {throw Error('Server mengirim respons login yang tidak terbaca'+(response.status!==200?' (HTTP '+response.status+')':'')+'. Coba lagi sebentar.');}
+                if(!response.ok||data.status!=='success')throw Error(data.msg||data.message||'Login belum berhasil. Coba lagi.');
+                stage='sync';
+                try {
                     await window.WATeacher?.prepare();
-                    showToast(data.msg, 'success');
-                    document.getElementById('currentUserNameText').innerText = data.user;
-                    document.getElementById('activeUserForm').value = data.user;
-                    
+                } catch(error) {
+                    if(['QuotaExceededError','InvalidStateError','SecurityError','NotAllowedError'].includes(error.name))throw Error('Penyimpanan browser belum dapat digunakan. Izinkan penyimpanan situs lalu coba lagi; data tidak dihapus.');
+                    throw error;
+                }
+                stage='intro';
+                showToast(data.msg, 'success');
+                document.getElementById('currentUserNameText').innerText = data.user;
+                document.getElementById('activeUserForm').value = data.user;
+                // Decorative effects must not turn an accepted login into an error.
+                try {
                     const introOverlay = document.getElementById('introOverlay');
                     introOverlay.hidden = false;
                     introOverlay.classList.add('active');
                     document.getElementById('introContent').classList.add('show-text');
                     playSciFiChime();
-                    if (window.WATeacher) {
-                        window.PresenStartup.transfer();
-                        setTimeout(() => location.reload(), matchMedia('(prefers-reduced-motion:reduce)').matches ? 0 : 180);
-                    } else {
-                        document.getElementById('authOverlay').style.display = 'none';
-                        loadLoginLogs();
-                        setTimeout(() => { introOverlay.classList.remove('active'); }, 180);
-                    }
-
+                } catch (_) {}
+                if (window.WATeacher) {
+                    window.PresenStartup?.transfer();
+                    setTimeout(() => location.reload(), matchMedia('(prefers-reduced-motion:reduce)').matches ? 0 : 180);
                 } else {
-                    showToast(data.msg, 'error');
+                    document.getElementById('authOverlay').style.display = 'none';
+                    loadLoginLogs();
+                    setTimeout(() => document.getElementById('introOverlay')?.classList.remove('active'),180);
                 }
-            })
-            .catch(() => {
-                showToast('Gagal memproses ke server', 'error');
-            });
+            } catch(error) {
+                const message=error instanceof TypeError?'Sambungan ke server terputus. Periksa internet lalu coba lagi.':error.message||'Permintaan belum berhasil. Coba lagi.';
+                showToast((stage==='sync'?'Login diterima, tetapi sinkronisasi belum siap: ':'')+message,'error');
+            } finally {button.disabled=false;form.removeAttribute('aria-busy');}
         }
         function toggleTeacherRegistration(show) {
             document.getElementById('formLoginAuth').hidden=show;
