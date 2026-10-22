@@ -60,12 +60,16 @@ try {
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
     if($action==='maps-config'){
         wa_teacher($device);
-        wa_response(['status'=>'success','embedKey'=>(string)(getenv('GOOGLE_MAPS_BROWSER_KEY')?:wa_one("SELECT value FROM wa_meta WHERE k='google_maps_browser_key'")['value']??'')]);
+        wa_response(['status'=>'success','embedKey'=>(string)(getenv('GOOGLE_MAPS_BROWSER_KEY')?:wa_one("SELECT value FROM wa_meta WHERE k='google_maps_browser_key'")['value']??''),'javascriptKey'=>(string)(getenv('GOOGLE_MAPS_JAVASCRIPT_BROWSER_KEY')?:wa_one("SELECT value FROM wa_meta WHERE k='google_maps_javascript_browser_key'")['value']??'')]);
     }
     if($action==='set-maps-config'){
         wa_teacher($device);if((wa_teacher_account($device['account_id'])['role']??'')!=='admin')throw new DomainException('Hanya administrator yang dapat mengatur Google Maps.');
         $key=wa_text($input['key']??'',180);if($key!==''&&!preg_match('/^[A-Za-z0-9_-]{20,180}$/D',$key))throw new InvalidArgumentException('Kunci Google Maps tidak valid.');
-        wa_query("INSERT INTO wa_meta(k,value) VALUES('google_maps_browser_key',?) ON DUPLICATE KEY UPDATE value=VALUES(value)",[$key]);wa_response(['status'=>'success']);
+        $javascriptKey=array_key_exists('javascriptKey',$input)?wa_text($input['javascriptKey'],180):null;
+        if($javascriptKey!==null&&$javascriptKey!==''&&!preg_match('/^[A-Za-z0-9_-]{20,180}$/D',$javascriptKey))throw new InvalidArgumentException('Kunci Maps JavaScript tidak valid.');
+        if($javascriptKey===null)wa_query("INSERT INTO wa_meta(k,value) VALUES('google_maps_browser_key',?) ON DUPLICATE KEY UPDATE value=VALUES(value)",[$key]);
+        else wa_query("INSERT INTO wa_meta(k,value) VALUES('google_maps_browser_key',?),('google_maps_javascript_browser_key',?) ON DUPLICATE KEY UPDATE value=VALUES(value)",[$key,$javascriptKey]);
+        wa_response(['status'=>'success']);
     }
     if($action==='upload-evidence')wa_response(wa_evidence_upload($device,$input));
     if($action==='read-evidence')wa_response(wa_evidence_read($device,wa_text($input['id']??'',36)));
