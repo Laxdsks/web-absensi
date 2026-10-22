@@ -50,6 +50,7 @@ final class StudentShell {
    byte[] block=new byte[8192];int count;while((count=in.read(block))!=-1)bytes.write(block,0,count);
    web.loadDataWithBaseURL(entry,new String(bytes.toByteArray(),StandardCharsets.UTF_8),"text/html","UTF-8",entry);
   }catch(IOException error){showRecovery();return;}
+  handler.postDelayed(()->{if(!destroyed&&!ready)showRecovery();},12000);
   check();primeServer();
  }
  void check(){if(!destroyed&&!ready)handler.postDelayed(probe,350);}
