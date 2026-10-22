@@ -27,6 +27,7 @@ async function mount(form,session){if(!form||form.querySelector('[data-evidence]
 }
 async function prepare(session,mark,form){await form?._waitEvidence?.();if(mark==='.')return [];if(form&&!form.elements.reason.value.trim())throw Error('Jelaskan alasan sakit atau izin sebelum mengirim.');const row=await local(session.id);if(!row)throw Error('Tambahkan satu foto bukti sebelum mengirim sakit atau izin.');await WA.change(old=>({...old,ready:true}),key(await account(),session.id));if(navigator.onLine)await flush();return [{id:row.id,hash:row.hash}];}
 async function show(ref){const s=await WA.get(),who=s.profile?.account?.id;if(!who)throw Error('Masuk kembali untuk melihat foto.');let row=await WA.get('evidence-view:'+who+':'+ref.id);
+ if((!row||row.hash!==ref.hash)&&s.profile.role==='student'){for(const session of await WA.get('evidence-index:'+who)||[]){const saved=await WA.get(key(who,session));if(saved?.id===ref.id&&saved.hash===ref.hash){row=saved;break;}}}
  if(!row||row.hash!==ref.hash){if(!navigator.onLine)throw Error('Foto belum tersimpan pada perangkat ini. Buka saat online.');row=await WA.api('read-evidence',{id:ref.id},s.token);if(row.hash!==ref.hash)throw Error('Foto bukti tidak sesuai dengan kiriman.');await WA.change(()=>row,'evidence-view:'+who+':'+ref.id);}
  return picture(row);
 }

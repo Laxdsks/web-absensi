@@ -21,6 +21,7 @@ test('camera decodes the lecturer QR, evidence is required, and a saved student 
    assert(compact.startsWith('WA2:'));assert(compact.length<legacy.length*.85,JSON.stringify({legacy:legacy.length,compact:compact.length}));
    for(const code of [legacy,compact])assert.equal((await sp.evaluate(code=>WA.readQR(code),code)).challenge.id,session.id);
    await assert.rejects(()=>sp.evaluate(code=>WA.readQR(code.slice(0,-12)+'AAAAAAAAAAAA'),compact),/QR|tanda tangan/i);
+   const forged=await tp.evaluate(async code=>{const w=WA.decode(code.slice(4)),[body,sig]=w.challenge.split('.');w.challenge=WA.encode({...WA.decode(body),slot:16})+'.'+sig;return WA.compactQR('WA1:'+WA.encode(w));},legacy);await assert.rejects(()=>sp.evaluate(code=>WA.readQR(code),forged),/tanda tangan/i);
   });
   await t.test('actual camera frames decode and close the scanner without submitting attendance early',async()=>{
    const png=await sp.evaluate(async code=>{const image=new Image();image.src=URL.createObjectURL(await WAQRFiles.png(code));await image.decode();const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=720;const g=canvas.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,1280,720);g.imageSmoothingEnabled=false;g.drawImage(image,440,160,400,400);return canvas.toDataURL('image/png').split(',')[1];},compact);
@@ -33,13 +34,13 @@ test('camera decodes the lecturer QR, evidence is required, and a saved student 
    await sp.locator('[data-evidence-file]').setInputFiles({name:'bukti.png',mimeType:'image/png',buffer:fs.readFileSync(path.join(out,'computer-qr.png'))});await sp.locator('[data-view-photo]').waitFor();await sp.locator('[data-view-photo]').click();await sp.locator('.evidence-dialog .evidence-full').waitFor();await sp.locator('.evidence-dialog>.p-close').click();
    // Saved form/photo must survive navigation before submission as well.
    await sp.reload();await sp.locator('#replyForm').waitFor();assert.equal(await sp.locator('#replyForm [name=reason]').inputValue(),'Sedang beristirahat karena sakit.');await sp.locator('[data-view-photo]').waitFor();await sp.locator('#replyForm [type=submit]').click();
-   await sp.waitForFunction(async id=>(await WA.get()).snapshot.marks.some(m=>m.session_id===id&&m.mark==='S'),session.id);await tp.evaluate(()=>WA.sync());
+   await sp.waitForFunction(async id=>(await WA.get()).snapshot.marks.some(m=>m.session_id===id&&m.mark==='S'),session.id);await tp.waitForFunction(async id=>{await WA.sync();return (await WA.get()).snapshot.marks.some(m=>m.session_id===id);},session.id);
    const mark=(await tp.evaluate(()=>WA.get())).snapshot.marks.find(m=>m.session_id===session.id&&m.nim===nim);assert.equal(mark.review_status,'pending');assert.equal(mark.evidence_ready,true);assert.equal(mark.attachments.length,1);assert.equal((await tp.evaluate(id=>WA.api('read-evidence',{id}),mark.attachments[0].id)).hash,mark.attachments[0].hash);
   });
   await t.test('closing, reopening, damaged optional drafts and offline reload retain the logged-in UI and history',async()=>{
    await sp.evaluate(async()=>{const s=await WA.get();localStorage.setItem('wa-student-draft-'+s.profile.device,'{broken');await WA.prepareOffline();});
    await sp.close();sp=await student.newPage();sp.on('pageerror',e=>errors.push(e.message));await sp.goto(BASE+'app/?role=student');await sp.locator('#scanSession').waitFor();assert.match(await sp.locator('.student-identity').innerText(),new RegExp(nim));
-   await student.setOffline(true);await sp.reload();await sp.locator('#scanSession').waitFor();await sp.locator('[data-student-view=history]').click();await sp.locator('.student-history-item').waitFor();assert.match(await sp.locator('#history').innerText(),/Sakit/);await sp.screenshot({path:path.join(out,'reopened-offline-history.png'),fullPage:true});await student.setOffline(false);
+   await student.setOffline(true);await sp.reload();await sp.locator('#scanSession').waitFor();await sp.locator('[data-student-view=history]').click();await sp.locator('.student-history-item').waitFor();assert.match(await sp.locator('#history').innerText(),/Sakit/);await sp.locator('.student-history-item summary').first().click();await sp.locator('[data-photo-row]').first().click();await sp.locator('.evidence-full').waitFor();await sp.locator('.evidence-dialog>.p-close').click();await sp.screenshot({path:path.join(out,'reopened-offline-history.png'),fullPage:true});await student.setOffline(false);
   });
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({legacyBytes:legacy.length,compactBytes:compact.length,cameraFrameDecoded:true,closedAfterScan:true,evidenceDelivered:true,reopenedOffline:true,physicalPhoneTested:false},null,2));
  }finally{await browser.close();}

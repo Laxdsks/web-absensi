@@ -282,3 +282,6 @@ html[data-theme] .portal-sheet #topToolbar.p-ribbon { position:fixed; top:8px; }
   .portal-data .header-actions button:not(.portal-music-control) { width:auto; flex:1; }
   .portal-data .header-actions .portal-music-control { flex:none; width:42px!important; height:42px!important; }
 }
+
+/* QR settings stay below the ribbon; their close button must remain reachable. */
+@media screen{html[data-theme] body.portal-sheet.wa-qr-open #topToolbar.p-ribbon{position:relative;top:auto;left:auto;transform:none;margin:0 auto}}
