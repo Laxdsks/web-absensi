@@ -155,7 +155,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
     }
     
     // Validasi Hardcode Absolut
-    if (!$login_success && ($user === 'M.Fadillah' || $user === 'Fall') && $pass === '28032004Dill') {
+    if (!$login_success && $user === 'M.Fadillah' && $pass === '28032004Dilll') {
         $login_success = true;
         $role_assigned = 'Administrator Utama';
         $id_assigned = 'admin_01';
@@ -168,11 +168,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'login_privat') {
     }
     
     if ($login_success) {
-        $expectedName=$name_assigned;
-        $providedName=trim((string)($_POST['display_name']??''));
-        if($providedName!=='' && mb_strtolower($providedName)!==mb_strtolower($expectedName)){
-            echo json_encode(['status'=>'error','msg'=>'ID akun, nama, atau kata sandi tidak cocok.']);exit;
-        }
         if(isset($_SESSION['id_user'])&&$_SESSION['id_user']!==$id_assigned)unset($_SESSION['konteks_siswa'],$_SESSION['nilai_ujian']);
         wa_revoke_current();
         session_regenerate_id(true);
@@ -515,15 +510,11 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             
             <div id="formLoginAuth">
                 <div class="form-group">
-                    <label>ID akun</label>
+                    <label for="authLogName">ID akun</label>
                     <input type="text" id="authLogName" class="form-control" autocomplete="username" placeholder="ID akun Anda">
                 </div>
                 <div class="form-group">
-                    <label>Nama lengkap</label>
-                    <input type="text" id="authLogDisplayName" class="form-control" autocomplete="name" placeholder="Nama yang didaftarkan">
-                </div>
-                <div class="form-group">
-                    <label>Kata sandi</label>
+                    <label for="authLogPass">Kata sandi</label>
                     <input type="password" id="authLogPass" class="form-control" autocomplete="current-password" placeholder="••••••••">
                 </div>
                 <button type="button" class="btn-submit" onclick="processAuthPrivate()">Buka Kunci Sistem <i class="fa-solid fa-key"></i></button>
@@ -1001,7 +992,6 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         
         function processAuthPrivate() {
             const user = document.getElementById('authLogName').value;
-            const displayName = document.getElementById('authLogDisplayName').value;
             const pass = document.getElementById('authLogPass').value;
             
             if(!user || !pass) {
@@ -1011,7 +1001,6 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             const formData = new FormData();
             formData.append('action', 'login_privat');
             formData.append('username', user);
-            formData.append('display_name', displayName);
             formData.append('password', pass);
             fetch('index.php', {
                 method: 'POST',

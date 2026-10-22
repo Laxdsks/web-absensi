@@ -13,3 +13,4 @@ previous-installers/
 previous-v2-installers/
 scripts/__pycache__/
 tests/results/
+__pycache__/
