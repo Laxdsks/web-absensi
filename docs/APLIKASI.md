@@ -1,3 +1,7 @@
+Pembaruan mahasiswa saat ini: **[Presen Go 1.2.3](https://github.com/Laxdsks/web-absensi/releases/download/presen-go-1.2.3/Presen-Go-1.2.3.apk)**. Pasang langsung sebagai pembaruan Presen Go 1.2.2 agar akun dan riwayat perangkat tetap tersimpan. [Petunjuk versi 1.2.3](PRESEN-GO-1.2.3.md) menjelaskan kamera QR, foto sakit/izin, dan penggunaan offline. Dosen memakai [web absensi](https://datasiswasekolah.42web.io/).
+
+Bagian berikut menyimpan dokumentasi paket lama untuk pengguna yang masih memerlukannya.
+
 # Aplikasi Absensi 1.2.1
 
 Panduan ini menjelaskan tiga paket **1.2.1**: **Absensi-Dosen-Android.apk** (ikon **Presen Pro**, aplikasi lengkap dosen/pengelola), **Absensi-Dosen-Windows-1.2.1.exe** (nama **Presen Desk**), dan **Absen-Mahasiswa-Android.apk** (ikon **Presen Go**, khusus mahasiswa). Lihat [rilis aplikasi terbaru](https://github.com/Laxdsks/web-absensi/releases/latest) untuk versi dan paket yang sudah diterbitkan. Android 2 memakai identitas aplikasi dan kunci yang tetap sejak versi 1.0.2 sehingga dapat dipasang berdampingan dengan APK lama; aplikasi lama serta datanya tidak dicopot atau ditimpa. Jika belum pernah memasang APK lama, langsung gunakan APK Android 2.

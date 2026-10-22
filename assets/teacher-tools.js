@@ -39,10 +39,11 @@
     const state = await WA.get();
     if (session.teacher_id !== state.profile.device) throw Error('Tampilkan QR dari perangkat pembuat sesi.');
     sessionQR = session;
-    sessionCode=WA.qr('session', state.profile.certificate, 'challenge', session.challenge);
-    const qr = qrcode(0, sessionCode.length > 1800 ? 'L' : 'M');qr.addData(sessionCode); qr.make();
+    const original=WA.qr('session', state.profile.certificate, 'challenge', session.challenge),compact=await WA.compactQR(original);
+    let control=$('#qrCompatibility');if(!control){const label=document.createElement('label');label.className='qr-compatibility';label.innerHTML='<input type="checkbox" id="qrCompatibility"> QR kompatibel aplikasi lama';$('#codeImage').after(label);control=label.querySelector('input');}
+    control.checked=false;control.closest('label').hidden=compact===original;
+    const paint=()=>{sessionCode=control.checked?original:compact;const qr=qrcode(0,sessionCode.length>1800?'L':'M');qr.addData(sessionCode,sessionCode.startsWith('WA2:')?'Alphanumeric':'Byte');qr.make();$('#codeImage').innerHTML=qr.createSvgTag({cellSize:4,margin:24,scalable:true});};control.onchange=paint;paint();
     $('#codeTitle').textContent = session.matkul + ' · pertemuan ' + session.slot;
-    $('#codeImage').innerHTML = qr.createSvgTag({cellSize:4, margin:6, scalable:true});
     $('#codeDialog').showModal(); clock();
   }
   function stopScan() {

@@ -14,7 +14,7 @@
   const upper=paper.querySelector('.grading-wrap')||paper.querySelector('#tableWrapper')||paper.querySelector('#tabelAbsen');
   const baseline=footer.getBoundingClientRect().top;
   // Preserve the requested upward move, stopping only before it overlaps the table.
-  const desired=baseline+firstY*scale,safe=upper?upper.getBoundingClientRect().bottom+4*scale:desired;
+  const desired=baseline+firstY*scale,safe=upper?upper.getBoundingClientRect().bottom+(firstY<0?4:gap)*scale:desired;
   footer.style.marginTop=(gap+(Math.max(desired,safe)-baseline)/scale)+'px';
  };
  function install(){const footer=document.querySelector('#paperSheet .signature-section');if(footer)new MutationObserver(records=>{if(records.some(r=>r.target.matches('.signature-box')&&positions.get(r.target)!==r.target.style.transform))schedule();}).observe(footer,{subtree:true,attributes:true,attributeFilter:['style']});schedule();}
