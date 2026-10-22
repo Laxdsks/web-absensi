@@ -1,0 +1,95 @@
+name: Build and publish current Presen Go
+on:
+  push:
+    branches: [main, build/student-current]
+    paths: ['native/android/**', '.github/workflows/student-current.yml', 'scripts/verify-student-current.py', 'scripts/test-student-current.py']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: presen-go-current-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    outputs:
+      publish_ready: ${{ steps.candidate.outputs.ready }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build current student app with its new permanent identity
+        working-directory: native/android
+        run: gradle assembleMahasiswaRelease -PstudentCurrentIdentity --no-daemon
+      - name: Prepare unsigned package for private signing
+        run: |
+          mkdir -p unsigned-student
+          cp native/android/app/build/outputs/apk/mahasiswa/release/*-unsigned.apk unsigned-student/Presen-Go-unsigned.apk
+          signers=("$ANDROID_HOME"/build-tools/*/lib/apksigner.jar)
+          cp "${signers[-1]}" unsigned-student/apksigner.jar
+          python3 scripts/android_inputs.py > /dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Presen-Go-unsigned-for-private-signing
+          path: unsigned-student/
+          retention-days: 7
+      - name: Validate signed release candidate against current code
+        id: candidate
+        run: |
+          python3 scripts/verify-student-current.py
+          if test -f native/android/prebuilt/Presen-Go-1.2.2.apk; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Fetch previous student app for separate-installation verification
+        if: steps.candidate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download aplikasi-1.2.1 --pattern 'Absen-Mahasiswa-Android.apk' --dir previous-v2-installers
+      - name: Enable emulator hardware acceleration
+        if: steps.candidate.outputs.ready == 'true'
+        run: sudo chmod a+rw /dev/kvm
+      - name: Test actual signed APK, original-app preservation and offline launch
+        if: steps.candidate.outputs.ready == 'true'
+        uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-snapshot -gpu swiftshader_indirect -no-boot-anim -camera-back none -camera-front none -memory 1536 -cores 2 -skin 480x800
+          script: python3 scripts/test-student-current.py
+      - uses: actions/upload-artifact@v4
+        if: steps.candidate.outputs.ready == 'true'
+        with:
+          name: Presen-Go-signed-and-verified
+          path: |
+            native/android/prebuilt/Presen-Go-1.2.2.apk
+            native/android/prebuilt/SHA256SUMS.txt
+            tests/results/student-current/
+          retention-days: 30
+  release:
+    needs: android
+    if: needs.android.outputs.publish_ready == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Publish verified student installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view presen-go-1.2.2 >/dev/null 2>&1; then
+            gh release upload presen-go-1.2.2 native/android/prebuilt/Presen-Go-1.2.2.apk native/android/prebuilt/SHA256SUMS.txt --clobber
+            gh release edit presen-go-1.2.2 --notes-file docs/PRESEN-GO-1.2.2.md
+          else
+            gh release create presen-go-1.2.2 native/android/prebuilt/Presen-Go-1.2.2.apk native/android/prebuilt/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'Presen Go 1.2.2 — Absen Mahasiswa Android' --notes-file docs/PRESEN-GO-1.2.2.md
+          fi

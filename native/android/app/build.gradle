@@ -17,7 +17,7 @@ android {
  flavorDimensions 'role'
  productFlavors {
   dosen { dimension 'role'; applicationIdSuffix '.dosen'; resValue 'string','app_name','Presen Pro'; buildConfigField 'String','APP_ROLE','"teacher"' }
-  mahasiswa { dimension 'role'; applicationIdSuffix '.mahasiswa'; resValue 'string','app_name','Presen Go'; buildConfigField 'String','APP_ROLE','"student"' }
+  mahasiswa { dimension 'role'; if (project.hasProperty('studentCurrentIdentity')) { applicationId 'id.webabsensi.presengo.mahasiswa' } else { applicationIdSuffix '.mahasiswa' }; resValue 'string','app_name','Presen Go'; buildConfigField 'String','APP_ROLE','"student"' }
  }
  buildTypes {
   debug {
