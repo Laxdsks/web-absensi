@@ -41,7 +41,9 @@ instrument('testRelaunchSavedStudent')
 packages=adb('shell','pm','list','packages');assert 'package:'+OLD in packages and 'package:'+NEW in packages
 assert adb('shell','cat',sentinel(OLD))=='original-data-retained'
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable');adb('logcat','-c')
-launch_result=adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity');(OUT/'manual-launch.txt').write_text(launch_result)
+# End instrumentation ownership before testing an ordinary launcher cold start.
+adb('shell','am','force-stop',NEW)
+launch_result=adb('shell','am','start','-W','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-n',NEW+'/id.webabsensi.app.MainActivity');(OUT/'manual-launch.txt').write_text(launch_result)
 rendered=False;labels='';xml=''
 for _ in range(18):
     time.sleep(2)
@@ -55,6 +57,8 @@ if not rendered:
     (OUT/'manual-launch-ui.xml').write_text(xml)
     (OUT/'manual-launch-failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
     logs=adb('logcat','-d','-s','AndroidRuntime:E','chromium:E','WebView:E');(OUT/'manual-launch-logcat.txt').write_text(logs)
+    (OUT/'manual-launch-events.txt').write_text(adb('logcat','-b','events','-d'))
+    (OUT/'manual-launch-activities.txt').write_text(adb('shell','dumpsys','activity','activities'))
     raise RuntimeError('Bundled student screen did not render while offline. UI: '+labels+'\nLaunch: '+launch_result+'\nDiagnostics: '+logs[-10000:])
 (OUT/'offline-launch.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 write_sentinel(NEW,'current-data-retained');install(new)
