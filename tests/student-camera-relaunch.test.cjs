@@ -16,7 +16,7 @@ test('camera decodes the lecturer QR, evidence is required, and a saved student 
   await tp.evaluate(async row=>{await WA.queue({type:'student-upsert',ctx:row,...row});await WA.sync();},{...ctx,nim,nama:'Mahasiswa Kamera Uji',jk:'L'});
   await sp.goto(BASE+'app/?role=student');await sp.locator('#login').waitFor();await sp.evaluate(fields=>WA.login('student',fields),{register:true,ctx,nim,nama:'Mahasiswa Kamera Uji',jk:'L',pin:'654321'});
   await tp.evaluate(async nim=>{await WA.sync();const id=(await WA.get()).snapshot.registrations.find(x=>x.nim===nim).id;await WA.queue({type:'approve',account:id});await WA.sync();},nim);await sp.evaluate(()=>WA.sync());await sp.locator('#scanSession:not([disabled])').waitFor();
-  const {session,legacy,compact}=await tp.evaluate(async({ctx,course})=>{const session=await WA.startSession(ctx,course,1,15);await WA.sync();const legacy=WA.qr('session',(await WA.get()).profile.certificate,'challenge',session.challenge);return{session,legacy,compact:await WA.compactQR(legacy)};},{ctx,course});
+  let {session,legacy,compact}=await tp.evaluate(async({ctx,course})=>{const session=await WA.startSession(ctx,course,1,15);await WA.sync();const legacy=WA.qr('session',(await WA.get()).profile.certificate,'challenge',session.challenge);return{session,legacy,compact:await WA.compactQR(legacy)};},{ctx,course});
   await t.test('signed compact QR is smaller, tampering is rejected and legacy QR still works',async()=>{
    assert(compact.startsWith('WA2:'));assert(compact.length<legacy.length*.85,JSON.stringify({legacy:legacy.length,compact:compact.length}));
    for(const code of [legacy,compact])assert.equal((await sp.evaluate(code=>WA.readQR(code),code)).challenge.id,session.id);
@@ -28,6 +28,24 @@ test('camera decodes the lecturer QR, evidence is required, and a saved student 
    const image=path.join(out,'computer-qr.png');fs.writeFileSync(image,Buffer.from(png,'base64'));execFileSync('ffmpeg',['-y','-loglevel','error','-i',image,'-vf','fps=30,setsar=1,format=yuv420p','-frames:v','2',feed]);
    await sp.locator('#scanSession').click();try{await sp.locator('#scanner').waitFor({state:'hidden',timeout:20000});}catch(error){console.error(await sp.evaluate(()=>({status:document.querySelector('#scanStatus').textContent,video:[document.querySelector('#camera').videoWidth,document.querySelector('#camera').videoHeight,document.querySelector('#camera').readyState]})));await sp.screenshot({path:path.join(out,'camera-failure.png'),fullPage:true});throw error;}await sp.locator('#replyForm').waitFor();assert.match(await sp.locator('.student-scan-receipt').innerText(),/QR berhasil dibaca/);assert.equal(await sp.locator('#camera').evaluate(e=>e.srcObject),null);
    assert(!(await sp.evaluate(()=>WA.get())).snapshot.marks.some(m=>m.session_id===session.id));await sp.screenshot({path:path.join(out,'after-scan.png'),fullPage:true});
+  });
+  await t.test('expired draft clears without server marks and the next camera QR replaces it even if native detection hangs',async()=>{
+   await sp.evaluate(async()=>{window.realNow=WA.now;const old=JSON.parse(localStorage.getItem('wa-student-draft-'+(await WA.get()).profile.device)).challenge;WA.now=()=>old.deadline+10;});
+   await sp.locator('#studentSession').getByText(/Sesi absensi selesai/).waitFor();assert.equal(await sp.locator('#replyForm').count(),0);
+   assert.equal(await sp.evaluate(async()=>localStorage.getItem('wa-student-draft-'+(await WA.get()).profile.device)),null);
+   await sp.evaluate(()=>{WA.now=window.realNow;window.BarcodeDetector=class{static async getSupportedFormats(){return ['qr_code'];}detect(){return new Promise(()=>{});}};});
+   ({session,legacy,compact}=await tp.evaluate(async({ctx,course})=>{const session=await WA.startSession(ctx,course,2,15);await WA.sync();const legacy=WA.qr('session',(await WA.get()).profile.certificate,'challenge',session.challenge);return{session,legacy,compact:await WA.compactQR(legacy)};},{ctx,course}));
+   const png=await sp.evaluate(async code=>{const image=new Image();image.src=URL.createObjectURL(await WAQRFiles.png(code));await image.decode();const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=720;const g=canvas.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,1280,720);g.drawImage(image,440,160,400,400);return canvas.toDataURL('image/png').split(',')[1];},compact);
+   const image=path.join(out,'next-meeting-qr.png');fs.writeFileSync(image,Buffer.from(png,'base64'));execFileSync('ffmpeg',['-y','-loglevel','error','-i',image,'-vf','fps=30,setsar=1,format=yuv420p','-frames:v','2',feed]);
+   await sp.locator('#scanSession').click();await sp.locator('#scanner').waitFor({state:'hidden',timeout:20000});await sp.locator('#replyForm').waitFor();assert.match(await sp.locator('#studentSession').innerText(),/Pertemuan 2/);
+   assert.equal(await sp.evaluate(async()=>JSON.parse(localStorage.getItem('wa-student-draft-'+(await WA.get()).profile.device)).challenge.id),session.id);assert.equal(await sp.locator('#camera').evaluate(e=>e.srcObject),null);
+  });
+  await t.test('a reset session invalidates the old draft and accepts only the newest signed code',async()=>{
+   const previous=compact;
+   ({session,legacy,compact}=await tp.evaluate(async({ctx,course})=>{const session=await WA.startSession(ctx,course,2,15);await WA.sync();const legacy=WA.qr('session',(await WA.get()).profile.certificate,'challenge',session.challenge);return{session,legacy,compact:await WA.compactQR(legacy)};},{ctx,course}));
+   await sp.evaluate(()=>WA.sync());await sp.locator('#studentSession').getByText(/Kode sesi sudah diperbarui/).waitFor();assert.equal(await sp.locator('#replyForm').count(),0);
+   await sp.locator('#scanSession').click();await sp.locator('#qrText').fill(previous);await sp.locator('#readText').click();await sp.locator('#scanStatus').getByText(/QR sudah diganti/).waitFor();assert.equal(await sp.locator('#replyForm').count(),0);
+   await sp.locator('#qrText').fill(compact);await sp.locator('#readText').click();await sp.locator('#scanner').waitFor({state:'hidden'});await sp.locator('#replyForm').waitFor();assert.equal(await sp.evaluate(async()=>JSON.parse(localStorage.getItem('wa-student-draft-'+(await WA.get()).profile.device)).challenge.version),session.version);
   });
   await t.test('sickness requires a reason and photo, provides full photo preview, then reaches the lecturer',async()=>{
    await sp.locator('#replyForm [name=mark]').selectOption('S');assert(await sp.locator('#replyForm [name=reason]').evaluate(e=>e.required));await sp.locator('#replyForm [name=reason]').fill('Sedang beristirahat karena sakit.');await sp.locator('#replyForm [type=submit]').click();await sp.locator('#notice').getByText(/foto bukti/).waitFor();

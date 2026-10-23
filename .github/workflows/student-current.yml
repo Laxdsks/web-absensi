@@ -1,7 +1,7 @@
 name: Build and publish current Presen Go
 on:
   push:
-    branches: [main, build/student-current, build/student-125]
+    branches: [main, build/student-current, fix/student-session-lifecycle-126]
     paths: ['app/**', 'assets/**', 'app-sw.js', 'native/android/**', '.github/workflows/student-current.yml', 'scripts/verify-student-current.py', 'scripts/test-student-current.py']
   workflow_dispatch:
 permissions:
@@ -44,7 +44,7 @@ jobs:
         id: candidate
         run: |
           python3 scripts/verify-student-current.py
-          if test -f native/android/prebuilt/Presen-Go-1.2.5.apk; then
+          if test -f native/android/prebuilt/Presen-Go-1.2.6.apk; then
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             echo 'ready=false' >> "$GITHUB_OUTPUT"
@@ -76,7 +76,7 @@ jobs:
         with:
           name: Presen-Go-signed-and-verified
           path: |
-            native/android/prebuilt/Presen-Go-1.2.5.apk
+            native/android/prebuilt/Presen-Go-1.2.6.apk
             native/android/prebuilt/SHA256SUMS.txt
             tests/results/student-current/
           retention-days: 30
@@ -92,9 +92,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view presen-go-1.2.5 >/dev/null 2>&1; then
-            gh release upload presen-go-1.2.5 native/android/prebuilt/Presen-Go-1.2.5.apk native/android/prebuilt/SHA256SUMS.txt --clobber
-            gh release edit presen-go-1.2.5 --notes-file docs/PRESEN-GO-1.2.5.md
+          if gh release view presen-go-1.2.6 >/dev/null 2>&1; then
+            gh release upload presen-go-1.2.6 native/android/prebuilt/Presen-Go-1.2.6.apk native/android/prebuilt/SHA256SUMS.txt --clobber
+            gh release edit presen-go-1.2.6 --notes-file docs/PRESEN-GO-1.2.6.md
           else
-            gh release create presen-go-1.2.5 native/android/prebuilt/Presen-Go-1.2.5.apk native/android/prebuilt/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'Presen Go 1.2.5 — Absen Mahasiswa Android' --notes-file docs/PRESEN-GO-1.2.5.md
+            gh release create presen-go-1.2.6 native/android/prebuilt/Presen-Go-1.2.6.apk native/android/prebuilt/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'Presen Go 1.2.6 — Absen Mahasiswa Android' --notes-file docs/PRESEN-GO-1.2.6.md
           fi
