@@ -47,6 +47,11 @@ adb('shell','svc','wifi','disable');adb('shell','svc','data','disable');adb('log
 # End instrumentation ownership before testing an ordinary launcher cold start.
 adb('shell','am','force-stop',NEW)
 launch_result=adb('shell','am','start','-W','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-n',NEW+'/id.webabsensi.app.MainActivity');(OUT/'manual-launch.txt').write_text(launch_result)
+def focused_activity():
+    # ActivityManager exposes top-resumed state consistently on API 33; the
+    # window-state-only subdump omits the global mCurrentFocus field.
+    dump=adb('shell','dumpsys','activity','activities')
+    return '\n'.join(line for line in dump.splitlines() if 'topResumedActivity=' in line or 'mResumedActivity' in line)
 def saved_screen(name):
     rendered=False;labels='';xml='';stable=0
     for _ in range(18):
@@ -57,14 +62,13 @@ def saved_screen(name):
             if 'dumped' not in dump.lower():continue
             xml=adb('shell','cat','/sdcard/presen-current-ui.xml');tree=ET.fromstring(xml)
             labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in tree.iter('node'))
-            foreground=adb('shell','dumpsys','window','windows')
-            focus=next((line for line in foreground.splitlines() if 'mCurrentFocus=' in line),'')
+            focus=focused_activity()
             owns_ui=any(n.get('package')==NEW for n in tree.iter('node'))
             if NEW in focus and owns_ui and any(text in labels.lower() for text in ['mahasiswa uji buka ulang','nimreopen123','mata kuliah tersimpan']):stable+=1
             else:stable=0
             if stable>=2:
                 screenshot=subprocess.check_output(['adb','exec-out','screencap','-p'])
-                focus_after=next((line for line in adb('shell','dumpsys','window','windows').splitlines() if 'mCurrentFocus=' in line),'')
+                focus_after=focused_activity()
                 if NEW not in focus_after:stable=0;continue
                 (OUT/(name+'.png')).write_bytes(screenshot);(OUT/(name+'-ui.xml')).write_text(xml)
                 (OUT/(name+'-focus.txt')).write_text(focus_after);rendered=True;break
