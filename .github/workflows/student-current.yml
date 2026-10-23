@@ -55,7 +55,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download aplikasi-1.2.1 --pattern 'Absen-Mahasiswa-Android.apk' --dir previous-v2-installers
-          gh release download presen-go-1.2.4 --pattern 'Presen-Go-1.2.4.apk' --dir previous-current-installers
+          gh release download presen-go-1.2.5 --pattern 'Presen-Go-1.2.5.apk' --dir previous-current-installers
       - name: Enable emulator hardware acceleration
         if: steps.candidate.outputs.ready == 'true'
         run: sudo chmod a+rw /dev/kvm
