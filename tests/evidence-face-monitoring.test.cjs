@@ -5,7 +5,7 @@ async function until(page,fn,arg){const end=Date.now()+45000;while(Date.now()<en
 test('private evidence, real local face models, monitoring filters and student navigation',{timeout:240000},async t=>{
  const subtest=t.test.bind(t);t.test=async(name,fn)=>{let failure;await subtest(name,async()=>{try{await fn();}catch(error){failure=error;throw error;}});if(failure)throw failure;};
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader']}),teacher=await browser.newContext(),student=await browser.newContext({permissions:['geolocation'],geolocation:{latitude:-8.536,longitude:118.462,accuracy:20}}),other=await browser.newContext(),tp=await teacher.newPage(),sp=await student.newPage(),op=await other.newPage(),errors=[];
- for(const p of [tp,sp,op])p.on('pageerror',e=>errors.push(e.message));
+ for(const p of [tp,sp,op])p.on('pageerror',e=>errors.push(e.stack||e.message));
  const suffix=Date.now(),ctx={jenjang:'S1',prodi:'Pendidikan Sejarah',semester:'5',kelas:'B'},nim='EVID'+suffix,course='Evidence '+suffix;
  try{
   for(const c of[teacher,student,other])await c.route('**/*',route=>{if(new URL(route.request().url()).pathname==='/face-fixture.jpg')return route.fulfill({contentType:'image/jpeg',body:fs.readFileSync(path.join(__dirname,'../node_modules/@vladmandic/face-api/demo/sample1.jpg'))});return new URL(route.request().url()).origin===new URL(BASE).origin?route.continue():route.abort();});
