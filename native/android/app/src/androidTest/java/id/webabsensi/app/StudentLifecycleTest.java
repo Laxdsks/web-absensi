@@ -44,12 +44,17 @@ public class StudentLifecycleTest extends InstrumentationTestCase {
   final String worker="self.addEventListener('install',e=>e.waitUntil(self.skipWaiting()));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.mode==='navigate')e.respondWith(Promise.resolve(new Response('<!doctype html><html><body><header>Presen Go</header><main id=main></main><script>window.__staleShell=true;<\\/script></body></html>',{headers:{'Content-Type':'text/html'}})));});";
   WebViewClient client=new WebViewClient(){@Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest request){
    if(request.getUrl().getPath().endsWith("native-stale-worker.js"))return workerResponse(worker);
+   if(request.getUrl().getPath().endsWith("native-stale-fixture.html"))return new WebResourceResponse("text/html","UTF-8",new ByteArrayInputStream("<!doctype html><html><body><main id=main><p>Controlled cache fixture</p></main><script>window.__nativeFixture=true;</script></body></html>".getBytes(StandardCharsets.UTF_8)));
    return null;
   }};
   getInstrumentation().runOnMainSync(()->{
    web().setWebViewClient(client);
    ServiceWorkerController.getInstance().setServiceWorkerClient(new ServiceWorkerClient(){@Override public WebResourceResponse shouldInterceptRequest(WebResourceRequest request){return request.getUrl().getPath().endsWith("native-stale-worker.js")?workerResponse(worker):null;}});
+   // Since 1.2.4 the actual app uses loadDataWithBaseURL, where SW registration
+   // is unavailable. Seed the hostile cache from an intercepted HTTPS document.
+   web().loadUrl("https://"+BuildConfig.APP_HOST+"/app/native-stale-fixture.html");
   });
+  until("window.__nativeFixture");
   js("window.__workerReady=false;window.__workerError='';navigator.serviceWorker.register('/app/native-stale-worker.js',{scope:'/app/'}).then(async reg=>{if(reg.active){window.__workerReady=true;return;}const worker=reg.installing||reg.waiting;worker.addEventListener('statechange',()=>{if(worker.state==='activated')window.__workerReady=true;});}).catch(e=>window.__workerError=e.message)");
   until("window.__workerReady || window.__workerError");assertEquals("Stale worker registered", "\"\"",js("window.__workerError"));
   getInstrumentation().runOnMainSync(()->web().loadUrl("https://"+BuildConfig.APP_HOST+"/app/?role=student&stale-test=1"));
@@ -59,7 +64,8 @@ public class StudentLifecycleTest extends InstrumentationTestCase {
  private WebResourceResponse workerResponse(String source){return new WebResourceResponse("application/javascript","UTF-8",new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));}
  public void testOnlineAfterStaleWorker()throws Exception{
   launch();until("document.querySelector('#scanSession') && document.querySelector('.student-identity')?.innerText.includes('NIMREOPEN123')");
-  assertEquals("Coherent current signed UI", "\"1.2.4\"",js("document.querySelector('meta[name=presen-build]')?.content"));
+  assertEquals("Both attendance methods remain available", "true",js("Boolean(document.querySelector('#scanSession') && document.querySelector('#faceSession'))"));
+  assertEquals("Coherent current signed UI", "\"1.2.5\"",js("document.querySelector('meta[name=presen-build]')?.content"));
   assertEquals("Network active", "true",js("navigator.onLine"));
   assertEquals("Stale worker cannot replace app document", "false",js("Boolean(window.__staleShell)"));
   js("PresenExperience.view('history')");until("document.querySelector('#history')?.innerText.includes('Mata Kuliah Tersimpan')");

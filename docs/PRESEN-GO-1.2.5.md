@@ -1,0 +1,9 @@
+Presen Go 1.2.5 menyediakan dua metode absensi: QR dosen atau pencocokan wajah pada perangkat. Pilih salah satu; metode QR tidak mewajibkan pemindaian wajah.
+
+- Untuk wajah, daftarkan referensi di Akun sekali pada perangkat ini. Pilih sesi aktif lalu Kirim. Persetujuan dosen, kelas, mata kuliah dan tenggat tetap diperiksa. Sesi yang telah tersimpan dapat dipakai saat offline; QR balasan tetap harus diterima dosen sebelum tenggat.
+- Pencocokan menggunakan satu wajah dengan beberapa bingkai yang konsisten, gerakan kepala dan ambang jarak referensi yang lebih ketat. Pendaftaran dengan referensi wajah berbeda ditolak. Ini laporan pencocokan lokal, bukan jaminan identitas atau deteksi pemalsuan. Data referensi terenkripsi tetap pada perangkat.
+- Android menyertakan alamat dari layanan lokasi perangkat bila tersedia. Pencarian alamat dibatasi waktunya dan kegagalan alamat tidak menghilangkan koordinat GPS. Dosen melihat alamat pada Monitoring dan detail peta. RT/RW hanya ditampilkan jika tersedia.
+- Sakit/Izin tetap memerlukan alasan dan foto bukti. Pembaruan mempertahankan perbaikan layar kosong, akun tersimpan, pemindaian QR dan antrean offline.
+- Pasang sebagai pembaruan Presen Go 1.2.2–1.2.4, tanpa mencopot aplikasi atau menghapus data. Paket dan sertifikat penandatanganan tetap sama.
+
+Pengujian mencakup dua alur absensi, penolakan laporan wajah yang tidak sesuai sesi/akun atau kedaluwarsa, model pengenalan wajah dengan contoh dua orang berbeda, konsistensi pemindaian, bukti foto privat, alamat, rute, serta pembaruan APK dengan akun tersimpan. Pengujian kamera/gerakan sintetis dan emulator tidak menjamin kecocokan pada semua wajah atau model HP. Rute Google, waktu tempuh dan Street View memerlukan internet serta layanan Google yang tersedia; tidak ada layanan berbayar baru yang diaktifkan oleh pembaruan ini.

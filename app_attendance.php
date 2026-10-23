@@ -30,6 +30,10 @@ function wa_location($location): ?array {
     $out=['lat'=>(float)$location['lat'],'lon'=>(float)$location['lon'],'accuracy'=>(float)$location['accuracy'],'at'=>(int)$location['at']];
     if(!is_finite($out['lat'])||!is_finite($out['lon'])||!is_finite($out['accuracy'])||abs($out['lat'])>90||abs($out['lon'])>180||$out['accuracy']<0||$out['accuracy']>100000||abs(wa_now()-$out['at'])>400*86400000)throw new InvalidArgumentException('Keterangan lokasi berada di luar batas.');
     if(isset($location['battery'])&&is_numeric($location['battery'])&&(float)$location['battery']>=0&&(float)$location['battery']<=100)$out['battery']=(int)round((float)$location['battery']);
+    if(is_array($location['address']??null)){
+        $address=[];foreach(['formatted','road','village','district','city','province','postcode','country','rt','rw'] as $field)if(is_string($location['address'][$field]??null))$address[$field]=wa_text($location['address'][$field],$field==='formatted'?800:160);
+        if(!empty($address['formatted']))$out['address']=$address;
+    }
     return $out;
 }
 
@@ -76,11 +80,14 @@ function wa_accept_reply(array $device,array $op): array {
     if($mark!=='.'&&!$attachments&&!empty($challenge['evidence']))throw new InvalidArgumentException('Lampirkan foto bukti sakit atau izin dari aplikasi versi terbaru.');
     wa_check_evidence_binding($attachments,$session,$student['nim']);
     $verification=wa_face_report($reply['verification']??null,(int)($reply['at']??0));
+    $face=($reply['method']??'qr')==='face';
+    if(!in_array($reply['method']??'qr',['qr','face'],true))throw new InvalidArgumentException('Metode absensi tidak dikenali.');
+    if($face&&(!$verification||($reply['verification']['session']??'')!==$session['id']||(int)($reply['verification']['version']??0)!==(int)$session['version']||($reply['verification']['account']??'')!==$student['id']))throw new InvalidArgumentException('Cocokkan wajah kembali untuk sesi dan akun ini.');
     $location=wa_location($reply['location']??null);
     if($location && abs((int)($reply['at']??0)-$location['at'])>300000)throw new InvalidArgumentException('Lokasi sudah terlalu lama. Ambil lokasi kembali.');
     $old=wa_one('SELECT * FROM wa_marks WHERE scope=? AND slot=? AND nim=? FOR UPDATE',[$session['scope'],$session['slot'],$student['nim']]);
     if($old && $old['mark']!=='' && $old['source']!=='automatic')return ['status'=>'success','duplicate'=>true,'mark'=>$old['mark'],'message'=>'Absen sudah tercatat; perubahan berikutnya dilakukan dosen.'];
-    wa_query('INSERT INTO wa_marks(scope,slot,nim,mark,session_id,reason,location,source,review_status,revision,recorded_at,owner_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE mark=VALUES(mark),reason=VALUES(reason),location=VALUES(location),source=VALUES(source),review_status=VALUES(review_status),revision=revision+1,recorded_at=VALUES(recorded_at)',[$session['scope'],$session['slot'],$student['nim'],$mark,$session['id'],$reason,$location?wa_json($location):null,$receipt?'qr-offline':'qr-online',$mark==='.'?'final':'pending',1,$at,$session['owner_id']]);
+    wa_query('INSERT INTO wa_marks(scope,slot,nim,mark,session_id,reason,location,source,review_status,revision,recorded_at,owner_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE mark=VALUES(mark),reason=VALUES(reason),location=VALUES(location),source=VALUES(source),review_status=VALUES(review_status),revision=revision+1,recorded_at=VALUES(recorded_at)',[$session['scope'],$session['slot'],$student['nim'],$mark,$session['id'],$reason,$location?wa_json($location):null,($face?'face':'qr').($receipt?'-offline':'-online'),$mark==='.'?'final':'pending',1,$at,$session['owner_id']]);
     wa_query('UPDATE wa_marks SET attachments=?,verification=? WHERE scope=? AND slot=? AND nim=?',[wa_json($attachments),$verification?wa_json($verification):null,$session['scope'],$session['slot'],$student['nim']]);
     wa_audit($device,$receipt?'scan-reply':'submit-attendance',$session['id'].':'.$student['nim'],['mark'=>$mark,'locationIncluded'=>$location!==null,'receivedAt'=>$at]);
     return ['status'=>'success','mark'=>$mark];

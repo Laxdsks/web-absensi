@@ -11,20 +11,23 @@ def write_sentinel(package,text):
     adb('shell','mkdir','-p','/data/user/0/'+package+'/files')
     adb('shell','sh','-c',"'printf %s "+text+' > '+sentinel(package)+"'")
 if not adb('get-serialno').startswith('emulator-') or adb('shell','getprop','ro.kernel.qemu')!='1':raise RuntimeError('This fixture is restricted to an isolated emulator.')
-old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.4.apk'
+old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.5.apk'
 if hashlib.sha256(old.read_bytes()).hexdigest()!='6b86ff328d2b73be29b1972d0f3bf53fe337f2b45d1485834b2f6e782507d9c6':raise RuntimeError('Unexpected original APK.')
-previous=ROOT/'previous-current-installers/Presen-Go-1.2.3.apk'
-tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.4-tests.apk'
+previous=ROOT/'previous-current-installers/Presen-Go-1.2.4.apk'
+tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.5-tests.apk'
 adb('root');time.sleep(2);install(old);write_sentinel(OLD,'original-data-retained')
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
 install(previous);install(tests)
 adb('shell','pm','grant',NEW,'android.permission.ACCESS_COARSE_LOCATION')
 adb('shell','pm','grant',NEW,'android.permission.ACCESS_FINE_LOCATION')
 def instrument(method):
+    # Each instrumentation run owns a separate app process. Finish the previous
+    # runner and its WebView callbacks before starting another instrumentation.
+    adb('shell','am','force-stop',NEW)
     result=adb('shell','am','instrument','-w','-r','-e','class','id.webabsensi.app.StudentLifecycleTest#'+method,NEW+'.test/android.test.InstrumentationTestRunner')
     (OUT/(method+'.txt')).write_text(result)
     if 'OK (1 test)' not in result:
-        logs=adb('logcat','-d','-s','AndroidRuntime:E','chromium:E','WebView:E')
+        logs=adb('logcat','-d','-b','all','-t','2000')
         (OUT/'android-failure-logcat.txt').write_text(logs)
         (OUT/'failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
         raise RuntimeError('Saved-student Android verification failed: '+result[-2000:]+'\nAndroid diagnostics:\n'+logs[-12000:])
@@ -56,7 +59,7 @@ for _ in range(18):
 if not rendered:
     (OUT/'manual-launch-ui.xml').write_text(xml)
     (OUT/'manual-launch-failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
-    logs=adb('logcat','-d','-s','AndroidRuntime:E','chromium:E','WebView:E');(OUT/'manual-launch-logcat.txt').write_text(logs)
+    logs=adb('logcat','-d','-b','all','-t','2000');(OUT/'manual-launch-logcat.txt').write_text(logs)
     (OUT/'manual-launch-events.txt').write_text(adb('logcat','-b','events','-d'))
     (OUT/'manual-launch-activities.txt').write_text(adb('shell','dumpsys','activity','activities'))
     raise RuntimeError('Bundled student screen did not render while offline. UI: '+labels+'\nLaunch: '+launch_result+'\nDiagnostics: '+logs[-10000:])
