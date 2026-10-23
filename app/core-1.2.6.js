@@ -60,14 +60,14 @@ function encodeBody(text){return b64(enc.encode(text));}
 async function readQR(code){code=await expandQR(code);if(!code?.startsWith('WA1:')||code.length>14000)throw Error('Gunakan QR dari aplikasi absensi.');const s=await get(),w=decode(code.slice(4)),identity=await open(w.certificate,s.profile.serverPublicKey);if(!identity.approved)throw Error('Pendaftaran mahasiswa belum disetujui.');if(w.type==='session'&&identity.role==='teacher'){if(s.profile.role==='student'&&identity.account!==(s.profile.account.ctx.owner||'admin_01'))throw Error('QR ini milik dosen penanggung jawab lain.');const challenge=await open(w.challenge,identity.pub);if(challenge.device!==identity.device||challenge.type!=='session')throw Error('Kode sesi tidak cocok.');if(s.profile.role==='student'&&!sameCtx(challenge.ctx,s.profile.account.ctx))throw Error('QR ini berasal dari kelas lain.');return {identity,challenge,wrapper:w};}if(w.type==='reply'&&identity.role==='student'){if(s.profile.role==='teacher'&&(identity.ctx?.owner||'admin_01')!==(s.profile.account.id||'admin_01'))throw Error('Mahasiswa ini terdaftar pada dosen lain.');const reply=await open(w.reply,identity.pub);if(reply.device!==identity.device||reply.type!=='reply')throw Error('Balasan tidak cocok.');return {identity,reply,wrapper:w};}throw Error('Jenis QR tidak cocok.');}
 // Shared session guard for QR, face, restored drafts, and final submission.
 function sessionRecord(session,s){const known=s.snapshot.sessions.find(x=>x.id===session.id);if(known&&known.version<session.version)return null;return s.snapshot.marks.find(m=>(m.session_id===session.id||m.scope===(session.scope||known?.scope)&&m.slot===session.slot)&&m.nim===s.profile.account.nim&&m.mark&&!(m.source==='automatic'&&session.deadline>now(s)))||null;}
-function assertSession(challenge,s){
+function assertSession(challenge,s,allowRecorded=false){
  if(!challenge||!s.profile?.account?.approved||s.authExpired)throw Error('Akun mahasiswa perlu disetujui dosen terlebih dahulu.');
  if(!sameCtx(challenge.ctx,s.profile.account.ctx))throw Error('Sesi tidak sesuai dengan kelas Anda.');
  const time=now(s),known=s.snapshot.sessions.find(x=>x.id===challenge.id);
  if(known&&known.version>challenge.version)throw Error('QR sudah diganti dosen. Pindai QR terbaru.');
  if(time<challenge.starts)throw Error('Sesi absensi belum dimulai.');
  if(time>=challenge.deadline||day(time)!==day(challenge.starts))throw Error('Sesi absensi selesai. Pindai QR pertemuan terbaru dari dosen.');
- if(sessionRecord(challenge,s))throw Error('Absensi pertemuan ini sudah tercatat. Pindai QR pertemuan berikutnya atau lihat Riwayat.');
+ if(!allowRecorded&&sessionRecord(challenge,s))throw Error('Absensi pertemuan ini sudah tercatat. Pindai QR pertemuan berikutnya atau lihat Riwayat.');
  return challenge;
 }
 async function faceSession(id,version){
