@@ -2,7 +2,7 @@ name: Build and publish current Presen Go
 on:
   push:
     branches: [main, build/student-current, build/student-125]
-    paths: ['native/android/**', '.github/workflows/student-current.yml', 'scripts/verify-student-current.py', 'scripts/test-student-current.py']
+    paths: ['app/**', 'assets/**', 'app-sw.js', 'native/android/**', '.github/workflows/student-current.yml', 'scripts/verify-student-current.py', 'scripts/test-student-current.py']
   workflow_dispatch:
 permissions:
   contents: read
