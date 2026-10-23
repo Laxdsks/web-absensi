@@ -21,10 +21,13 @@ install(previous);install(tests)
 adb('shell','pm','grant',NEW,'android.permission.ACCESS_COARSE_LOCATION')
 adb('shell','pm','grant',NEW,'android.permission.ACCESS_FINE_LOCATION')
 def instrument(method):
+    # Each instrumentation run owns a separate app process. Finish the previous
+    # runner and its WebView callbacks before starting another instrumentation.
+    adb('shell','am','force-stop',NEW)
     result=adb('shell','am','instrument','-w','-r','-e','class','id.webabsensi.app.StudentLifecycleTest#'+method,NEW+'.test/android.test.InstrumentationTestRunner')
     (OUT/(method+'.txt')).write_text(result)
     if 'OK (1 test)' not in result:
-        logs=adb('logcat','-d','-s','AndroidRuntime:E','chromium:E','WebView:E')
+        logs=adb('logcat','-d','-b','all','-t','2000')
         (OUT/'android-failure-logcat.txt').write_text(logs)
         (OUT/'failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
         raise RuntimeError('Saved-student Android verification failed: '+result[-2000:]+'\nAndroid diagnostics:\n'+logs[-12000:])
@@ -56,7 +59,7 @@ for _ in range(18):
 if not rendered:
     (OUT/'manual-launch-ui.xml').write_text(xml)
     (OUT/'manual-launch-failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
-    logs=adb('logcat','-d','-s','AndroidRuntime:E','chromium:E','WebView:E');(OUT/'manual-launch-logcat.txt').write_text(logs)
+    logs=adb('logcat','-d','-b','all','-t','2000');(OUT/'manual-launch-logcat.txt').write_text(logs)
     (OUT/'manual-launch-events.txt').write_text(adb('logcat','-b','events','-d'))
     (OUT/'manual-launch-activities.txt').write_text(adb('shell','dumpsys','activity','activities'))
     raise RuntimeError('Bundled student screen did not render while offline. UI: '+labels+'\nLaunch: '+launch_result+'\nDiagnostics: '+logs[-10000:])
