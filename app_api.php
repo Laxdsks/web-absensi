@@ -61,6 +61,19 @@ try {
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
+    if($action==='resolve-session-qr'){
+        $student=wa_approved_student($device);
+        $session=wa_one('SELECT * FROM wa_sessions WHERE id=?',[wa_id($input['id']??'')]);
+        if(!$session||$session['owner_id']!==$student['owner_id']||wa_ctx_key(json_decode($session['ctx'],true))!==$student['ctx_key'])throw new DomainException('QR tidak sesuai dengan dosen atau kelas Anda.');
+        $teacher=wa_one('SELECT * FROM wa_devices WHERE id=? AND revoked=0',[$session['teacher_id']]);
+        if(!$teacher)throw new DomainException('Sesi dosen sudah tidak aktif.');wa_teacher($teacher);
+        $challenge=wa_open($session['challenge'],$teacher['pubkey']);
+        if((int)($input['version']??0)!==(int)$session['version']||!hash_equals((string)$challenge['nonce'],(string)($input['nonce']??'')))throw new InvalidArgumentException('QR sudah diganti atau tidak valid. Pindai QR terbaru.');
+        if(wa_now()<(int)$session['starts']||wa_now()>=(int)$session['deadline'])throw new InvalidArgumentException('Sesi absensi belum dimulai atau sudah selesai.');
+        if(!in_array($student['nim'],json_decode($session['roster'],true),true))throw new DomainException('Mahasiswa belum terdaftar pada sesi ini.');
+        $profile=wa_profile($teacher);
+        wa_response(['status'=>'success','code'=>'WA1:'.wa_b64(wa_json(['type'=>'session','certificate'=>$profile['certificate'],'challenge'=>$session['challenge']]))]);
+    }
     if($action==='maps-config'){
         wa_teacher($device);
         wa_response(['status'=>'success','embedKey'=>(string)(getenv('GOOGLE_MAPS_BROWSER_KEY')?:wa_one("SELECT value FROM wa_meta WHERE k='google_maps_browser_key'")['value']??''),'javascriptKey'=>(string)(getenv('GOOGLE_MAPS_JAVASCRIPT_BROWSER_KEY')?:wa_one("SELECT value FROM wa_meta WHERE k='google_maps_javascript_browser_key'")['value']??'')]);

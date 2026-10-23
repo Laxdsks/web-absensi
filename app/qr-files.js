@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   async function png(code) {
-    const qr = qrcode(0, code.length > 1800 ? 'L' : 'M'); qr.addData(code,code.startsWith('WA2:')?'Alphanumeric':'Byte'); qr.make();
+    const qr = qrcode(0, code.length > 1800 ? 'L' : 'M'); qr.addData(code,/^WA[23]:/.test(code)?'Alphanumeric':'Byte'); qr.make();
     const count = qr.getModuleCount(), cell = 8, margin = 8;
     const canvas = document.createElement('canvas'); canvas.width = canvas.height = (count + margin * 2) * cell;
     const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);

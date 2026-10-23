@@ -65,7 +65,7 @@ public class StudentLifecycleTest extends InstrumentationTestCase {
  public void testOnlineAfterStaleWorker()throws Exception{
   launch();until("document.querySelector('#scanSession') && document.querySelector('.student-identity')?.innerText.includes('NIMREOPEN123')");
   assertEquals("Both attendance methods remain available", "true",js("Boolean(document.querySelector('#scanSession') && document.querySelector('#faceSession'))"));
-  assertEquals("Coherent current signed UI", "\"1.2.6\"",js("document.querySelector('meta[name=presen-build]')?.content"));
+  assertEquals("Coherent current signed UI", "\"1.2.7\"",js("document.querySelector('meta[name=presen-build]')?.content"));
   assertEquals("Network active", "true",js("navigator.onLine"));
   assertEquals("Stale worker cannot replace app document", "false",js("Boolean(window.__staleShell)"));
   js("PresenExperience.view('history')");until("document.querySelector('#history')?.innerText.includes('Mata Kuliah Tersimpan')");
