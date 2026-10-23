@@ -88,3 +88,6 @@ html[data-theme] body.portal-sheet,html[data-theme] body.portal-data{background:
 .p-registration-nim{display:inline-block}
 .p-mail-layout .p-registration-date{display:block;white-space:normal;line-height:1.5}
 @media(max-width:600px){.p-inbox-dialog .p-notice-row>div:first-child{flex-basis:100%}.p-inbox-dialog .p-notice-row>.p-actions{width:100%;justify-content:flex-end}}
+
+/* Keep route controls outside the embedded map and readable on narrow screens. */
+.p-map-route-controls{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:12px 0}.p-map-route-controls label{display:grid;gap:6px;min-width:180px}.p-map-place{white-space:normal;overflow-wrap:anywhere;line-height:1.6}.monitor-address{white-space:normal;overflow-wrap:anywhere;color:var(--muted,#aab9cb)}

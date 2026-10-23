@@ -59,7 +59,8 @@ public class StudentLifecycleTest extends InstrumentationTestCase {
  private WebResourceResponse workerResponse(String source){return new WebResourceResponse("application/javascript","UTF-8",new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));}
  public void testOnlineAfterStaleWorker()throws Exception{
   launch();until("document.querySelector('#scanSession') && document.querySelector('.student-identity')?.innerText.includes('NIMREOPEN123')");
-  assertEquals("Coherent current signed UI", "\"1.2.4\"",js("document.querySelector('meta[name=presen-build]')?.content"));
+  assertEquals("Both attendance methods remain available", "true",js("Boolean(document.querySelector('#scanSession') && document.querySelector('#faceSession'))"));
+  assertEquals("Coherent current signed UI", "\"1.2.5\"",js("document.querySelector('meta[name=presen-build]')?.content"));
   assertEquals("Network active", "true",js("navigator.onLine"));
   assertEquals("Stale worker cannot replace app document", "false",js("Boolean(window.__staleShell)"));
   js("PresenExperience.view('history')");until("document.querySelector('#history')?.innerText.includes('Mata Kuliah Tersimpan')");

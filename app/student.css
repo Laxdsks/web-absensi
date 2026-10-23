@@ -125,3 +125,5 @@ html[data-theme=malam] .portal-student .absent,html[data-theme=samudra] .portal-
 .portal-student .student-history-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
 .portal-student .student-history-filters label{min-width:0}
 .portal-student .student-history-filters input,.portal-student .student-history-filters select{box-sizing:border-box;width:100%;min-width:0;max-width:100%}
+
+.student-attendance-methods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.student-attendance-methods button{margin:0;min-height:58px;white-space:normal;line-height:1.4}#faceSession{border-color:var(--student-accent,#217e93);font-weight:700}#studentAttendancePanel .student-flow{margin-bottom:14px}@media(max-width:360px){.student-attendance-methods{grid-template-columns:1fr}}
