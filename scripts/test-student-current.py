@@ -47,31 +47,45 @@ adb('shell','svc','wifi','disable');adb('shell','svc','data','disable');adb('log
 # End instrumentation ownership before testing an ordinary launcher cold start.
 adb('shell','am','force-stop',NEW)
 launch_result=adb('shell','am','start','-W','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-n',NEW+'/id.webabsensi.app.MainActivity');(OUT/'manual-launch.txt').write_text(launch_result)
-rendered=False;labels='';xml=''
-for _ in range(18):
-    time.sleep(2)
-    try:
-        adb('shell','uiautomator','dump','--compressed','/sdcard/presen-current-ui.xml')
-        xml=adb('shell','cat','/sdcard/presen-current-ui.xml');tree=ET.fromstring(xml)
-        labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in tree.iter('node'))
-        if any(s in labels.lower() for s in ['mahasiswa uji buka ulang','nimreopen123','mata kuliah tersimpan']):rendered=True;break
-    except (subprocess.CalledProcessError,ET.ParseError):pass
-if not rendered:
-    (OUT/'manual-launch-ui.xml').write_text(xml)
-    (OUT/'manual-launch-failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
-    logs=adb('logcat','-d','-b','all','-t','2000');(OUT/'manual-launch-logcat.txt').write_text(logs)
-    (OUT/'manual-launch-events.txt').write_text(adb('logcat','-b','events','-d'))
-    (OUT/'manual-launch-activities.txt').write_text(adb('shell','dumpsys','activity','activities'))
-    raise RuntimeError('Bundled student screen did not render while offline. UI: '+labels+'\nLaunch: '+launch_result+'\nDiagnostics: '+logs[-10000:])
-(OUT/'offline-launch.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+def saved_screen(name):
+    rendered=False;labels='';xml='';stable=0
+    for _ in range(18):
+        time.sleep(2)
+        try:
+            adb('shell','rm','-f','/sdcard/presen-current-ui.xml')
+            dump=adb('shell','uiautomator','dump','--compressed','/sdcard/presen-current-ui.xml')
+            if 'dumped' not in dump.lower():continue
+            xml=adb('shell','cat','/sdcard/presen-current-ui.xml');tree=ET.fromstring(xml)
+            labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in tree.iter('node'))
+            foreground=adb('shell','dumpsys','window','windows')
+            focus=next((line for line in foreground.splitlines() if 'mCurrentFocus=' in line),'')
+            owns_ui=any(n.get('package')==NEW for n in tree.iter('node'))
+            if NEW in focus and owns_ui and any(text in labels.lower() for text in ['mahasiswa uji buka ulang','nimreopen123','mata kuliah tersimpan']):stable+=1
+            else:stable=0
+            if stable>=2:
+                screenshot=subprocess.check_output(['adb','exec-out','screencap','-p'])
+                focus_after=next((line for line in adb('shell','dumpsys','window','windows').splitlines() if 'mCurrentFocus=' in line),'')
+                if NEW not in focus_after:stable=0;continue
+                (OUT/(name+'.png')).write_bytes(screenshot);(OUT/(name+'-ui.xml')).write_text(xml)
+                (OUT/(name+'-focus.txt')).write_text(focus_after);rendered=True;break
+        except (subprocess.CalledProcessError,ET.ParseError):stable=0
+    if not rendered:
+        (OUT/(name+'-ui.xml')).write_text(xml)
+        (OUT/(name+'-failure.png')).write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+        logs=adb('logcat','-d','-b','all','-t','2500');(OUT/(name+'-logcat.txt')).write_text(logs)
+        (OUT/(name+'-events.txt')).write_text(adb('logcat','-b','events','-d'))
+        (OUT/(name+'-activities.txt')).write_text(adb('shell','dumpsys','activity','activities'))
+        raise RuntimeError('Student UI did not remain in the foreground: '+labels+'\nDiagnostics: '+logs[-10000:])
+    (OUT/(name+'-logcat.txt')).write_text(adb('logcat','-d','-b','all','-t','1000'))
+saved_screen('offline-launch')
 write_sentinel(NEW,'current-data-retained');install(new)
 assert adb('shell','cat',sentinel(OLD))=='original-data-retained'
 assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
-adb('shell','am','force-stop',NEW);adb('shell','am','start','-W','-n',NEW+'/id.webabsensi.app.MainActivity');time.sleep(4)
+adb('shell','am','force-stop',NEW);adb('shell','am','start','-W','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-n',NEW+'/id.webabsensi.app.MainActivity');saved_screen('reinstalled-launch')
 crashes=adb('logcat','-d','-s','AndroidRuntime:E');assert 'FATAL EXCEPTION' not in crashes,crashes[-1500:]
 # Only after persistence has been checked: clear this isolated emulator fixture to test a first installation.
 assert 'Success' in adb('shell','pm','clear',NEW)
 adb('shell','svc','wifi','enable');time.sleep(5)
 instrument('testFreshReadOnlyApiHandshake')
-report={'package':NEW,'freshNativeReadOnlyApiVerified':True,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFrom123RetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'headerOnlyBlankPageReproducedOn123':True,'staleServiceWorkerBypassedOnline':True,'missingJavaScriptShowsNativeRecovery':True,'retryRetainsAccountAndHistory':True,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
+report={'package':NEW,'freshNativeReadOnlyApiVerified':True,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFromVersion':'1.2.4','upgradeRetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'headerOnlyBlankPageReproducedOnPreviousVersion':True,'staleServiceWorkerBypassedOnline':True,'missingJavaScriptShowsNativeRecovery':True,'retryRetainsAccountAndHistory':True,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
 (OUT/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))
