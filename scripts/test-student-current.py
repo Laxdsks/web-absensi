@@ -11,10 +11,10 @@ def write_sentinel(package,text):
     adb('shell','mkdir','-p','/data/user/0/'+package+'/files')
     adb('shell','sh','-c',"'printf %s "+text+' > '+sentinel(package)+"'")
 if not adb('get-serialno').startswith('emulator-') or adb('shell','getprop','ro.kernel.qemu')!='1':raise RuntimeError('This fixture is restricted to an isolated emulator.')
-old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.5.apk'
+old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.6.apk'
 if hashlib.sha256(old.read_bytes()).hexdigest()!='6b86ff328d2b73be29b1972d0f3bf53fe337f2b45d1485834b2f6e782507d9c6':raise RuntimeError('Unexpected original APK.')
-previous=ROOT/'previous-current-installers/Presen-Go-1.2.4.apk'
-tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.5-tests.apk'
+previous=ROOT/'previous-current-installers/Presen-Go-1.2.5.apk'
+tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.6-tests.apk'
 adb('root');time.sleep(2);install(old);write_sentinel(OLD,'original-data-retained')
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
 install(previous);install(tests)
@@ -91,5 +91,5 @@ crashes=adb('logcat','-d','-s','AndroidRuntime:E');assert 'FATAL EXCEPTION' not 
 assert 'Success' in adb('shell','pm','clear',NEW)
 adb('shell','svc','wifi','enable');time.sleep(5)
 instrument('testFreshReadOnlyApiHandshake')
-report={'package':NEW,'freshNativeReadOnlyApiVerified':True,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFromVersion':'1.2.4','upgradeRetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'headerOnlyBlankPageReproducedOnPreviousVersion':True,'staleServiceWorkerBypassedOnline':True,'missingJavaScriptShowsNativeRecovery':True,'retryRetainsAccountAndHistory':True,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
+report={'package':NEW,'freshNativeReadOnlyApiVerified':True,'separateFrom121':True,'oldPrivateDataRetained':True,'offlineScreenRendered':True,'sameCertificateReinstallRetainedData':True,'upgradeFromVersion':'1.2.5','upgradeRetainedLoginAndHistory':True,'savedStudentOfflineRecreation':True,'corruptOptionalDraftRecovered':True,'nativeCrashes':False,'headerOnlyBlankPageReproducedOnPreviousVersion':True,'staleServiceWorkerBypassedOnline':True,'missingJavaScriptShowsNativeRecovery':True,'retryRetainsAccountAndHistory':True,'apkSha256':hashlib.sha256(new.read_bytes()).hexdigest(),'physicalCameraGpsTested':False}
 (OUT/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))

@@ -38,7 +38,7 @@
   async function showQR(session) {
     const state = await WA.get();
     if (session.teacher_id !== state.profile.device) throw Error('Tampilkan QR dari perangkat pembuat sesi.');
-    sessionQR = session;
+    sessionQR = session;$('#codeImage').hidden=false;$('#shareCode').disabled=false;
     const original=WA.qr('session', state.profile.certificate, 'challenge', session.challenge),compact=await WA.compactQR(original);
     let control=$('#qrCompatibility');if(!control){const label=document.createElement('label');label.className='qr-compatibility';label.innerHTML='<input type="checkbox" id="qrCompatibility"> QR kompatibel aplikasi lama';$('#codeImage').after(label);control=label.querySelector('input');}
     control.checked=false;control.closest('label').hidden=compact===original;
@@ -79,7 +79,8 @@
         const left = Math.max(0,Math.ceil((Number(el.dataset.end)-now)/1000));
         el.textContent = left ? Math.floor(left/60)+':'+String(left%60).padStart(2,'0')+' tersisa' : 'Absen ditutup · A otomatis';
       });
-      if ($('#countdown')) $('#countdown').textContent = sessionQR ? Math.max(0,Math.ceil((sessionQR.deadline-now)/1000))+' detik tersisa' : '';
+      if ($('#countdown')) $('#countdown').textContent = sessionQR ? (sessionQR.deadline<=now?'Sesi absensi selesai · tampilkan QR pertemuan terbaru':Math.ceil((sessionQR.deadline-now)/1000)+' detik tersisa') : '';
+      if(sessionQR&&$('#codeDialog')?.open){const current=state.snapshot.sessions.find(x=>x.id===sessionQR.id),ended=sessionQR.deadline<=now||current?.version>sessionQR.version;$('#codeImage').hidden=ended;$('#shareCode').disabled=ended;if(current?.version>sessionQR.version)$('#countdown').textContent='QR sudah diperbarui. Tutup dan tampilkan QR terbaru.';}
     });
   }
   function initialize(state) {
