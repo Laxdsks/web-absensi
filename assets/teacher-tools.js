@@ -6,6 +6,7 @@
   const $ = selector => host.querySelector(selector);
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const sheet = host.dataset.page === 'absen', params = new URLSearchParams(location.search);
+  window.addEventListener('wa-global-reset',()=>{sessionQR=null;sessionCode='';host.querySelector('#codeDialog')?.close();});
   let sessionQR = null, sessionCode = '', stream = null, scanTimer, renderKey = '', rendering = false;
   const notify = text => { $('#toolNotice').textContent = text; $('#toolNotice').style.display='flex';window.PresenUI?.closable($('#toolNotice')); if(host.hidden) window.showToast?.(escape(text),'error'); };
   async function run(fn, button) {
@@ -103,6 +104,7 @@
           if(displayed && displayed.textContent.trim()!==name) await window.WASetSheetCourse(name);
           await window.WAFlush?.();
           const session = await WA.startSession(c,name,Number(values.slot),Number(values.minutes));
+          window.WASetMeetingDate?.(session);await window.WAFlush?.();
           await showQR(session); notify('Absen dimulai. Kehadiran dicatat pada tabel asli di lembar ini.');
         }, $('#startSession'));
       };
