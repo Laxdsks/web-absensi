@@ -1,6 +1,6 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261023-presen-127-r1';
+const WA_BUILD = '20261024-presen-128-r1';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_db(): mysqli {
@@ -16,15 +16,16 @@ function wa_db(): mysqli {
 }
 
 function wa_schema(mysqli $db): void {
-    try { $v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc(); if(($v['value']??'')==='9')return; } catch(mysqli_sql_exception $ignored) {}
+    try { $v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc(); if(($v['value']??'')==='10')return; } catch(mysqli_sql_exception $ignored) {}
     if((int)($db->query("SELECT GET_LOCK(CONCAT('wa_schema:',DATABASE()),10) AS acquired")->fetch_assoc()['acquired']??0)!==1)throw new RuntimeException('Pembaruan penyimpanan sedang diproses. Coba lagi.');
     try {
-        try {$v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc();if(($v['value']??'')==='9')return;}catch(mysqli_sql_exception $ignored){}
+        try {$v=$db->query("SELECT value FROM wa_meta WHERE k='schema_version'")->fetch_assoc();if(($v['value']??'')==='10')return;}catch(mysqli_sql_exception $ignored){}
     $tables = [
         "CREATE TABLE IF NOT EXISTS wa_push_devices (device_id CHAR(36) PRIMARY KEY, subscription TEXT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS wa_push_sent (device_id CHAR(36) NOT NULL, session_id CHAR(36) NOT NULL, phase VARCHAR(100) NOT NULL, PRIMARY KEY(device_id,session_id,phase)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS wa_meta (k VARCHAR(60) PRIMARY KEY, value MEDIUMTEXT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS wa_accounts (id CHAR(36) PRIMARY KEY, nim VARCHAR(50) NOT NULL, nama VARCHAR(255) NOT NULL, jk CHAR(1) NOT NULL, ctx TEXT NOT NULL, ctx_key CHAR(64) NOT NULL, pin_hash VARCHAR(255) NOT NULL, approved TINYINT NOT NULL DEFAULT 0, approved_by VARCHAR(60), created_at BIGINT NOT NULL, UNIQUE KEY account_identity(ctx_key,nim)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+        "CREATE TABLE IF NOT EXISTS wa_class_invites (token_hash CHAR(64) PRIMARY KEY, owner_id VARCHAR(60) NOT NULL, ctx TEXT NOT NULL, matkul VARCHAR(180) NOT NULL, reset_epoch INT NOT NULL, created_at BIGINT NOT NULL, KEY invite_owner(owner_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS wa_devices (id CHAR(36) PRIMARY KEY, account_id VARCHAR(60) NOT NULL, role VARCHAR(12) NOT NULL, token_hash CHAR(64) NOT NULL UNIQUE, pubkey TEXT NOT NULL, revoked TINYINT NOT NULL DEFAULT 0, created_at BIGINT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS wa_sessions (id CHAR(36) PRIMARY KEY, scope CHAR(64) NOT NULL, ctx TEXT NOT NULL, matkul VARCHAR(180) NOT NULL, slot SMALLINT NOT NULL, day CHAR(10) NOT NULL, starts BIGINT NOT NULL, deadline BIGINT NOT NULL, ends BIGINT NOT NULL, version INT NOT NULL, challenge MEDIUMTEXT NOT NULL, teacher_id CHAR(36) NOT NULL, roster MEDIUMTEXT NOT NULL, finalized TINYINT NOT NULL DEFAULT 0, UNIQUE KEY session_meeting(scope,slot)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS wa_marks (scope CHAR(64) NOT NULL, slot SMALLINT NOT NULL, nim VARCHAR(50) NOT NULL, mark CHAR(1) NOT NULL, session_id CHAR(36), reason TEXT NOT NULL, location TEXT, source VARCHAR(20) NOT NULL, review_status VARCHAR(20) NOT NULL, revision INT NOT NULL DEFAULT 1, recorded_at BIGINT NOT NULL, PRIMARY KEY(scope,slot,nim)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
@@ -42,11 +43,22 @@ function wa_schema(mysqli $db): void {
     if (!$db->query("SHOW COLUMNS FROM siswa LIKE 'academic_year'")->num_rows) $db->query("ALTER TABLE siswa ADD academic_year VARCHAR(9) NOT NULL DEFAULT '2026/2027'");
     if (!$db->query("SHOW COLUMNS FROM siswa LIKE 'academic_period'")->num_rows) $db->query("ALTER TABLE siswa ADD academic_period VARCHAR(6) NOT NULL DEFAULT ''");
     $db->query("UPDATE siswa SET academic_period=IF(MOD(CAST(REPLACE(semester,'Semester ','') AS UNSIGNED),2)=0,'Genap','Ganjil') WHERE academic_period=''");
+    // One NIM per owner/class/year/period, including legacy label variants.
+    if(!$db->query("SHOW COLUMNS FROM siswa LIKE 'wa_identity_key'")->num_rows){
+        $db->query("ALTER TABLE siswa ADD wa_identity_key CHAR(64) GENERATED ALWAYS AS (CASE WHEN jenjang='S1' AND TRIM(nim)<>'' THEN SHA2(CONCAT_WS('|',TRIM(owner_id),LOWER(TRIM(prodi)),REPLACE(REPLACE(LOWER(TRIM(semester)),'semester',''),' ',''),UPPER(REPLACE(REPLACE(LOWER(TRIM(kelas)),'kelas',''),' ','')),TRIM(academic_year),LOWER(TRIM(academic_period)),UPPER(TRIM(nim))),256) ELSE NULL END) STORED");
+    }
+    if(!$db->query("SHOW INDEX FROM siswa WHERE Key_name='wa_unique_student_identity'")->num_rows){
+        $db->query("UPDATE siswa kept JOIN (SELECT wa_identity_key,MIN(id) keep_id,MAX(NULLIF(TRIM(nama),'')) nonempty_name,MAX(NULLIF(TRIM(jk),'')) nonempty_sex FROM siswa WHERE wa_identity_key IS NOT NULL GROUP BY wa_identity_key HAVING COUNT(*)>1) duplicates ON kept.id=duplicates.keep_id SET kept.nama=IF(TRIM(kept.nama)='',duplicates.nonempty_name,kept.nama),kept.jk=IF(TRIM(kept.jk)='',COALESCE(duplicates.nonempty_sex,''),kept.jk)");
+        $db->query("DELETE duplicate FROM siswa duplicate JOIN siswa kept ON duplicate.wa_identity_key=kept.wa_identity_key AND duplicate.id>kept.id WHERE duplicate.wa_identity_key IS NOT NULL");
+        $db->query("UPDATE siswa SET nim=UPPER(TRIM(nim)),semester=REPLACE(REPLACE(LOWER(TRIM(semester)),'semester',''),' ',''),kelas=UPPER(REPLACE(REPLACE(LOWER(TRIM(kelas)),'kelas',''),' ','')) WHERE jenjang='S1' AND TRIM(nim)<>''");
+        $db->query("ALTER TABLE siswa ADD UNIQUE KEY wa_unique_student_identity(wa_identity_key)");
+    }
+
     if (!$db->query("SHOW COLUMNS FROM wa_accounts LIKE 'approval_status'")->num_rows){$db->query("ALTER TABLE wa_accounts ADD approval_status VARCHAR(12) NOT NULL DEFAULT 'pending'");$db->query("UPDATE wa_accounts SET approval_status='approved' WHERE approved=1");}
     $db->query("CREATE TABLE IF NOT EXISTS wa_evidence (id CHAR(36) PRIMARY KEY, owner_id VARCHAR(60) NOT NULL, account_id CHAR(36) NOT NULL, ctx_key CHAR(64) NOT NULL, session_id CHAR(36) NOT NULL, nim VARCHAR(50) NOT NULL, mime VARCHAR(30) NOT NULL, sha256 CHAR(64) NOT NULL, image_bytes MEDIUMBLOB NOT NULL, width INT NOT NULL, height INT NOT NULL, created_at BIGINT NOT NULL, KEY evidence_owner(owner_id), KEY evidence_session(account_id,session_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     $db->query("CREATE TABLE IF NOT EXISTS wa_teacher_accounts (id CHAR(36) PRIMARY KEY, username VARCHAR(50) NOT NULL UNIQUE, display_name VARCHAR(100) NOT NULL, password_hash VARCHAR(255) NOT NULL, role VARCHAR(12) NOT NULL DEFAULT 'teacher', status VARCHAR(12) NOT NULL DEFAULT 'pending', avatar MEDIUMTEXT NULL, created_at BIGINT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     foreach(['attachments','verification'] as $column)if(!$db->query("SHOW COLUMNS FROM wa_marks LIKE '{$column}'")->num_rows)$db->query("ALTER TABLE wa_marks ADD {$column} TEXT NULL");
-    $db->query("INSERT INTO wa_meta(k,value) VALUES('schema_version','9') ON DUPLICATE KEY UPDATE value='9'");
+    $db->query("INSERT INTO wa_meta(k,value) VALUES('schema_version','10') ON DUPLICATE KEY UPDATE value='10'");
     } finally {$db->query("SELECT RELEASE_LOCK(CONCAT('wa_schema:',DATABASE()))");}
 }
 
@@ -64,9 +76,24 @@ function wa_uuid(): string { $b = random_bytes(16); $b[6] = chr((ord($b[6]) & 15
 function wa_id($id): string { if (!is_string($id) || !preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i', $id)) throw new InvalidArgumentException('ID tidak valid.'); return $id; }
 function wa_text($value, int $max = 255): string { if (!is_scalar($value)) throw new InvalidArgumentException('Teks tidak valid.'); $text = trim((string)$value); if (strlen($text) > $max) throw new InvalidArgumentException('Teks terlalu panjang.'); return $text; }
 function wa_teacher_account(string $id): ?array {
-    if($id==='admin_01')return ['id'=>$id,'username'=>'M.Fadillah','display_name'=>'M.Fadillah','role'=>'admin','status'=>'active'];
-    if($id==='dosen_01')return ['id'=>$id,'username'=>'Zen','display_name'=>'Zen','role'=>'teacher','status'=>'active'];
-    return wa_one('SELECT id,username,display_name,role,status,avatar FROM wa_teacher_accounts WHERE id=?',[$id]);
+    if($id==='admin_01')$account=['id'=>$id,'username'=>'M.Fadillah','display_name'=>'M.Fadillah','role'=>'admin','status'=>'active'];
+    elseif($id==='dosen_01')$account=['id'=>$id,'username'=>'Zen','display_name'=>'Zen','role'=>'teacher','status'=>'active'];
+    else $account=wa_one('SELECT id,username,display_name,role,status,avatar FROM wa_teacher_accounts WHERE id=?',[$id]);
+    if(!$account)return null;
+    if(defined('APP_TEMPLATE_BUILD'))return $account+['professional_title'=>''];
+    if(in_array($id,['admin_01','dosen_01'],true)){
+        $store=json_decode(@file_get_contents(__DIR__.'/admin_config.json')?:'{}',true);$profile=$store['profiles'][$id]??($id==='admin_01'&&!isset($store['profiles'])?$store:[]);
+        if(!empty($profile['admin_name']))$account['display_name']=wa_text($profile['admin_name'],100);
+        $account['avatar']=$profile['admin_avatar']??'';
+    }
+    $custom=json_decode(wa_one('SELECT value FROM wa_meta WHERE k=?',['teacher-profile:'.$id])['value']??'{}',true)?:[];
+    if(!empty($custom['name']))$account['display_name']=$custom['name'];$account['professional_title']=$custom['title']??'';
+    return $account;
+}
+function wa_teacher_label(array $account): string {return $account['display_name'].(!empty($account['professional_title'])?', '.$account['professional_title']:'');}
+function wa_save_teacher_identity(string $id,string $name,string $title): void {
+    $name=wa_text($name,100);$title=wa_text($title,100);if(mb_strlen($name)<2)throw new InvalidArgumentException('Isi nama dosen minimal 2 karakter.');
+    wa_query('INSERT INTO wa_meta(k,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)',['teacher-profile:'.$id,wa_json(['name'=>$name,'title'=>$title])]);
 }
 function wa_active_teacher(string $id): bool { $account=wa_teacher_account($id);return $account!==null&&$account['status']==='active'; }
 function wa_owner(): string { return (string)($GLOBALS['wa_request_owner'] ?? $_SESSION['id_user'] ?? 'admin_01'); }
@@ -113,7 +140,7 @@ function wa_reset_all_student_data(array $device,string $confirmation): array {
     wa_db()->begin_transaction();
     try {
         $counts=[];
-        foreach (['siswa','wa_accounts','wa_sessions','wa_marks','wa_documents','wa_evidence'] as $table)
+        foreach (['siswa','wa_accounts','wa_sessions','wa_marks','wa_documents','wa_evidence','wa_class_invites'] as $table)
             $counts[$table]=(int)(wa_one("SELECT COUNT(*) AS n FROM {$table} WHERE owner_id=?",[$owner])['n']??0);
         wa_query("UPDATE wa_meta SET value=CAST(value AS UNSIGNED)+1 WHERE k=?",['student_data_epoch:'.$owner]);
         $studentIds=wa_rows("SELECT d.id FROM wa_devices d JOIN wa_accounts a ON a.id=d.account_id WHERE d.role='student' AND a.owner_id=?",[$owner]);
@@ -122,7 +149,7 @@ function wa_reset_all_student_data(array $device,string $confirmation): array {
             wa_query('DELETE FROM wa_push_sent WHERE device_id=?',[$row['id']]);
             wa_query('UPDATE wa_devices SET revoked=1 WHERE id=?',[$row['id']]);
         }
-        foreach (['wa_evidence','wa_accounts','wa_sessions','wa_marks','wa_documents','siswa'] as $table) wa_query("DELETE FROM {$table} WHERE owner_id=?",[$owner]);
+        foreach (['wa_evidence','wa_accounts','wa_sessions','wa_marks','wa_documents','wa_class_invites','siswa'] as $table) wa_query("DELETE FROM {$table} WHERE owner_id=?",[$owner]);
         wa_audit($device,'reset-all-student-data','own-account',['counts'=>$counts]);
         wa_db()->commit();
         return ['status'=>'success','deleted'=>$counts,'resetEpoch'=>wa_student_data_epoch()];
@@ -191,7 +218,7 @@ function wa_issue_device(string $account, string $role, string $pub): array {
 function wa_profile(array $device): array {
     $account=$device['role']==='student'?wa_one('SELECT id,nim,nama,jk,ctx,approved,approval_status,owner_id FROM wa_accounts WHERE id=?',[$device['account_id']]):wa_teacher_account($device['account_id']);
     if (!$account) throw new InvalidArgumentException('Akun tidak ditemukan.');
-    if($device['role']==='teacher'){$account['nama']=$account['display_name'];$account['approved']=$account['status']==='active';}
+    if($device['role']==='teacher'){$account['nama']=wa_teacher_label($account);$account['approved']=$account['status']==='active';}
     if (isset($account['ctx'])) $account['ctx']=json_decode($account['ctx'],true);
     $account['owner_id']=$account['owner_id']??$device['account_id'];
     $account['approved']=(bool)$account['approved'];

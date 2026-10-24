@@ -34,6 +34,13 @@ public class StudentLifecycleTest extends InstrumentationTestCase {
   for(int i=0;i<120;i++){if("true".equals(js("Boolean("+expression+")")))return;Thread.sleep(500);}
   fail("Student UI did not recover: "+expression+"; "+js("document.body.innerText.slice(0,1200)"));
  }
+ public void testClassInvitationIntentIsRestricted()throws Exception{
+  launch();Method parse=MainActivity.class.getDeclaredMethod("classInvite",Intent.class);parse.setAccessible(true);
+  String token="0123456789abcdef0123456789abcdef";
+  assertEquals(token,parse.invoke(activity,new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("presengo://join/"+token))));
+  assertEquals("",parse.invoke(activity,new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://example.com/"+token))));
+  assertEquals("",parse.invoke(activity,new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("presengo://join/not-an-invitation"))));
+ }
  public void testSeedSavedStudent()throws Exception{
   launch();until("window.WA && window.PresenUI");
   js("window.__seeded=false;(async()=>{localStorage.setItem('wa-student-onboarding-v1','complete');const ctx={jenjang:'S1',prodi:'Pendidikan Teknologi Informasi',semester:'1',kelas:'A'},profile={role:'student',device:'11111111-1111-4111-8111-111111111111',account:{id:'22222222-2222-4222-8222-222222222222',nim:'NIMREOPEN123',nama:'Mahasiswa Uji Buka Ulang',approved:true,approval_status:'approved',ctx}};await WA.change(s=>({...s,token:null,profile,outbox:[],snapshot:{roster:[],documents:[],registrations:[],sessions:[{id:'saved-session',scope:'saved-scope',ctx,matkul:'Mata Kuliah Tersimpan',slot:1,day:WA.day(),starts:Date.now()-300000,deadline:Date.now()-100000,version:1}],marks:[{scope:'saved-scope',session_id:'saved-session',nim:'NIMREOPEN123',slot:1,mark:'.',recorded_at:Date.now(),review_status:'final'}]}}));window.__seeded=true;})()");
@@ -65,7 +72,7 @@ public class StudentLifecycleTest extends InstrumentationTestCase {
  public void testOnlineAfterStaleWorker()throws Exception{
   launch();until("document.querySelector('#scanSession') && document.querySelector('.student-identity')?.innerText.includes('NIMREOPEN123')");
   assertEquals("Both attendance methods remain available", "true",js("Boolean(document.querySelector('#scanSession') && document.querySelector('#faceSession'))"));
-  assertEquals("Coherent current signed UI", "\"1.2.7\"",js("document.querySelector('meta[name=presen-build]')?.content"));
+  assertEquals("Coherent current signed UI", "\"1.2.8\"",js("document.querySelector('meta[name=presen-build]')?.content"));
   assertEquals("Network active", "true",js("navigator.onLine"));
   assertEquals("Stale worker cannot replace app document", "false",js("Boolean(window.__staleShell)"));
   js("PresenExperience.view('history')");until("document.querySelector('#history')?.innerText.includes('Mata Kuliah Tersimpan')");

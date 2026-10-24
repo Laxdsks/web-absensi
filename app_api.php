@@ -4,6 +4,7 @@ require_once __DIR__.'/teacher_accounts.php';
 require_once __DIR__.'/app_attendance.php';
 require_once __DIR__.'/app_evidence.php';
 require_once __DIR__.'/app_push.php';
+require_once __DIR__.'/app_classes.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
@@ -20,10 +21,10 @@ try {
     $input=json_decode($raw,true,64,JSON_THROW_ON_ERROR); if(!is_array($input))throw new InvalidArgumentException('Permintaan tidak terbaca.');
     $action=(string)($input['action']??'');
     if($action==='teacher-directory'){
-        $teachers=[['id'=>'admin_01','name'=>'M.Fadillah'],['id'=>'dosen_01','name'=>'Zen']];
-        foreach(wa_rows("SELECT id,display_name FROM wa_teacher_accounts WHERE status='active' ORDER BY display_name") as $row)$teachers[]=['id'=>$row['id'],'name'=>$row['display_name']];
+        $teachers=[];foreach(array_merge(['admin_01','dosen_01'],array_column(wa_rows("SELECT id FROM wa_teacher_accounts WHERE status='active' ORDER BY display_name"),'id')) as $id){$teacher=wa_teacher_account($id);if($teacher)$teachers[]=['id'=>$id,'name'=>wa_teacher_label($teacher)];}
         wa_response(['status'=>'success','teachers'=>$teachers]);
     }
+    if($action==='resolve-class-invite')wa_response(['status'=>'success','invite'=>wa_resolve_class_invite((string)($input['token']??''))]);
     if($action==='home-layout')wa_response(['status'=>'success','layout'=>teacher_home_layout()]);
     if($action==='bootstrap') {
         // Login establishes a PHP session and cookie. A bearer left in IndexedDB
@@ -37,7 +38,7 @@ try {
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     if($action==='register'||$action==='student-login') {
-        $GLOBALS['wa_request_owner']='admin_01'; $ctx=wa_ctx($input['ctx']??null); $nim=wa_nim($input['nim']??''); $pin=wa_text($input['pin']??'',12); $pub=wa_text($input['pubkey']??'',300); wa_pub_pem($pub);
+        $GLOBALS['wa_request_owner']='admin_01'; $ctx=wa_ctx($input['ctx']??null); if(!empty($input['invite'])){$invitation=wa_resolve_class_invite((string)$input['invite']);if(wa_ctx_key($ctx)!==wa_ctx_key($invitation['ctx']))throw new DomainException('Undangan tidak sesuai dengan kelas yang dipilih.');$ctx=$invitation['ctx'];} $nim=wa_nim($input['nim']??''); $pin=wa_text($input['pin']??'',12); $pub=wa_text($input['pubkey']??'',300); wa_pub_pem($pub);
         if(!preg_match('/^\d{6,12}$/',$pin))throw new InvalidArgumentException('Gunakan PIN 6–12 angka.');
         $bucket=hash('sha256',($_SERVER['REMOTE_ADDR']??'').'|'.$nim.'|'.wa_ctx_key($ctx));
         $attempt=wa_one('SELECT * FROM wa_login_attempts WHERE bucket=?',[$bucket]);
@@ -61,6 +62,8 @@ try {
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
+    if($action==='create-class-invite')wa_response(['status'=>'success','invite'=>wa_create_class_invite($device,$input)]);
+    if($action==='update-teacher-profile'){wa_teacher($device);wa_save_teacher_identity($device['account_id'],(string)($input['name']??''),(string)($input['title']??''));wa_response(['status'=>'success','teacher'=>wa_teacher_account($device['account_id'])]);}
     if($action==='resolve-session-qr'){
         $student=wa_approved_student($device);
         $session=wa_one('SELECT * FROM wa_sessions WHERE id=?',[wa_id($input['id']??'')]);

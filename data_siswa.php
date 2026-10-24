@@ -62,7 +62,7 @@ if (($_GET['aksi'] ?? $_POST['aksi'] ?? '') === 'import_siswa' && $_SERVER['REQU
     $inserted = 0; $skipped = 0;
     mysqli_begin_transaction($koneksi);
     $duplicate = mysqli_prepare($koneksi, "SELECT id FROM siswa WHERE owner_id='{$data_owner}' AND academic_year='{$data_year}' AND academic_period='{$data_period}' AND nim=? AND jenjang='S1' AND kelas IN (?, ?) AND prodi=? AND semester IN (?, ?) LIMIT 1");
-    $insert = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk, owner_id, academic_year, academic_period) VALUES ('S1', ?, ?, ?, ?, ?, ?, '{$data_owner}', '{$data_year}', '{$data_period}')");
+    $insert = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk, owner_id, academic_year, academic_period) VALUES ('S1', ?, ?, ?, ?, ?, ?, '{$data_owner}', '{$data_year}', '{$data_period}') ON DUPLICATE KEY UPDATE nama=VALUES(nama),jk=VALUES(jk)");
     if (!$duplicate || !$insert) {
         mysqli_rollback($koneksi);
         http_response_code(500);
@@ -109,7 +109,7 @@ if (isset($_POST['save_siswa'])) {
             mysqli_stmt_close($stmt);
         }
     } else {
-        $stmt = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk, owner_id, academic_year, academic_period) VALUES ('S1', ?, ?, ?, ?, ?, ?, '{$data_owner}', '{$data_year}', '{$data_period}')");
+        $stmt = mysqli_prepare($koneksi, "INSERT INTO siswa (jenjang, kelas, prodi, semester, nim, nama, jk, owner_id, academic_year, academic_period) VALUES ('S1', ?, ?, ?, ?, ?, ?, '{$data_owner}', '{$data_year}', '{$data_period}') ON DUPLICATE KEY UPDATE nama=VALUES(nama),jk=VALUES(jk)");
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'ssssss', $kelas, $prodi, $semester, $nim, $nama, $jk);
             mysqli_stmt_execute($stmt);
@@ -374,7 +374,7 @@ if ($stmt) {
     </style>
     <script src="app/vendor/tesseract.min.js" defer></script>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.7.js" defer></script>
+    <script src="app/runtime-teacher-1.2.8.js" defer></script>
 <link rel="stylesheet" href="app/guide.css"><script src="app/guide.js" defer></script>
 <link rel="stylesheet" href="app/portal.css?v=20261012"><script src="app/portal.js?v=20261012" defer></script><script src="app/appearance.js" defer></script><script src="app/workspace.js" defer></script><script src="app/account-tools.js" defer></script><script src="app/inbox.js" defer></script><script src="app/grade-assistant.js" defer></script>
 <script src="app/evidence.js" defer></script><script src="app/monitoring.js" defer></script><script src="app/experience.js" defer></script><link rel="stylesheet" href="app/experience.css">

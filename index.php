@@ -49,6 +49,7 @@ $teacherRecord = $is_logged_in ? wa_teacher_account($accountId) : null;
 if($teacherRecord && !in_array($accountId,['admin_01','dosen_01'],true)){
     $globalConfig=['admin_name'=>$teacherRecord['display_name'],'admin_role'=>$teacherRecord['role']==='admin'?'Administrator Utama':'Dosen','admin_avatar'=>$teacherRecord['avatar']?:$defaultConfig['admin_avatar']];
 }
+if($teacherRecord){$globalConfig['admin_name']=$teacherRecord['display_name'];$globalConfig['professional_title']=$teacherRecord['professional_title']??'';}
 $globalConfig['app_title'] = $configStore['app_title'] ?? $globalConfig['app_title'] ?? $defaultConfig['app_title'];
 $homeLayout = defined('APP_TEMPLATE_BUILD') ? 'left' : teacher_home_layout();
 
@@ -88,6 +89,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
     if(!hash_equals((string)($_SESSION['wa_csrf']??''),(string)($_POST['csrf']??''))){http_response_code(403);echo json_encode(['status'=>'error','msg'=>'Muat ulang halaman lalu coba lagi.']);exit;}
     $newName = trim($_POST['admin_name'] ?? '');
     $newRole = trim($_POST['admin_role'] ?? '');
+    $professionalTitle=trim($_POST['professional_title']??'');
     $newAvatar = $_POST['admin_avatar'] ?? '';
     if(mb_strlen($newName)<2||mb_strlen($newName)>100){http_response_code(422);echo json_encode(['status'=>'error','msg'=>'Nama harus terdiri dari 2 sampai 100 karakter.']);exit;}
     
@@ -100,6 +102,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
         else try{$currentConfig['admin_avatar']=teacher_avatar($newAvatar);}catch(InvalidArgumentException $error){http_response_code(422);echo json_encode(['status'=>'error','msg'=>$error->getMessage()]);exit;}
     }
     
+    try{wa_save_teacher_identity($accountId,$currentConfig['admin_name'],$professionalTitle);}catch(InvalidArgumentException $error){http_response_code(422);echo json_encode(['status'=>'error','msg'=>$error->getMessage()]);exit;}
+    $currentConfig['professional_title']=$professionalTitle;
     $profiles[$accountId] = $currentConfig;
     $currentConfig['app_title'] = $configStore['app_title'] ?? $defaultConfig['app_title'];
     if(!in_array($accountId,['admin_01','dosen_01'],true)){
@@ -485,7 +489,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.7.js" defer></script>
+    <script src="app/runtime-teacher-1.2.8.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
@@ -564,6 +568,9 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                 <input type="text" id="editAdminName" class="form-control" value="<?php echo htmlspecialchars($globalConfig['admin_name']); ?>">
             </div>
             <div class="form-group">
+                <label>Gelar / jabatan akademik (opsional)</label>
+                <input type="text" id="editProfessionalTitle" class="form-control" maxlength="100" value="<?php echo htmlspecialchars($globalConfig['professional_title']??''); ?>" placeholder="Contoh: S.Pd., M.Pd.">
+            </div><div class="form-group">
                 <label>Jabatan / Role Sistem</label>
                 <input type="text" id="editAdminRole" class="form-control" value="<?php echo htmlspecialchars($globalConfig['admin_role']); ?>" readonly>
             </div>
@@ -1156,6 +1163,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             formData.append('csrf', window.SERVER_CONFIG.csrf || '');
             formData.append('admin_name', newName);
             formData.append('admin_role', newRole);
+            formData.append('professional_title', document.getElementById('editProfessionalTitle').value);
             formData.append('admin_avatar', uploadedBase64Avatar);
             fetch('index.php', {
                 method: 'POST',
@@ -1167,7 +1175,8 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                     showToast(data.msg, 'success');
                     document.getElementById('widgetAdminName').innerText = newName;
                     document.getElementById('widgetAdminRole').innerText = newRole;
-                    document.getElementById('currentUserNameText').innerText = newName;
+                    document.getElementById('currentUserNameText').innerText = newName + (document.getElementById('editProfessionalTitle').value ? ', '+document.getElementById('editProfessionalTitle').value : '');
+                    void window.WA?.sync();
                     document.getElementById('widgetAvatarImg').src = uploadedBase64Avatar;
                     document.getElementById('topNavAvatarImg').src = uploadedBase64Avatar;
                     closeProfileModal();
