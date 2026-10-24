@@ -1014,7 +1014,6 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 
         function undo() {
             if(historyStack.length === 0) {
-                showCustomModal('Undo', 'Tidak ada riwayat undo tersisa.');
                 return;
             }
             const currentHtml = htmlKertasTanpaPratinjau();
@@ -1027,12 +1026,10 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             simpanPosisiLembarAbsen();
             document.dispatchEvent(new Event('sheet-position-changed'));
             jadwalkanPenandaHalaman();
-            showCustomModal('Undo', 'Perubahan sebelumnya berhasil dibatalkan.');
         }
 
         function redo() {
             if(redoStack.length === 0) {
-                showCustomModal('Redo', 'Tidak ada riwayat redo tersisa.');
                 return;
             }
             const currentHtml = htmlKertasTanpaPratinjau();
@@ -1045,7 +1042,6 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             simpanPosisiLembarAbsen();
             document.dispatchEvent(new Event('sheet-position-changed'));
             jadwalkanPenandaHalaman();
-            showCustomModal('Redo', 'Perubahan berhasil dikembalikan (redo).');
         }
 
         function toggleToolbar() {

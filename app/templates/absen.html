@@ -1101,7 +1101,6 @@
 
         function undo() {
             if(historyStack.length === 0) {
-                showCustomModal('Undo', 'Tidak ada riwayat undo tersisa.');
                 return;
             }
             const currentHtml = htmlKertasTanpaPratinjau();
@@ -1114,12 +1113,10 @@
             simpanPosisiLembarAbsen();
             document.dispatchEvent(new Event('sheet-position-changed'));
             jadwalkanPenandaHalaman();
-            showCustomModal('Undo', 'Perubahan sebelumnya berhasil dibatalkan.');
         }
 
         function redo() {
             if(redoStack.length === 0) {
-                showCustomModal('Redo', 'Tidak ada riwayat redo tersisa.');
                 return;
             }
             const currentHtml = htmlKertasTanpaPratinjau();
@@ -1132,7 +1129,6 @@
             simpanPosisiLembarAbsen();
             document.dispatchEvent(new Event('sheet-position-changed'));
             jadwalkanPenandaHalaman();
-            showCustomModal('Redo', 'Perubahan berhasil dikembalikan (redo).');
         }
 
         function toggleToolbar() {
