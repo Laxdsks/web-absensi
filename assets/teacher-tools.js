@@ -6,6 +6,8 @@
   const $ = selector => host.querySelector(selector);
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const sheet = host.dataset.page === 'absen', params = new URLSearchParams(location.search);
+  const invitationButton=document.createElement('button');invitationButton.type='button';invitationButton.id='shareClassInvite';invitationButton.textContent='Undang mahasiswa';invitationButton.className='btn btn-dark';invitationButton.onclick=()=>void run(async()=>{const state=await WA.get();await window.PresenClassInvites.share(context(state),new URLSearchParams(location.search).get('matkul')||state.selection?.matkul||'');},invitationButton);(document.querySelector('#topToolbar .sheet-primary')||document.querySelector('#topToolbar .toolbar-group')||host).append(invitationButton);
+
   window.addEventListener('wa-global-reset',()=>{sessionQR=null;sessionCode='';host.querySelector('#codeDialog')?.close();});
   let sessionQR = null, sessionCode = '', stream = null, scanTimer, renderKey = '', rendering = false;
   const notify = text => { $('#toolNotice').textContent = text; $('#toolNotice').style.display='flex';window.PresenUI?.closable($('#toolNotice')); if(host.hidden) window.showToast?.(escape(text),'error'); };
@@ -86,6 +88,7 @@
   }
   function initialize(state) {
     host.hidden = false;
+    if(!invitationButton.isConnected)(document.querySelector('.portal-actions,.main-card')||host).append(invitationButton);
     const body = sheet ? `<form id="sessionForm"><label>Mata kuliah<input name="matkul" maxlength="180" required></label><div class="tool-grid"><label>Pertemuan<input name="slot" type="number" min="1" max="16" value="1" required></label><label>Durasi (menit)<input name="minutes" type="number" min="1" max="1440" placeholder="Misalnya 10" required></label></div><p>QR berlaku untuk kelas pada lembar ini. 1. Cocokkan kelas dan mata kuliah. 2. Isi pertemuan dan durasi. 3. Mulai lalu bagikan QR. Kolom tetap kosong selama waktu berjalan; A otomatis muncul sesudah tenggat. Untuk mahasiswa offline, pindai QR balasannya sebelum tenggat.</p><button id="startSession" type="submit">Mulai Absen / reset QR</button><button id="scanReply" type="button">Pindai QR mahasiswa</button><div id="sessionList"></div></form>` : '';
     $('#toolBody').innerHTML = body + '<div id="toolResults"></div>' + (!sheet ? `<details><summary>Cadangan perangkat</summary><button id="backup" type="button">Simpan cadangan</button><label>Pulihkan cadangan JSON<input id="restore" type="file" accept="application/json,.json"></label><p>Sinkronkan data pada aplikasi lama sebelum beralih. Cadangan tidak menyertakan akses login atau kunci QR.</p></details>` : '');
     if (sheet) {
@@ -104,6 +107,7 @@
           if(displayed && displayed.textContent.trim()!==name) await window.WASetSheetCourse(name);
           await window.WAFlush?.();
           const session = await WA.startSession(c,name,Number(values.slot),Number(values.minutes));
+          $('#sessionList').dataset.selectedMeeting=String(session.slot);renderKey='';void render();
           window.WASetMeetingDate?.(session);await window.WAFlush?.();
           await showQR(session); notify('Absen dimulai. Kehadiran dicatat pada tabel asli di lembar ini.');
         }, $('#startSession'));
@@ -148,8 +152,12 @@
       const key=JSON.stringify([scope,state.snapshot.roster,state.snapshot.sessions,state.snapshot.marks,state.snapshot.registrations,state.outbox]); if(key===renderKey) return; renderKey=key;
       const sessions=state.snapshot.sessions.filter(x=>x.scope===scope), marks=state.snapshot.marks.filter(x=>x.scope===scope);
       if(sheet) {
-        $('#sessionList').innerHTML=sessions.map(x=>`<div class="tool-card">Pertemuan ${x.slot} · ${escape(x.day)} <b data-end="${x.deadline}"></b><button type="button" data-session="${x.id}">Tampilkan QR</button></div>`).join('');
-        host.querySelectorAll('[data-session]').forEach(button=>button.onclick=()=>void run(()=>showQR(sessions.find(x=>x.id===button.dataset.session))));
+        const latest=[...sessions].sort((a,b)=>b.starts-a.starts)[0],panel=$('#sessionList');
+        window.PresenMeetings.mount(panel,{count:Math.max(16,Number(document.getElementById('headerPertemuan')?.colSpan)||16),selected:latest?.slot||1,onSelect:slot=>{$('#sessionForm').elements.slot.value=slot;},state:slot=>{const session=sessions.find(x=>x.slot===slot);return !session?'Belum dibuka':session.deadline>WA.now(state)?'Aktif':'Selesai';},render:(detail,slot)=>{
+          const session=sessions.find(x=>x.slot===slot);
+          if(!session){const p=document.createElement('p');p.textContent='Pertemuan '+slot+' belum dibuka. Atur durasi lalu tekan Mulai Absen.';detail.append(p);return;}
+          detail.innerHTML=`<div class="tool-card">Pertemuan ${session.slot} · ${escape(session.day)} <b data-end="${session.deadline}"></b><button type="button" data-session="${session.id}">Tampilkan QR</button></div>`;detail.querySelector('[data-session]').onclick=()=>void run(()=>showQR(session));clock();
+        }});
       }
       const registrations=state.snapshot.registrations.filter(x=>!x.approved), pending=marks.filter(x=>['S','I'].includes(x.mark));
       $('#toolResults').innerHTML=`<details><summary>Perubahan belum tersinkron (${state.outbox.length})</summary>${state.outbox.filter(x=>x.problem).map(x=>`<div class="tool-card"><p>${escape(x.problem.message||'Ada perubahan pada perangkat lain.')}</p><button type="button" data-resolve="${x.id}" data-keep="1">Kirim salinan perangkat ini</button><button type="button" data-resolve="${x.id}" data-keep="0">Gunakan data server</button></div>`).join('')||'<p>Perubahan tersimpan di perangkat sampai server menerima sinkronisasi.</p>'}</details>`;

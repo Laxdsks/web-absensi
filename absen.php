@@ -48,6 +48,12 @@ $academic_context=wa_page_context(['prodi'=>$prodi,'semester'=>$semester,'kelas'
 $data_year=wa_academic_year($academic_context); $data_period=wa_academic_period($academic_context);
 $_SESSION['konteks_siswa'] = ['jenjang' => $jenjang, 'kelas' => $kelas, 'prodi' => $prodi, 'semester' => $semester, 'year'=>$data_year, 'period'=>$data_period];
 
+$meeting_dates=[];
+if(!defined('APP_TEMPLATE_BUILD')){
+    $meeting_scope=wa_scope($academic_context,trim((string)($_GET['matkul']??'')));
+    foreach(wa_rows('SELECT slot,day FROM wa_sessions WHERE owner_id=? AND scope=?',[$data_owner,$meeting_scope]) as $meeting)$meeting_dates[(int)$meeting['slot']]=(string)$meeting['day'];
+}
+
 // LOGIKA BACKEND SINKRONISASI EKSAK & INTERISOLASI DATA (=)
 // Menggunakan operator pencarian eksak = pada query database SQL penarikan nama mahasiswa sesuai instruksi
 $data_siswa = [];
@@ -486,7 +492,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.7.js" defer></script>
+    <script src="app/runtime-teacher-1.2.8.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
@@ -702,7 +708,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                         <!-- Baris untuk tanggal manual -->
                         <tr id="subHeaderPertemuan">
                             <?php for($i=1; $i<=16; $i++): ?>
-                            <th class="date-entry" contenteditable="true">&nbsp;</th>
+                            <th class="date-entry" contenteditable="true" data-attendance-date="<?php echo htmlspecialchars($meeting_dates[$i]??''); ?>"><?php echo isset($meeting_dates[$i])?htmlspecialchars(implode("\n",array_reverse(explode('-',$meeting_dates[$i])))):'&nbsp;'; ?></th>
                             <?php endfor; ?>
                         </tr>
                         <tr id="numberHeaderPertemuan">

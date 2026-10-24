@@ -68,3 +68,18 @@ class CredentialRotationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RosterIdentityPreservationTests(unittest.TestCase):
+    def test_duplicate_row_ids_share_one_logical_identity(self):
+        row = {"id": 1, "nim": "C123456", "prodi": "Pendidikan Sejarah", "semester": "1", "kelas": "A"}
+        before = {"roster": [row, {**row, "id": 22}], "sessions": [], "marks": [], "documents": [], "registrations": []}
+        after = {**before, "roster": [row]}
+        self.assertEqual(verify.record_keys(before), verify.record_keys(after))
+        changed = {**before, "roster": [{**row, "nim": "C987654"}]}
+        self.assertNotEqual(verify.record_keys(before)["roster"], verify.record_keys(changed)["roster"])
+
+    def test_owners_classes_and_years_are_separate(self):
+        row = {"id": 1, "nim": "C123456", "prodi": "Pendidikan Sejarah", "semester": "1", "kelas": "A"}
+        snapshot = {"roster": [row, {**row, "owner": "dosen_01"}, {**row, "kelas": "B"}, {**row, "year": "2027/2028"}], "sessions": [], "marks": [], "documents": [], "registrations": []}
+        self.assertEqual(len(verify.record_keys(snapshot)["roster"]), 4)

@@ -84,6 +84,7 @@ function wa_accept_reply(array $device,array $op): array {
     if(!in_array($reply['method']??'qr',['qr','face'],true))throw new InvalidArgumentException('Metode absensi tidak dikenali.');
     if($face&&(!$verification||($reply['verification']['session']??'')!==$session['id']||(int)($reply['verification']['version']??0)!==(int)$session['version']||($reply['verification']['account']??'')!==$student['id']))throw new InvalidArgumentException('Cocokkan wajah kembali untuk sesi dan akun ini.');
     $location=wa_location($reply['location']??null);
+    if(!$location)throw new InvalidArgumentException('Aktifkan lokasi untuk mengirim absensi ke dosen.');
     if($location && abs((int)($reply['at']??0)-$location['at'])>300000)throw new InvalidArgumentException('Lokasi sudah terlalu lama. Ambil lokasi kembali.');
     $old=wa_one('SELECT * FROM wa_marks WHERE scope=? AND slot=? AND nim=? FOR UPDATE',[$session['scope'],$session['slot'],$student['nim']]);
     if($old && $old['mark']!=='' && $old['source']!=='automatic')return ['status'=>'success','duplicate'=>true,'mark'=>$old['mark'],'message'=>'Absen sudah tercatat; perubahan berikutnya dilakukan dosen.'];
@@ -155,7 +156,7 @@ function wa_operation(array $device,array $op): array {
         if(!$account||$account['owner_id']!==$device['account_id'])throw new DomainException('Pendaftaran tidak ditemukan pada akun dosen ini.');
         $ctx=json_decode($account['ctx'],true); $nim=$account['nim'];
         $match=array_values(array_filter(wa_roster($ctx),static function($s)use($nim){return strtoupper($s['nim'])===$nim;}));
-        if(!$match)wa_query("INSERT INTO siswa(jenjang,prodi,semester,kelas,nim,nama,jk,owner_id,academic_year,academic_period) VALUES('S1',?,?,?,?,?,?,?,?,?)",[$ctx['prodi'],$ctx['semester'],$ctx['kelas'],$nim,$account['nama'],$account['jk'],$device['account_id'],wa_academic_year($ctx),wa_academic_period($ctx)]);
+        if(!$match)wa_query("INSERT INTO siswa(jenjang,prodi,semester,kelas,nim,nama,jk,owner_id,academic_year,academic_period) VALUES('S1',?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)",[$ctx['prodi'],$ctx['semester'],$ctx['kelas'],$nim,$account['nama'],$account['jk'],$device['account_id'],wa_academic_year($ctx),wa_academic_period($ctx)]);
         else wa_query('UPDATE wa_accounts SET nama=?,jk=? WHERE id=?',[$match[0]['nama'],$match[0]['jk'],$id]);
         wa_query("UPDATE wa_accounts SET approved=1,approval_status='approved',approved_by=? WHERE id=?",[$device['account_id'],$id]);
         foreach(wa_rows('SELECT id,ctx,roster FROM wa_sessions WHERE deadline>? FOR UPDATE',[wa_now()]) as $session){
@@ -178,7 +179,7 @@ function wa_operation(array $device,array $op): array {
         $name=wa_text($op['nama']??''); $jk=wa_text($op['jk']??'',1);
         if($name===''||!in_array($jk,['','L','P'],true))throw new InvalidArgumentException('Lengkapi nama; L/P hanya boleh L, P, atau kosong.');
         if($old)wa_query('UPDATE siswa SET nama=?,jk=? WHERE id=?',[$name,$jk,$old['id']]);
-        else wa_query("INSERT INTO siswa(jenjang,prodi,semester,kelas,nim,nama,jk,owner_id,academic_year,academic_period) VALUES('S1',?,?,?,?,?,?,?,?,?)",[$ctx['prodi'],$ctx['semester'],$ctx['kelas'],$nim,$name,$jk,$device['account_id'],wa_academic_year($ctx),wa_academic_period($ctx)]);
+        else wa_query("INSERT INTO siswa(jenjang,prodi,semester,kelas,nim,nama,jk,owner_id,academic_year,academic_period) VALUES('S1',?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE nama=VALUES(nama),jk=VALUES(jk)",[$ctx['prodi'],$ctx['semester'],$ctx['kelas'],$nim,$name,$jk,$device['account_id'],wa_academic_year($ctx),wa_academic_period($ctx)]);
         wa_audit($device,'save-student',$nim,['ctx'=>$ctx]); return ['status'=>'success'];
     }
     $course=wa_text($op['matkul']??'',180); $scope=wa_scope($ctx,$course);

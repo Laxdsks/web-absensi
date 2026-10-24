@@ -252,7 +252,7 @@
         }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.7.js" defer></script>
+    <script src="app/runtime-teacher-1.2.8.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
@@ -331,6 +331,9 @@
                 <input type="text" id="editAdminName" class="form-control" value="M.Fadillah">
             </div>
             <div class="form-group">
+                <label>Gelar / jabatan akademik (opsional)</label>
+                <input type="text" id="editProfessionalTitle" class="form-control" maxlength="100" value="" placeholder="Contoh: S.Pd., M.Pd.">
+            </div><div class="form-group">
                 <label>Jabatan / Role Sistem</label>
                 <input type="text" id="editAdminRole" class="form-control" value="Administrator Utama" readonly>
             </div>
@@ -916,6 +919,7 @@
             formData.append('csrf', window.SERVER_CONFIG.csrf || '');
             formData.append('admin_name', newName);
             formData.append('admin_role', newRole);
+            formData.append('professional_title', document.getElementById('editProfessionalTitle').value);
             formData.append('admin_avatar', uploadedBase64Avatar);
             fetch('index.php', {
                 method: 'POST',
@@ -927,7 +931,8 @@
                     showToast(data.msg, 'success');
                     document.getElementById('widgetAdminName').innerText = newName;
                     document.getElementById('widgetAdminRole').innerText = newRole;
-                    document.getElementById('currentUserNameText').innerText = newName;
+                    document.getElementById('currentUserNameText').innerText = newName + (document.getElementById('editProfessionalTitle').value ? ', '+document.getElementById('editProfessionalTitle').value : '');
+                    void window.WA?.sync();
                     document.getElementById('widgetAvatarImg').src = uploadedBase64Avatar;
                     document.getElementById('topNavAvatarImg').src = uploadedBase64Avatar;
                     closeProfileModal();

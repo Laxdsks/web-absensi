@@ -91,11 +91,19 @@ def record_keys(snapshot):
     # Only hashed identities are kept in the temporary runner file, never names,
     # NIMs, marks, credentials or document contents. Existing records may be
     # updated by active users; deployment must not remove their identities.
-    fields = {"roster": ("id",), "sessions": ("id",), "marks": ("scope", "slot", "nim"),
+    fields = {"sessions": ("id",), "marks": ("scope", "slot", "nim"),
               "documents": ("scope", "kind"), "registrations": ("id",)}
     records = {kind: sorted({hashlib.sha256(json.dumps([row[key] for key in keys],
                             ensure_ascii=False).encode()).hexdigest()
                           for row in snapshot[kind]}) for kind, keys in fields.items()}
+    # A roster identity is owner + academic context + NIM, not a duplicate row ID.
+    # This allows canonical duplicate cleanup while still detecting lost students.
+    records['roster'] = sorted({hashlib.sha256(json.dumps([
+        row.get('owner', 'admin_01'), row['prodi'].strip().lower(),
+        str(row['semester']).replace('Semester ', '').strip(),
+        str(row['kelas']).replace('Kelas ', '').strip().upper(),
+        row.get('year', '2026/2027'), row.get('period', 'Ganjil' if int(str(row['semester']).replace('Semester ', '')) % 2 else 'Genap').strip().lower(),
+        row['nim'].strip().upper()], ensure_ascii=False).encode()).hexdigest() for row in snapshot['roster']})
     records['evidence'] = sorted({hashlib.sha256(json.dumps([ref['id'], ref['hash']]).encode()).hexdigest()
                                   for row in snapshot['marks'] if row.get('evidence_ready')
                                   for ref in row.get('attachments', [])})
