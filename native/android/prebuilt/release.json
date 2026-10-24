@@ -2,7 +2,7 @@
   "applicationId": "id.webabsensi.presengo.mahasiswa",
   "versionName": "1.2.7",
   "versionCode": 27,
-  "source_inputs_sha256": "1e036cb7545764c047c95ed2650839c28cc41a4591b1e8e0aa5c5a357a74497c",
+  "source_inputs_sha256": "a17d45c1a3284e9793a9f898d72415fca9d9c62a97522a64d0540d5219777bcd",
   "apk_sha256": "ebfd57940c8bae9f73e7bb6414b8aaa083ce4361ef6de56e77e118e61ab22ca6",
   "signing_certificate_sha256": "94dff5588bc91ca0932fe33fc9480056893d48ff69d0cc4b494a4bdd7199e878"
 }
