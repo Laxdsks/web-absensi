@@ -17,7 +17,7 @@ function prepareTable(table){table.querySelectorAll('th br').forEach(br=>br.repl
 }
 function restoreSize(el){const previous=sizes.get(el)||(el.hasAttribute('data-wa-fit-font')?{value:el.dataset.waFitFont,priority:el.dataset.waFitPriority||''}:null);if(previous)el.style.setProperty('font-size',previous.value,previous.priority);sizes.delete(el);delete el.dataset.waFitFont;delete el.dataset.waFitPriority;}
 function bodySize(){const field=document.getElementById('fontSizeSelect')||document.getElementById('examFontSize');return Math.max(1,Math.min(100,Number(field?.value)||8.5))*4/3;}
-function tableItems(table){return [...table.querySelectorAll('th,td')].filter(cell=>!cell.closest('.page-preview-only')&&!cell.classList.contains('empty-note')).flatMap(cell=>cell.querySelector('input')?[...cell.querySelectorAll('input')]:[cell]);}
+function tableItems(table){return [...table.querySelectorAll('th,td')].filter(cell=>!cell.closest('.page-preview-only')&&!cell.classList.contains('empty-note')&&!cell.classList.contains('date-entry')).flatMap(cell=>cell.querySelector('input')?[...cell.querySelectorAll('input')]:[cell]);}
 function commonFont(items,base){return Math.max(Math.min(4,base),Math.min(base,...items.filter(el=>el.getClientRects().length&&text(el)&&available(el)>3).map(el=>Math.floor(base*(available(el)-2)/Math.max(1,measure(el,text(el),base))*100)/100)));}
 function attendanceWidths(base){
  const table=document.getElementById('tabelAbsen'),head=table?.tHead?.rows[0];if(!head||head.cells.length!==6)return;
@@ -46,7 +46,13 @@ function examWidths(base){
 function update(){scheduled=false;if(running)return;running=true;try{
  const primary=[...paper.querySelectorAll('#tabelAbsen,#examTableBlock table,#examScaleBlock table')],base=bodySize(),meta=[...paper.querySelectorAll('.meta-label,.meta-val,.meta-value')];
  const items=primary.flatMap(tableItems);[...items,...meta].forEach(restoreSize);paper.style.setProperty('--wa-sheet-body-font',base+'px');items.forEach(el=>el.style.setProperty('font-size',base+'px','important'));
- attendanceWidths(base);examWidths(base);
+ attendanceWidths(base);examWidths(base);window.WAFitAttendanceDates?.();
+ paper.querySelectorAll('input.attendance-cell').forEach(input=>{
+  const present=input.value.trim()==='.',cell=input.closest('td');input.classList.toggle('wa-presence-dot',present);
+  let ink=cell.querySelector('.wa-presence-ink');
+  if(present&&!ink){ink=document.createElementNS('http://www.w3.org/2000/svg','svg');ink.classList.add('wa-presence-ink');ink.setAttribute('viewBox','0 0 10 10');ink.setAttribute('aria-hidden','true');const circle=document.createElementNS(ink.namespaceURI,'circle');circle.setAttribute('cx','5');circle.setAttribute('cy','5');circle.setAttribute('r','5');circle.setAttribute('fill','currentColor');ink.append(circle);cell.append(ink);}
+  if(ink){ink.style.display=present?'block':'none';ink.style.color=getComputedStyle(input).color;const diameter=Math.max(1,Math.min(5,base*.38,input.clientWidth-4,input.clientHeight-4));ink.style.width=ink.style.height=diameter+'px';}
+ });
  // A narrow label must never reduce the body font of the entire document.
  // The selected point size is authoritative; only long metadata values fit locally.
  meta.filter(el=>!el.matches('.meta-label')).forEach(fit);
@@ -62,7 +68,7 @@ window.WAFitExportHTML=(html,width)=>{
   const fitExport=(el,limit)=>{const value=text(el);if(!value)return;const style=frame.contentWindow.getComputedStyle(el),base=parseFloat(style.fontSize);ctx.font=`${style.fontStyle} ${style.fontWeight} ${base}px ${style.fontFamily}`;const needed=ctx.measureText(style.textTransform==='uppercase'?value.toUpperCase():value).width;
    if(needed>limit-2){for(const node of [el,...el.querySelectorAll('span,p,small')]){node.style.whiteSpace='normal';node.style.overflowWrap='anywhere';node.style.wordBreak='break-word';node.style.lineHeight='1.3';node.style.setProperty('mso-line-height-rule','at-least');}}else el.style.whiteSpace='nowrap';};
   doc.querySelectorAll('th,td').forEach(cell=>{const style=frame.contentWindow.getComputedStyle(cell),space=cell.clientWidth-parseFloat(style.paddingLeft||0)-parseFloat(style.paddingRight||0);
-   if(cell.closest('.doc-header,.export-header,.doc-signatures,.export-signatures'))return;
+   if(cell.matches('.date-entry')||cell.closest('.doc-header,.export-header,.doc-signatures,.export-signatures'))return;
    if(cell.closest('.doc-meta')){cell.querySelectorAll('p>span').forEach(row=>{const value=row.lastElementChild;if(value){const label=row.firstElementChild.getBoundingClientRect().width,colon=row.children[1]?.getBoundingClientRect().width||0;fitExport(value,space-label-colon-12);}});return;}fitExport(cell,space);
   });
   return '<!doctype html>'+doc.documentElement.outerHTML;
@@ -113,4 +119,28 @@ async function sizeControls(){
  };
 }
 void sizeControls();schedule();
+})();
+
+/* Meeting date editor: large touch controls, compact printable date cells. */
+(()=>{
+'use strict';if(!document.getElementById('tabelAbsen'))return;
+let active=null,activeInput=null;document.addEventListener('focusin',e=>{if(e.target.matches('#paperSheet input:not([type=file])')){activeInput=e.target;active=null;}});const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+window.WAFitAttendanceDates=()=>{document.querySelectorAll('#subHeaderPertemuan .date-entry').forEach((cell,index)=>{
+ cell.style.setProperty('--wa-date-color',cell.style.color||'#111');cell.contentEditable='false';cell.tabIndex=0;cell.setAttribute('role','button');cell.setAttribute('aria-label','Atur tanggal pertemuan '+(index+1));cell.title='Ketuk untuk mengatur tanggal, ukuran huruf, dan warna';
+ const point=Math.max(4,Math.min(12,Number(cell.dataset.dateSize)||6)),style=getComputedStyle(cell);ctx.font=`${style.fontStyle} ${style.fontWeight} ${point*4/3}px ${style.fontFamily}`;const width=Math.max(4,cell.clientWidth-6),needed=Math.max(1,...cell.textContent.trim().split(/\s+/).map(line=>ctx.measureText(line).width));cell.style.setProperty('--wa-date-font',Math.min(point*4/3,point*4/3*width/needed)+'px');
+});};
+function changed(cell){window.WAFitAttendanceDates();cell.dispatchEvent(new Event('input',{bubbles:true}));window.perbaruiPenandaHalaman?.();}
+function edit(cell){active=cell;const index=[...cell.parentElement.children].indexOf(cell)+1;
+ const d=window.PresenUI?.dialog('Tanggal pertemuan '+index,'<form id="meetingDateForm"><p>Tanggal ditampilkan dalam tiga baris: hari, bulan, dan tahun. Ketuk kotak tanggal untuk mengubahnya.</p><label>Pertemuan<select name="slot"></select></label><label>Tanggal<input name="date" type="date" required></label><label>Ukuran huruf tanggal (pt)<input name="size" type="number" min="4" max="12" step="0.5" required></label><label>Warna teks<input name="color" type="color"></label><div class="date-formats"><label><input name="bold" type="checkbox"> Tebal</label><label><input name="italic" type="checkbox"> Miring</label><label><input name="underline" type="checkbox"> Garis bawah</label></div><p class="small">Huruf menyesuaikan lebar kotak agar tahun dan angka tidak terpotong garis tabel. Tombol B, I, U dan warna di bilah alat juga berlaku pada tanggal yang terakhir dipilih.</p><div class="p-actions"><button class="p-primary" type="submit">Simpan tanggal</button><button type="button" data-clear-date>Kosongkan</button></div></form>');if(!d)return;d.classList.add('sheet-date-dialog','p-screen-only');const form=d.querySelector('form');form.elements.date.value=cell.dataset.attendanceDate||'';form.elements.size.value=cell.dataset.dateSize||6;
+ function load(){const style=getComputedStyle(cell),rgb=style.color.match(/\d+/g);form.elements.date.value=cell.dataset.attendanceDate||'';form.elements.size.value=cell.dataset.dateSize||6;form.elements.color.value=rgb?'#'+rgb.slice(0,3).map(v=>Number(v).toString(16).padStart(2,'0')).join(''):'#000000';form.elements.bold.checked=Number(style.fontWeight)>=600;form.elements.italic.checked=style.fontStyle==='italic';form.elements.underline.checked=style.textDecorationLine.includes('underline');}load();const cells=[...document.querySelectorAll('#subHeaderPertemuan .date-entry')];cells.forEach((_,i)=>form.elements.slot.add(new Option('Pertemuan '+(i+1),String(i))));form.elements.slot.value=String(index-1);form.elements.slot.onchange=()=>{cell=cells[Number(form.elements.slot.value)];active=cell;load();};
+ form.onsubmit=e=>{e.preventDefault();if(!form.reportValidity())return;const value=form.elements.date.value;if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return;window.simpanStateUndo?.();const [y,m,day]=value.split('-');cell.dataset.attendanceDate=value;cell.dataset.dateSize=form.elements.size.value;cell.textContent=day+'\n'+m+'\n'+y;cell.style.color=form.elements.color.value;cell.style.fontWeight=form.elements.bold.checked?'bold':'normal';cell.style.fontStyle=form.elements.italic.checked?'italic':'normal';cell.style.textDecoration=form.elements.underline.checked?'underline':'none';d.close();changed(cell);cell.focus({preventScroll:true});};
+ d.querySelector('[data-clear-date]').onclick=()=>{window.simpanStateUndo?.();delete cell.dataset.attendanceDate;cell.textContent='';d.close();changed(cell);cell.focus({preventScroll:true});};
+}
+document.addEventListener('click',e=>{const cell=e.target.closest('#subHeaderPertemuan .date-entry');if(cell){activeInput=null;e.preventDefault();e.stopPropagation();edit(cell);}else if(e.target.closest('#paperSheet')){active=null;if(!e.target.matches('input'))activeInput=null;}},true);
+document.addEventListener('keydown',e=>{if(e.target.matches('#subHeaderPertemuan .date-entry')&&['Enter',' '].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();edit(e.target);}},true);
+const oldFormat=window.formatTeksWord,oldColor=window.formatWarnaTeks;
+window.formatTeksWord=command=>{const property={bold:'fontWeight',italic:'fontStyle',underline:'textDecoration'}[command];if(active?.isConnected&&property){window.simpanStateUndo?.();const enabled={bold:'bold',italic:'italic',underline:'underline'}[command],disabled=command==='underline'?'none':'normal';active.style[property]=active.style[property]===enabled?disabled:enabled;changed(active);return;}if(activeInput?.isConnected&&property){window.simpanStateUndo?.();const enabled={bold:'bold',italic:'italic',underline:'underline'}[command];activeInput.style[property]=activeInput.style[property]===enabled?(command==='underline'?'none':'normal'):enabled;changed(activeInput);return;}return oldFormat?.(command);};
+window.formatWarnaTeks=color=>{if(active?.isConnected){window.simpanStateUndo?.();active.style.color=color;changed(active);return;}if(activeInput?.isConnected){window.simpanStateUndo?.();activeInput.style.color=color;changed(activeInput);return;}return oldColor?.(color);};
+const button=document.createElement('button');button.type='button';button.id='sheetDateSettings';button.className='btn btn-dark';button.textContent='Tanggal pertemuan';button.onclick=()=>edit(active?.isConnected?active:document.querySelector('#subHeaderPertemuan .date-entry'));document.querySelector('#fontSizeSelect')?.closest('label').after(button);
+window.WAFitAttendanceDates();
 })();
