@@ -696,7 +696,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                             <th rowspan="3" style="width: 132px; min-width: 132px;" contenteditable="true" id="thLabelId"><?php echo $label_id; ?></th>
                             <th rowspan="3" style="width: 190px; min-width: 190px;" contenteditable="true">NAMA MAHASISWA</th>
                             <th rowspan="3" style="width: 24px;" contenteditable="true">L/P</th>
-                            <th colspan="16" id="headerPertemuan" contenteditable="true">TANGGAL / BULAN</th>
+                            <th colspan="16" id="headerPertemuan" contenteditable="true">TANGGAL / BULAN / TAHUN</th>
                             <th rowspan="3" style="width: 30px;" contenteditable="true">KET</th>
                         </tr>
                         <!-- Baris untuk tanggal manual -->
@@ -1001,7 +1001,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             });
             clone.querySelectorAll('textarea').forEach(input => { input.textContent = input.value; });
             clone.querySelectorAll('option').forEach(option => { if (option.selected) option.setAttribute('selected', ''); else option.removeAttribute('selected'); });
-            clone.querySelectorAll('.page-preview-only,.p-location-icon').forEach(element => element.remove());
+            clone.querySelectorAll('.page-preview-only,.p-location-icon,.wa-presence-ink').forEach(element => element.remove());
             return clone.innerHTML;
         }
 
@@ -1918,13 +1918,13 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         function cloneUntukEkspor(element) {
             window.WAFitSheetText?.();
             const clone = element.cloneNode(true);
-            const sourceCells=[...element.querySelectorAll('th,td')];clone.querySelectorAll('th,td').forEach((cell,i)=>cell.style.fontSize=getComputedStyle(sourceCells[i]).fontSize);
+            const sourceCells=[...element.querySelectorAll('th,td')];clone.querySelectorAll('th,td').forEach((cell,i)=>{const style=getComputedStyle(sourceCells[i]);for(const key of ['fontSize','color','fontWeight','fontStyle','textDecoration'])cell.style[key]=style[key];});
             const originalInputs=[...element.querySelectorAll('input')].filter(input=>input.type!=='file'&&!input.closest('.sheet-signature-controls,.page-preview-only'));
-            clone.querySelectorAll('.p-screen-only, button, input[type="file"], .sheet-signature-controls, .sheet-signature-image[hidden], .btn-hapus-logo, .page-preview-marker, .page-preview-only').forEach(el => el.remove());
+            clone.querySelectorAll('.p-screen-only, button, input[type="file"], .sheet-signature-controls, .sheet-signature-image[hidden], .btn-hapus-logo, .page-preview-marker, .page-preview-only, .wa-presence-ink').forEach(el => el.remove());
             clone.querySelectorAll('input').forEach((input,index) => {
                 const value = document.createElement('span');
-                value.textContent = input.value || '';
-                value.style.whiteSpace = 'nowrap';value.style.fontSize=getComputedStyle(originalInputs[index]||input).fontSize;
+                value.textContent = input.classList.contains('attendance-cell') && input.value.trim()==='.' ? '•' : input.value || '';
+                value.style.whiteSpace = 'nowrap';const sourceStyle=getComputedStyle(originalInputs[index]||input);for(const key of ['fontSize','color','fontWeight','fontStyle','textDecoration'])value.style[key]=sourceStyle[key];
                 input.replaceWith(value);
             });
             clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
@@ -2014,12 +2014,12 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 cell.style.padding = '3px 6px';
                 cell.style.textAlign = 'center';
                 cell.style.verticalAlign = 'middle';
-                cell.style.whiteSpace = 'nowrap';
+                cell.style.whiteSpace = cell.matches('.date-entry') ? 'pre' : 'nowrap';
                 cell.style.overflowWrap = 'normal';
                 const fitted=parseFloat(cell.style.fontSize);cell.style.fontSize=Number.isFinite(fitted)?fitted+'px':getComputedStyle(document.getElementById('tabelAbsen')).fontSize;
                 cell.style.lineHeight = '1.3';
-                cell.style.color = '#111';
-                if (cell.tagName === 'TH') { cell.style.backgroundColor = '#ffffff'; cell.style.fontWeight = 'bold'; }
+                if (!cell.matches('.date-entry')) cell.style.color = '#111';
+                if (cell.tagName === 'TH' && !cell.matches('.date-entry')) { cell.style.backgroundColor = '#ffffff'; cell.style.fontWeight = 'bold'; }
                 cell.style.setProperty('mso-line-height-rule','at-least');
                 const paragraph = document.createElement('p');
                 paragraph.style.cssText = 'margin:0;mso-margin-top-alt:0pt;mso-margin-bottom-alt:0pt;padding:0;line-height:1.3;mso-line-height-rule:at-least;';
