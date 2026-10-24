@@ -993,7 +993,15 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 
         function htmlKertasTanpaPratinjau() {
             const clone = document.getElementById('paperSheet').cloneNode(true);
-            clone.querySelectorAll('.page-preview-only,.p-location-icon,.p-screen-only').forEach(element => element.remove());
+            // HTML serialization does not include live input values unless they
+            // are explicitly copied into attributes first.
+            clone.querySelectorAll('input').forEach(input => {
+                input.setAttribute('value', input.value);
+                if (input.checked) input.setAttribute('checked', ''); else input.removeAttribute('checked');
+            });
+            clone.querySelectorAll('textarea').forEach(input => { input.textContent = input.value; });
+            clone.querySelectorAll('option').forEach(option => { if (option.selected) option.setAttribute('selected', ''); else option.removeAttribute('selected'); });
+            clone.querySelectorAll('.page-preview-only,.p-location-icon').forEach(element => element.remove());
             return clone.innerHTML;
         }
 
@@ -1013,6 +1021,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             redoStack.push(currentHtml);
             const prevHtml = historyStack.pop();
             document.getElementById('paperSheet').innerHTML = prevHtml;
+            document.dispatchEvent(new Event('sheet-history-restored'));
             inisialisasiEventEditable();
             inisialisasiInputAbsensi();
             simpanPosisiLembarAbsen();
@@ -1030,6 +1039,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             historyStack.push(currentHtml);
             const nextHtml = redoStack.pop();
             document.getElementById('paperSheet').innerHTML = nextHtml;
+            document.dispatchEvent(new Event('sheet-history-restored'));
             inisialisasiEventEditable();
             inisialisasiInputAbsensi();
             simpanPosisiLembarAbsen();
