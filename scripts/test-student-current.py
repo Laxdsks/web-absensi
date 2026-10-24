@@ -13,7 +13,7 @@ def write_sentinel(package,text):
 if not adb('get-serialno').startswith('emulator-') or adb('shell','getprop','ro.kernel.qemu')!='1':raise RuntimeError('This fixture is restricted to an isolated emulator.')
 old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.8.apk'
 if hashlib.sha256(old.read_bytes()).hexdigest()!='6b86ff328d2b73be29b1972d0f3bf53fe337f2b45d1485834b2f6e782507d9c6':raise RuntimeError('Unexpected original APK.')
-previous=ROOT/'previous-current-installers/Presen-Go-1.2.6.apk'
+previous=ROOT/'previous-current-installers/Presen-Go-1.2.7.apk'
 tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.8-tests.apk'
 adb('root');time.sleep(2);install(old);write_sentinel(OLD,'original-data-retained')
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
@@ -37,6 +37,7 @@ adb('shell','svc','wifi','enable');time.sleep(5)
 instrument('testSeedStaleWorker')
 write_sentinel(NEW,'current-data-retained');install(new)
 assert adb('shell','cat',sentinel(NEW))=='current-data-retained'
+instrument('testClassInvitationIntentIsRestricted')
 instrument('testOnlineAfterStaleWorker')
 instrument('testMissingRuntimeRecovery')
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
