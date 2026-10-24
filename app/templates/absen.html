@@ -1102,6 +1102,8 @@
             document.getElementById('paperSheet').innerHTML = prevHtml;
             inisialisasiEventEditable();
             inisialisasiInputAbsensi();
+            simpanPosisiLembarAbsen();
+            document.dispatchEvent(new Event('sheet-position-changed'));
             jadwalkanPenandaHalaman();
             showCustomModal('Undo', 'Perubahan sebelumnya berhasil dibatalkan.');
         }
@@ -1117,6 +1119,8 @@
             document.getElementById('paperSheet').innerHTML = nextHtml;
             inisialisasiEventEditable();
             inisialisasiInputAbsensi();
+            simpanPosisiLembarAbsen();
+            document.dispatchEvent(new Event('sheet-position-changed'));
             jadwalkanPenandaHalaman();
             showCustomModal('Redo', 'Perubahan berhasil dikembalikan (redo).');
         }
@@ -1415,6 +1419,7 @@
             } catch (error) {}
         }
 
+        window.muatPosisiAbsen = pulihkanPosisiLembarAbsen;
         pulihkanPosisiLembarAbsen();
 
         document.addEventListener('click', function(e) {
@@ -1428,6 +1433,7 @@
         });
 
         function ubahPosisiAktif(axis, delta) {
+            if (selectedElement && !selectedElement.isConnected) selectedElement = document.getElementById(selectedElement.id);
             if(!selectedElement) {
                 showCustomModal('Perhatian', 'Silakan klik salah satu blok elemen di lembar kertas terlebih dahulu.');
                 return;
@@ -1437,20 +1443,16 @@
                 const match = (el.style.transform || '').match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
                 return match ? [parseFloat(match[1]), parseFloat(match[2])] : [0, 0];
             };
-            const satuBaris = axis === 'y' ? [selectedElement, ...Array.from(selectedElement.parentElement.children).filter(el => {
-                if (el === selectedElement) return false;
-                const a = selectedElement.getBoundingClientRect();
-                const b = el.getBoundingClientRect();
-                const overlapVertikal = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
-                return b.width > 0 && b.height > 0 && overlapVertikal >= Math.min(a.height, b.height) * 0.45;
-            })] : [selectedElement];
-            satuBaris.forEach(el => {
-                let [x, y] = posisi(el);
-                if (axis === 'x') x += delta;
-                if (axis === 'y') y += delta;
-                el.style.transform = `translate(${x}px, ${y}px)`;
+            const moving = [selectedElement];
+            moving.forEach(el => {
+                let position;
+                try { const matrix = new DOMMatrix(el.style.transform || 'none'); position = [matrix.m41, matrix.m42]; }
+                catch (_) { position = [0, 0]; }
+                if (axis === 'x') position[0] += delta; else position[1] += delta;
+                el.style.transform = `translate(${position[0]}px, ${position[1]}px)`;
             });
             simpanPosisiLembarAbsen();
+            document.dispatchEvent(new Event('sheet-position-changed'));
         }
 
         document.addEventListener('keydown', function(event) {
@@ -1857,7 +1859,7 @@
             {target:'#tourLogoBox',title:'1. Pasang logo dari perangkat',desc:'Klik kotak logo kiri atau kanan, lalu pilih gambar JPG atau PNG. Gambar ditampilkan utuh. Tombol Hapus di bawah logo mengosongkan logo tersebut; ukuran logo dapat diatur pada panel Inspektor.'},
             {target:'#sheetHeader',title:'2. Edit kop dan informasi kuliah',example:'<code>Klik teks</code> → <code>Ketik perubahan</code>',desc:'Klik teks pada kertas untuk mengedit kop, semester, mata kuliah, dan nama dosen. Untuk mengedit dari panel, klik blok sampai garis biru muncul, lalu isi kolom teks di Inspektor. Data mahasiswa resmi ditambah atau diedit melalui halaman Data Mahasiswa.'},
             {target:'#tableWrapper',title:'3. Isi 16 pertemuan',example:'<code>.</code> Hadir · <code>A</code> Alpa · <code>S</code> Sakit · <code>I</code> Izin<br><code>Enter</code> Sel berikutnya · <code>Delete</code> Hapus isian',desc:'Masukkan titik, A, S, atau I pada sel pertemuan. Pada rekap, Absen = A + S + I, dengan jumlah sakit dan izin di kolom terpisah. S dan I bukan hadir, tanpa penalti tambahan. Hanya A dihitung alpa; minimal 4 A membuat nilai akhir E. Kolom pertemuan pada lembar absen tetap sama. Tombol Sisip/Hapus Kolom mengubah jumlah pertemuan pada lembar ini.'},
-            {target:'#inspectorPanel',title:'4. Geser elemen yang terseleksi',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Gunakan tombol X/Y di panel atau tekan/tahan anak panah keyboard. Usap menu atas ke atas dan panel Inspektor ke kanan untuk menyembunyikannya; klik pegangan Menu atau Inspektor untuk membukanya kembali. Atas/bawah menggeser elemen di sampingnya pada baris yang sama; kiri/kanan hanya menggeser elemen terpilih. Saat mengisi kolom input, panah tetap digunakan untuk mengedit isian. Reset Posisi Ini mengembalikan elemen terpilih.'},
+            {target:'#inspectorPanel',title:'4. Geser elemen yang terseleksi',example:'<code>←</code> <code>↑</code> <code>↓</code> <code>→</code><br><code>Shift + panah</code> = 5 px',desc:'Klik blok sampai garis biru muncul. Gunakan tombol X/Y di panel atau tekan/tahan anak panah keyboard. Usap menu atas ke atas dan panel Inspektor ke kanan untuk menyembunyikannya; klik pegangan Menu atau Inspektor untuk membukanya kembali. Semua arah hanya menggeser elemen terpilih. Atur posisi dengan memperhatikan ruang tabel dan batas halaman. Saat mengisi kolom input, panah tetap digunakan untuk mengedit isian. Reset Posisi Ini mengembalikan elemen terpilih.'},
             {target:'#uniLeftBox',title:'5. Foto dan tanda tangan dosen',example:'<code>+ Tanda tangan / foto</code> → <code>Pilih gambar</code>',desc:'Klik + Tanda tangan / foto pada blok kiri atau kanan untuk memasukkan PNG, JPG, atau WEBP. Bisa juga pilih blok lalu tempel gambar dari clipboard. Gambar tersimpan di browser perangkat untuk kelas ini dan ikut cetak/Word; tombol unggah tidak ikut dicetak. Klik blok untuk menampilkan Ganti gambar dan Hapus. Atur Jarak tanda tangan di Inspektor untuk ruang gambar, atau gunakan panah untuk memindahkan seluruh blok.'},
             {target:'#tourBtnRekap',title:'6. Buka rekap dan atur penilaian',desc:'Klik Rekap Nilai untuk membuka tabel penuh. Bobot awal: kehadiran 35%, aktivitas 35%, UTS 15%, UAS 15%; semua bobot bisa diedit. Bertanya dihitung 2 poin per kejadian, aktif/menjawab 3 poin, diskusi individu diisi dosen maksimal 25 poin. UTS/UAS diisi 0–100. Nilai awal setiap komponen 0.'},
             {target:'a[href^="ujian.php"]',title:'7. Kirim nilai ke Lembar Ujian',example:'<code>Rekap Nilai</code> → <code>Simpan &amp; Kirim Nilai</code> → <code>Lembar Ujian</code>',desc:'Di dalam rekap, klik Simpan & Kirim Nilai ke Lembar Ujian dan tunggu pemberitahuan berhasil. Setelah itu buka Lembar Ujian langsung, atau kembali melalui Data Mahasiswa. Gunakan sesi browser, prodi, semester, dan kelas yang sama. Nilai tersimpan pada session PHP; edit teks dan logo ujian tersimpan di browser perangkat.'},

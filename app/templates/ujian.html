@@ -183,7 +183,7 @@
             <button type="button" onclick="ubahPosisiAktif('y',-3)">↑ Geser atas</button>
             <button type="button" onclick="ubahPosisiAktif('y',3)">Geser bawah ↓</button>
         </div>
-        <div style="font-size:11px;color:var(--muted);">Pilih elemen lalu tekan/tahan panah keyboard. Shift + panah bergerak 5 px. Usap menu ke atas atau Inspektor ke kanan untuk menyembunyikan. Atas/bawah menggeser elemen satu baris bersama.</div>
+        <div style="font-size:11px;color:var(--muted);">Pilih elemen lalu tekan/tahan panah keyboard. Shift + panah bergerak 5 px. Usap menu ke atas atau Inspektor ke kanan untuk menyembunyikan. Semua arah menggeser elemen terpilih saja.</div>
         <button type="button" onclick="resetPosisiAktif()" style="width:100%;margin-top:8px;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--panel);color:var(--text);cursor:pointer;">Reset posisi terpilih</button>
         <section class="paragraph-spacing-controls" aria-label="Pengaturan spasi paragraf" style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border);">
             <strong style="display:block;font-size:12px;margin-bottom:6px;">Spasi paragraf elemen terpilih</strong>
@@ -782,16 +782,18 @@
         function ubahPosisiAktif(axis, delta) {
             if (!selectedElement) return;
             const readPosition = el => { const m = (el.style.transform || '').match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/); return m ? [parseFloat(m[1]), parseFloat(m[2])] : [0, 0]; };
-            const moving = axis === 'y' ? [selectedElement, ...Array.from(selectedElement.parentElement.children).filter(el => {
-                if (el === selectedElement || !el.matches('.selectable-element')) return false;
-                const a = selectedElement.getBoundingClientRect(), b = el.getBoundingClientRect();
-                const overlap = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
-                return b.width > 0 && b.height > 0 && overlap >= Math.min(a.height, b.height) * .45;
-            })] : [selectedElement];
-            moving.forEach(el => { let [x,y] = readPosition(el); if (axis === 'x') x += delta; else y += delta; el.style.transform = `translate(${x}px, ${y}px)`; });
+            const moving = [selectedElement];
+            moving.forEach(el => {
+                let position;
+                try { const matrix = new DOMMatrix(el.style.transform || 'none'); position = [matrix.m41, matrix.m42]; }
+                catch (_) { position = [0, 0]; }
+                if (axis === 'x') position[0] += delta; else position[1] += delta;
+                el.style.transform = `translate(${position[0]}px, ${position[1]}px)`;
+            });
             simpanPosisi();
+            document.dispatchEvent(new Event('sheet-position-changed'));
         }
-        function resetPosisiAktif() { if (selectedElement) { selectedElement.style.transform = 'translate(0px, 0px)'; simpanPosisi(); } }
+        function resetPosisiAktif() { if (selectedElement) { selectedElement.style.transform = 'translate(0px, 0px)'; simpanPosisi(); document.dispatchEvent(new Event('sheet-position-changed')); } }
         document.addEventListener('keydown', event => {
             if (tourActive) return;
             if (!selectedElement || !['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key)) return;
