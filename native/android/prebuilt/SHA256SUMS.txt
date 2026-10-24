@@ -1,2 +1,2 @@
-ebfd57940c8bae9f73e7bb6414b8aaa083ce4361ef6de56e77e118e61ab22ca6  Presen-Go-1.2.7.apk
-5634bdc73ec5ba1fe9a73de12e9d1bb8add05aff82bb7f4074f3511bda71de7e  Presen-Go-1.2.7-tests.apk
+3bc04286513a41d1af806824c501b2e118d1090ed839de3eda8a9a5792813579  Presen-Go-1.2.8.apk
+1aabfbe79cc998aa07e526c86e66cf4107fe3f4ac1de2e597c981577000c556f  Presen-Go-1.2.8-tests.apk
