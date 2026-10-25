@@ -71,8 +71,8 @@
 #paperSheet .wa-signature-flow>.signature-box {transform:translateX(var(--wa-signature-x,0px))!important;margin-top:var(--wa-signature-offset,0px)!important}
 /* The exam has one formatting group; let it use the full available ribbon. */
 #topToolbar .sheet-tools:has(>.sheet-format:only-child){grid-template-columns:minmax(0,1fr)}
-/* Three short date lines remain inside each meeting cell in screen and print. */
-#paperSheet #tabelAbsen th.date-entry{font-size:var(--wa-date-font,8px)!important;font-weight:normal;white-space:pre!important;line-height:1.25!important;padding:2px!important;min-width:12px;cursor:pointer;vertical-align:middle;overflow-wrap:normal!important;word-break:normal!important;touch-action:manipulation}
+/* A rotated numeric date stays inside a square header without changing row height. */
+#paperSheet #tabelAbsen th.date-entry{font-size:var(--wa-date-font,8px)!important;font-weight:normal;white-space:nowrap!important;line-height:1!important;padding:0!important;min-width:12px;height:var(--wa-date-cell,18px)!important;position:relative;overflow:hidden;cursor:pointer;vertical-align:middle;overflow-wrap:normal!important;word-break:normal!important;touch-action:manipulation}
 #paperSheet #tabelAbsen th.date-entry:focus{outline:2px solid #2563eb;outline-offset:-2px}
 .sheet-date-dialog{width:min(420px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto}
 .sheet-date-dialog label{display:block;margin:12px 0}.sheet-date-dialog input:not([type=checkbox]){width:100%;box-sizing:border-box;min-height:44px;font-size:16px}.sheet-date-dialog input[type=color]{height:44px}.sheet-date-dialog .date-formats{display:flex;flex-wrap:wrap;gap:16px}.sheet-date-dialog button{min-height:44px}.sheet-date-dialog .p-actions{display:flex;flex-wrap:wrap;gap:8px}
@@ -85,3 +85,15 @@
 @media (max-width:700px),(pointer:coarse){#topToolbar button,#inspectorPanel button{min-height:44px;min-width:44px}#topToolbar input[type=color]{min-height:44px;min-width:44px}.sheet-date-dialog .p-close{min-height:44px;min-width:44px}}
 
 #paperSheet #tabelAbsen th.date-entry{color:var(--wa-date-color,#111)!important}
+
+#paperSheet #tabelAbsen .wa-date-label{position:absolute;left:50%;top:50%;display:block;white-space:nowrap;line-height:1.15;font-size:var(--wa-date-font,6px)!important;transform:translate(-50%,-50%) rotate(-45deg);transform-origin:center;pointer-events:none;text-decoration:inherit}
+.sheet-date-dialog .date-size-sync{display:flex;gap:10px;align-items:center}.sheet-date-dialog .date-size-sync input{width:20px;min-height:20px;flex:none}
+@media print {
+ /* Separate painted edges survive Chromium page fragmentation and positioned date labels. */
+ #paperSheet #tabelAbsen{border-collapse:separate!important;border-spacing:0!important;border:0!important}
+ #paperSheet #tabelAbsen th,#paperSheet #tabelAbsen td{border:0!important;border-right:1px solid #000!important;border-bottom:1px solid #000!important;background:#fff!important}
+ #paperSheet #tabelAbsen thead>tr:first-child>th{border-top:1px solid #000!important}
+ #paperSheet #tabelAbsen thead>tr:first-child>th:first-child,#paperSheet #tabelAbsen tbody>tr:not(.page-preview-only)>td:first-child{border-left:1px solid #000!important}
+ #paperSheet #tabelAbsen thead{display:table-header-group!important}
+ #paperSheet #tabelAbsen tbody>tr:not(.page-preview-only){break-inside:avoid;page-break-inside:avoid}
+}
