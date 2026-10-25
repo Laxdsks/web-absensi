@@ -232,6 +232,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
 <!DOCTYPE html>
 <html lang="id" data-theme="<?php echo htmlspecialchars($active_theme); ?>">
 <head>
+    <?php wa_teacher_startup_head(); ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer-when-downgrade">
@@ -268,6 +269,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
                 },
                 ready() {
                     if (ready) return;
+                    if(window.PresenTeacherStartup&&!PresenTeacherStartup.ready)return;
                     ready = true;
                     const intro = document.getElementById('introOverlay');
                     if ((transfer || freshIntro) && intro) {
@@ -489,7 +491,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         }
     </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.9.js" defer></script>
+    <script src="app/runtime-teacher-1.2.10.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>

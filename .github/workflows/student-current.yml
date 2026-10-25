@@ -1,7 +1,7 @@
 name: Build and publish current Presen Go
 on:
   push:
-    branches: [main, build/student-current, fix/attendance-date-grid]
+    branches: [main, build/student-current, fix/teacher-navigation-startup]
     paths: ['app/**', 'assets/**', 'app-sw.js', 'native/android/**', '.github/workflows/student-current.yml', 'scripts/verify-student-current.py', 'scripts/test-student-current.py']
   workflow_dispatch:
 permissions:
@@ -44,7 +44,7 @@ jobs:
         id: candidate
         run: |
           python3 scripts/verify-student-current.py
-          if test -f native/android/prebuilt/Presen-Go-1.2.9.apk; then
+          if test -f native/android/prebuilt/Presen-Go-1.2.10.apk; then
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             echo 'ready=false' >> "$GITHUB_OUTPUT"
@@ -55,7 +55,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download aplikasi-1.2.1 --pattern 'Absen-Mahasiswa-Android.apk' --dir previous-v2-installers
-          gh release download presen-go-1.2.8 --pattern 'Presen-Go-1.2.8.apk' --dir previous-current-installers
+          gh release download presen-go-1.2.9 --pattern 'Presen-Go-1.2.9.apk' --dir previous-current-installers
       - name: Enable emulator hardware acceleration
         if: steps.candidate.outputs.ready == 'true'
         run: sudo chmod a+rw /dev/kvm
@@ -76,7 +76,7 @@ jobs:
         with:
           name: Presen-Go-signed-and-verified
           path: |
-            native/android/prebuilt/Presen-Go-1.2.9.apk
+            native/android/prebuilt/Presen-Go-1.2.10.apk
             native/android/prebuilt/SHA256SUMS.txt
             tests/results/student-current/
           retention-days: 30
@@ -92,9 +92,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view presen-go-1.2.9 >/dev/null 2>&1; then
-            gh release upload presen-go-1.2.9 native/android/prebuilt/Presen-Go-1.2.9.apk native/android/prebuilt/SHA256SUMS.txt --clobber
-            gh release edit presen-go-1.2.9 --notes-file docs/PRESEN-GO-1.2.9.md
+          if gh release view presen-go-1.2.10 >/dev/null 2>&1; then
+            gh release upload presen-go-1.2.10 native/android/prebuilt/Presen-Go-1.2.10.apk native/android/prebuilt/SHA256SUMS.txt --clobber
+            gh release edit presen-go-1.2.10 --notes-file docs/PRESEN-GO-1.2.10.md
           else
-            gh release create presen-go-1.2.9 native/android/prebuilt/Presen-Go-1.2.9.apk native/android/prebuilt/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'Presen Go 1.2.9 — Absen Mahasiswa Android' --notes-file docs/PRESEN-GO-1.2.9.md
+            gh release create presen-go-1.2.10 native/android/prebuilt/Presen-Go-1.2.10.apk native/android/prebuilt/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'Presen Go 1.2.10 — Absen Mahasiswa Android' --notes-file docs/PRESEN-GO-1.2.10.md
           fi

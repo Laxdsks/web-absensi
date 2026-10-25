@@ -11,10 +11,10 @@ def write_sentinel(package,text):
     adb('shell','mkdir','-p','/data/user/0/'+package+'/files')
     adb('shell','sh','-c',"'printf %s "+text+' > '+sentinel(package)+"'")
 if not adb('get-serialno').startswith('emulator-') or adb('shell','getprop','ro.kernel.qemu')!='1':raise RuntimeError('This fixture is restricted to an isolated emulator.')
-old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.9.apk'
+old=ROOT/'previous-v2-installers/Absen-Mahasiswa-Android.apk';new=ROOT/'native/android/prebuilt/Presen-Go-1.2.10.apk'
 if hashlib.sha256(old.read_bytes()).hexdigest()!='6b86ff328d2b73be29b1972d0f3bf53fe337f2b45d1485834b2f6e782507d9c6':raise RuntimeError('Unexpected original APK.')
-previous=ROOT/'previous-current-installers/Presen-Go-1.2.8.apk'
-tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.9-tests.apk'
+previous=ROOT/'previous-current-installers/Presen-Go-1.2.9.apk'
+tests=ROOT/'native/android/prebuilt/Presen-Go-1.2.10-tests.apk'
 adb('root');time.sleep(2);install(old);write_sentinel(OLD,'original-data-retained')
 adb('shell','svc','wifi','disable');adb('shell','svc','data','disable')
 install(previous);install(tests)

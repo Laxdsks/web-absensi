@@ -77,6 +77,6 @@ function open(){
  brandSize.oninput=()=>{localStorage.setItem('presen-brand-size',brandSize.value);applyBrand();};d.querySelector('#pBrandReset').onclick=()=>{localStorage.removeItem('presen-brand-image');localStorage.removeItem('presen-brand-size');brandFile.value='';brandSize.value='48';previewBrand();status.textContent='Logo bawaan dipulihkan.';};
  return d;
 }
-{controls();apply();applyBrand();window.addEventListener('resize',apply);window.addEventListener('load',()=>{apply();applyBrand();});if(saved('db','')==='1'&&window.WA){const ticket=wallpaperTicket;void WA.get('wallpaper-source').then(data=>{if(ticket===wallpaperTicket&&data){wallpaperImage=data;apply();}});}}
-window.PresenAppearance={open,apply};
+let appearanceReady=Promise.resolve();{controls();apply();applyBrand();window.addEventListener('resize',apply);window.addEventListener('load',()=>{apply();applyBrand();});if(saved('db','')==='1'&&window.WA){const ticket=wallpaperTicket;appearanceReady=WA.get('wallpaper-source').then(data=>{if(ticket===wallpaperTicket&&data){wallpaperImage=data;apply();}});}}
+appearanceReady=appearanceReady.then(async()=>{const src=wallpaperImage||saved('','');if(src){const img=new Image();img.src=src;await img.decode().catch(()=>{});}}).catch(()=>{});window.PresenAppearance={open,apply,ready:appearanceReady};
 })();

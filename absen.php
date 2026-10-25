@@ -121,6 +121,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 <!DOCTYPE html>
 <html lang="id" data-theme="<?php echo htmlspecialchars($theme, ENT_QUOTES, 'UTF-8'); ?>">
 <head>
+    <?php wa_teacher_startup_head(); ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="assets/app-audio.js?v=20261009-music-panel" defer></script>
@@ -492,7 +493,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
 <script src="assets/native-export.js?v=20261010" defer></script>
-    <script src="app/runtime-teacher-1.2.9.js" defer></script>
+    <script src="app/runtime-teacher-1.2.10.js" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261010-reliable-4">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
@@ -503,7 +504,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
 <script src="app/account-tools.js?v=20261012" defer></script>
 <script src="app/evidence.js" defer></script><script src="app/monitoring.js" defer></script><script src="app/experience.js" defer></script><link rel="stylesheet" href="app/experience.css">
 </head>
-<body>
+<body class="portal-sheet">
 
     <?php if(!empty($pesan_validasi)): ?>
         <script>
