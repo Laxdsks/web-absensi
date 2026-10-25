@@ -83,3 +83,31 @@ class RosterIdentityPreservationTests(unittest.TestCase):
         row = {"id": 1, "nim": "C123456", "prodi": "Pendidikan Sejarah", "semester": "1", "kelas": "A"}
         snapshot = {"roster": [row, {**row, "owner": "dosen_01"}, {**row, "kelas": "B"}, {**row, "year": "2027/2028"}], "sessions": [], "marks": [], "documents": [], "registrations": []}
         self.assertEqual(len(verify.record_keys(snapshot)["roster"]), 4)
+
+
+class ExamBundleVerificationTests(unittest.TestCase):
+    def test_current_bundle_is_verified_instead_of_requiring_separate_script_tags(self):
+        path = "app/runtime-teacher-1.2.10.js?v=fixture"
+        html = '<div id="examSupervisorBox"></div><div id="examLecturerBox"></div><script data-teacher-bundle src="'+path+'"></script><script>SheetSignatures.install({});</script>'
+        bundle = (verify.ROOT / path.split("?")[0]).read_bytes()
+        with patch.object(verify, "request", return_value=(bundle, {})) as request:
+            verify.verify_exam_layout(html)
+            request.assert_called_once_with(path)
+
+    def test_incomplete_or_different_bundle_is_rejected(self):
+        html = '<div id="examSupervisorBox"></div><div id="examLecturerBox"></div><script data-teacher-bundle src="app/runtime-teacher-1.2.10.js"></script><script>SheetSignatures.install({});</script>'
+        with patch.object(verify, "request", return_value=(b"/* incomplete */", {})):
+            with self.assertRaisesRegex(RuntimeError, "does not match"):
+                verify.verify_exam_layout(html)
+
+    def test_missing_helpers_are_not_accepted(self):
+        for html in ('examSupervisorBox examLecturerBox SheetSignatures.install', 'sheet-spacing.js examSupervisorBox'):
+            with self.assertRaises(RuntimeError):
+                verify.verify_exam_layout(html)
+
+    def test_bundle_path_is_limited_to_the_teacher_entry(self):
+        html = 'examSupervisorBox examLecturerBox SheetSignatures.install <script data-teacher-bundle src="https://other.invalid/runtime.js"></script>'
+        with patch.object(verify, "request") as request:
+            with self.assertRaisesRegex(RuntimeError, "Unexpected"):
+                verify.verify_exam_layout(html)
+            request.assert_not_called()
