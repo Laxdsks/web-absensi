@@ -13,7 +13,7 @@ html[data-teacher-page-state=ready] .portal-data .content-card{animation:none!im
 #presenTeacherRecovery{visibility:visible!important;position:fixed;inset:0;z-index:2147483600;background:#102538;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;font:16px/1.5 system-ui,sans-serif}
 #presenTeacherRecovery h1{font-size:22px}#presenTeacherRecovery button{padding:12px 20px;border:0;border-radius:8px;background:#fff;color:#102538;font:600 16px system-ui;cursor:pointer}
 </style>
-<script src="app/teacher-startup.js"></script>
+<script src="app/teacher-startup.js?v=20261025-presen-1210-r1"></script>
 HTML;
 }
 
