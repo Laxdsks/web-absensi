@@ -72,7 +72,7 @@
 /* The exam has one formatting group; let it use the full available ribbon. */
 #topToolbar .sheet-tools:has(>.sheet-format:only-child){grid-template-columns:minmax(0,1fr)}
 /* A rotated numeric date stays inside a square header without changing row height. */
-#paperSheet #tabelAbsen th.date-entry{font-size:var(--wa-date-font,8px)!important;font-weight:normal;white-space:nowrap!important;line-height:1!important;padding:0!important;min-width:12px;height:var(--wa-date-cell,18px)!important;position:relative;overflow:hidden;cursor:pointer;vertical-align:middle;overflow-wrap:normal!important;word-break:normal!important;touch-action:manipulation}
+#paperSheet #tabelAbsen th.date-entry{font-size:var(--wa-sheet-body-font,12px)!important;font-weight:normal;white-space:nowrap!important;line-height:1!important;padding:0!important;min-width:12px;height:var(--wa-date-cell,18px)!important;position:relative;overflow:visible!important;cursor:pointer;vertical-align:middle;overflow-wrap:normal!important;word-break:normal!important;touch-action:manipulation}
 #paperSheet #tabelAbsen th.date-entry:focus{outline:2px solid #2563eb;outline-offset:-2px}
 .sheet-date-dialog{width:min(420px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto}
 .sheet-date-dialog label{display:block;margin:12px 0}.sheet-date-dialog input:not([type=checkbox]){width:100%;box-sizing:border-box;min-height:44px;font-size:16px}.sheet-date-dialog input[type=color]{height:44px}.sheet-date-dialog .date-formats{display:flex;flex-wrap:wrap;gap:16px}.sheet-date-dialog button{min-height:44px}.sheet-date-dialog .p-actions{display:flex;flex-wrap:wrap;gap:8px}
@@ -86,7 +86,7 @@
 
 #paperSheet #tabelAbsen th.date-entry{color:var(--wa-date-color,#111)!important}
 
-#paperSheet #tabelAbsen .wa-date-label{position:absolute;left:50%;top:50%;display:block;white-space:nowrap;line-height:1.15;font-size:var(--wa-date-font,6px)!important;transform:translate(-50%,-50%) rotate(-45deg);transform-origin:center;pointer-events:none;text-decoration:inherit}
+#paperSheet #tabelAbsen .wa-date-label{position:absolute;z-index:2;left:50%;top:50%;display:block;white-space:nowrap;line-height:1.15;font-size:var(--wa-date-font,6px)!important;transform:translate(-50%,-50%) rotate(-45deg);transform-origin:center;pointer-events:none;text-decoration:inherit}
 .sheet-date-dialog .date-size-sync{display:flex;gap:10px;align-items:center}.sheet-date-dialog .date-size-sync input{width:20px;min-height:20px;flex:none}
 @media print {
  /* Separate painted edges survive Chromium page fragmentation and positioned date labels. */

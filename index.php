@@ -291,7 +291,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         })();
     </script>
     
-    <script src="assets/app-audio.js?v=20261025-presen-1210-r1" defer></script>
+    <script src="assets/app-audio.js?v=20261025-presen-1210-date-font-r2" defer></script>
     <link rel="stylesheet" href="app/vendor/fontawesome/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -490,15 +490,15 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
             .auth-card { padding: 25px 20px; width: 92%; margin: 10px; }
         }
     </style>
-<script src="assets/native-export.js?v=20261025-presen-1210-r1" defer></script>
+<script src="assets/native-export.js?v=20261025-presen-1210-date-font-r2" defer></script>
     <script src="app/runtime-teacher-1.2.10.js" defer></script>
-    <link rel="stylesheet" href="assets/teacher-tools.css?v=20261025-presen-1210-r1">
+    <link rel="stylesheet" href="assets/teacher-tools.css?v=20261025-presen-1210-date-font-r2">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
-<link rel="stylesheet" href="app/guide.css?v=20261025-presen-1210-r1"><script src="app/guide.js?v=20261025-presen-1210-r1" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261025-presen-1210-r1"><script src="app/portal.js?v=20261025-presen-1210-r1" defer></script><script src="app/appearance.js?v=20261025-presen-1210-r1" defer></script><script src="app/workspace.js?v=20261025-presen-1210-r1" defer></script><script src="app/inbox.js?v=20261025-presen-1210-r1" defer></script><script src="app/grade-assistant.js?v=20261025-presen-1210-r1" defer></script>
-<script src="app/account-tools.js?v=20261025-presen-1210-r1" defer></script>
-<script src="app/evidence.js?v=20261025-presen-1210-r1" defer></script><script src="app/monitoring.js?v=20261025-presen-1210-r1" defer></script><script src="app/experience.js?v=20261025-presen-1210-r1" defer></script><link rel="stylesheet" href="app/experience.css?v=20261025-presen-1210-r1">
+<link rel="stylesheet" href="app/guide.css?v=20261025-presen-1210-date-font-r2"><script src="app/guide.js?v=20261025-presen-1210-date-font-r2" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261025-presen-1210-date-font-r2"><script src="app/portal.js?v=20261025-presen-1210-date-font-r2" defer></script><script src="app/appearance.js?v=20261025-presen-1210-date-font-r2" defer></script><script src="app/workspace.js?v=20261025-presen-1210-date-font-r2" defer></script><script src="app/inbox.js?v=20261025-presen-1210-date-font-r2" defer></script><script src="app/grade-assistant.js?v=20261025-presen-1210-date-font-r2" defer></script>
+<script src="app/account-tools.js?v=20261025-presen-1210-date-font-r2" defer></script>
+<script src="app/evidence.js?v=20261025-presen-1210-date-font-r2" defer></script><script src="app/monitoring.js?v=20261025-presen-1210-date-font-r2" defer></script><script src="app/experience.js?v=20261025-presen-1210-date-font-r2" defer></script><link rel="stylesheet" href="app/experience.css?v=20261025-presen-1210-date-font-r2">
 </head>
 <body class="portal-home" data-home-layout="<?php echo htmlspecialchars($homeLayout,ENT_QUOTES,'UTF-8'); ?>">
     <!-- KANVAS PARTIKEL MELAYANG -->
