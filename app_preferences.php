@@ -35,7 +35,7 @@ function wa_appearance_save(array $device,array $input): array {
         wa_query("INSERT IGNORE INTO wa_meta(k,value) VALUES(?,'{}')",[$key]);
         $saved=json_decode(wa_one('SELECT value FROM wa_meta WHERE k=? FOR UPDATE',[$key])['value'],true)?:[];
         $version=(int)($saved['versions'][$field]??0);
-        if($expected!==$version){wa_db()->rollback();return ['status'=>'success','conflict'=>true,'appearance'=>wa_appearance_read($device)];}
+        if($expected!==$version){$same=array_key_exists($field,$saved['settings']??[])&&$saved['settings'][$field]===$value;wa_db()->rollback();return ['status'=>'success','conflict'=>!$same,'appearance'=>wa_appearance_read($device)];}
         $saved['settings'][$field]=$value;$saved['versions'][$field]=$version+1;$saved['revision']=(int)($saved['revision']??0)+1;$saved['updatedAt']=wa_now();
         if(strlen(wa_json($saved))>3300000)throw new InvalidArgumentException('Ukuran tampilan akun terlalu besar. Gunakan gambar yang lebih kecil.');
         wa_query('UPDATE wa_meta SET value=? WHERE k=?',[wa_json($saved),$key]);
