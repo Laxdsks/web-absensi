@@ -31,7 +31,7 @@ def verify_exam_layout(exam):
             raise RuntimeError("The deployed exam spacing helper is missing.")
         return
     path = entry.group(1)
-    if not re.fullmatch(r'app/runtime-teacher-\d+\.\d+\.\d+\.js(?:\?[^"<>]*)?', path):
+    if not re.fullmatch(r'app/runtime-teacher-\d+\.\d+\.\d+(?:-[A-Za-z0-9-]+)?\.js(?:\?[^"<>]*)?', path):
         raise RuntimeError("Unexpected teacher bundle path.")
     bundle = request(path)[0]
     local = ROOT / path.split("?", 1)[0]

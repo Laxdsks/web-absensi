@@ -17,10 +17,12 @@ fs.writeFileSync(path.join(root,'app/teacher-appearance.js'),appearance.replace(
 const guide=fs.readFileSync(path.join(root,'app/guide.js'),'utf8'),guideSplit=guide.indexOf(",host=document.createElement('div');");
 if(guideSplit<0)throw Error('Update the teacher guide adapter for the shared chapter catalogue.');
 fs.writeFileSync(path.join(root,'app/teacher-guide.js'),guide.slice(0,guideSplit)+';\n'+fs.readFileSync(path.join(root,'app/teacher-guide-tour.js'),'utf8')+'\n})();\n');
-for(const file of ['index.php','data_siswa.php','absen.php','ujian.php','music_player.php','app_core.php','app/index.html','app-sw.js']){const target=path.join(root,file);fs.writeFileSync(target,fs.readFileSync(target,'utf8').replace(/(runtime-teacher|core)-\d+\.\d+\.\d+\.js/g,(_,name)=>name+'-'+version+'.js'));}
+for(const file of ['index.php','data_siswa.php','absen.php','ujian.php','music_player.php','app_core.php','app/index.html','app-sw.js']){const target=path.join(root,file);fs.writeFileSync(target,fs.readFileSync(target,'utf8').replace(/(runtime-teacher|core)-\d+\.\d+\.\d+(?=\.js|-)/g,(_,name)=>name+'-'+version));}
 require('./build-teacher-bundle.cjs').build(version,teacherCore);
 // Teacher pages must request one coherent set of layout assets after deployment.
 const build=fs.readFileSync(path.join(root,'app_core.php'),'utf8').match(/const WA_BUILD = '([^']+)'/)[1];
+// A distinct pathname also bypasses older workers that ignore query strings.
+fs.copyFileSync(path.join(root,'app','runtime-teacher-'+version+'.js'),path.join(root,'app','runtime-teacher-'+version+'-'+build+'.js'));
 require('./build-teacher-worker.cjs')(build);
 for(const file of ['index.php','data_siswa.php','absen.php','ujian.php','music_player.php','app_core.php']){const target=path.join(root,file);fs.writeFileSync(target,fs.readFileSync(target,'utf8').replace(/((?:src|href)=["'](?:app|assets)\/[a-z][a-z0-9.-]*\.(?:js|css))(?:\?[^"']*)?/gi,(_,asset)=>asset+'?v='+build));}
 for(const page of ['index','data_siswa','absen','ujian','music_player']){const result=spawnSync(php,[path.join(__dirname,'build-template.php'),page],{cwd:root,stdio:'inherit'});if(result.status!==0)process.exit(result.status||1);}

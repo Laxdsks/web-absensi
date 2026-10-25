@@ -1,6 +1,6 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261025-presen-1210-print-grid-r1';
+const WA_BUILD = '20261026-presen-1210-print-grid-r2';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_teacher_startup_head(): void {
@@ -9,7 +9,7 @@ function wa_teacher_startup_head(): void {
 }
 function wa_teacher_shell_assets(): void {
     echo '<style id="presenTeacherShellStyle">'.file_get_contents(__DIR__.'/app/teacher-shell.css').'</style>';
-    $entry = 'app/runtime-teacher-1.2.10.js';
+    $entry = 'app/runtime-teacher-1.2.10-'.WA_BUILD.'.js';
     echo '<script data-teacher-bundle src="'.$entry.'?v='.WA_BUILD.'" defer></script>';
 }
 
