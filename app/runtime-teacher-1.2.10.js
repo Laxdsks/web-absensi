@@ -123,13 +123,14 @@ const proto=Storage.prototype,rawGet=proto.getItem,rawSet=proto.setItem,rawRemov
 const legacy=Object.fromEntries(fields.map(k=>[k,rawGet.call(localStorage,k)]).filter(([,v])=>v!==null));
 const legacyDB=rawGet.call(localStorage,'custom_bg_wallpaper_db')==='1',legacyBinding=rawGet.call(localStorage,'presen-appearance-owner');
 const initialOwner=WA.get().then(s=>s.profile?.role==='teacher'?s.profile.account.id:null);
-const legacyBackup=(async()=>{const previous=await initialOwner,who=previous&&(legacyBinding===previous||!legacyBinding&&previous==='admin_01')?previous:null;const old={...legacy};if(legacyDB)old.custom_bg_wallpaper=await WA.get('wallpaper-source')||old.custom_bg_wallpaper;const key=who?'teacher-appearance-legacy:'+who:'teacher-appearance-unclaimed';if(meaningful(old)&&!await WA.get(key))await WA.change(()=>old,key);})();
+const legacyBackup=(async()=>{const previous=await initialOwner,who=previous&&(legacyBinding===previous||!legacyBinding&&previous==='admin_01')?previous:null;const old={...legacy};if(legacyDB)old.custom_bg_wallpaper=await WA.get('wallpaper-source')||old.custom_bg_wallpaper;const key=who?'teacher-appearance-legacy:'+who:'teacher-appearance-unclaimed';if(meaningful(old))await WA.change(previous=>({...previous,...old}),key);})();
 let owner=null,record=null,ready=false,applying=false,timer,sending=null,error='',observed=0,refreshing=false,pendingSerial=0;
 const namespaced=k=>'pa:'+owner+':'+k,cacheKey=id=>'teacher-appearance:'+id;
 const empty=()=>({revision:0,settings:{},versions:{},pending:{},legacyChecked:false});
 function value(k){return rawGet.call(localStorage,namespaced(k));}
 function put(k,v){if(v===null||v===undefined)rawRemove.call(localStorage,namespaced(k));else rawSet.call(localStorage,namespaced(k),String(v));}
-function changed(k){if(!ready||applying||!owner)return;dirty.add(k==='custom_bg_wallpaper_db'?'custom_bg_wallpaper':k);clearTimeout(timer);timer=setTimeout(()=>void capture().then(flush).catch(fail),180);}
+function marker(k){try{return JSON.parse(rawGet.call(localStorage,namespaced('pending:'+k))||'null');}catch(_){return null;}}
+function changed(k){if(!ready||applying||!owner)return;k=k==='custom_bg_wallpaper_db'?'custom_bg_wallpaper':k;rawSet.call(localStorage,namespaced('pending:'+k),JSON.stringify({id:crypto.randomUUID(),baseVersion:record.pending[k]?.baseVersion??record.versions[k]??0}));dirty.add(k);clearTimeout(timer);timer=setTimeout(()=>void capture().then(flush).catch(fail),180);}
 const dirty=new Set();
 proto.getItem=function(k){return this===localStorage&&managed.has(String(k))?(owner?value(String(k)):null):rawGet.call(this,k);};
 proto.setItem=function(k,v){if(this===localStorage&&managed.has(String(k))){if(owner){rawSet.call(this,namespaced(String(k)),String(v));changed(String(k));}return;}return rawSet.call(this,k,v);};
@@ -146,12 +147,12 @@ async function normalizeImage(data,kind='wallpaper'){
  throw Error('Gambar terlalu besar untuk disinkronkan. Gunakan gambar yang lebih kecil.');
 }
 const stageTickets=new Map();
-async function stage(k,v){
- const target=record,identity=owner,ticket=(stageTickets.get(k)||0)+1,baseVersion=target?.pending[k]?.baseVersion??target?.versions[k]??0;stageTickets.set(k,ticket);
+async function stage(k,v,intent=marker(k)){
+ const target=record,identity=owner,ticket=(stageTickets.get(k)||0)+1,baseVersion=intent?.baseVersion??target?.pending[k]?.baseVersion??target?.versions[k]??0;stageTickets.set(k,ticket);
  if(['presen-brand-image','custom_bg_wallpaper'].includes(k)&&v)v=await normalizeImage(v,k==='presen-brand-image'?'brand':'wallpaper');
  if(owner!==identity||record!==target||stageTickets.get(k)!==ticket)return;
- if(record.pending[k]?.value===v||!record.pending[k]&&((record.settings[k]??null)===v))return;
- record.pending[k]={value:v,baseVersion,serial:++pendingSerial};
+ if(record.pending[k]?.value===v){if(intent)record.pending[k].marker=intent.id;return;}if(!record.pending[k]&&((record.settings[k]??null)===v)){if(intent?.id===marker(k)?.id)rawRemove.call(localStorage,namespaced('pending:'+k));return;}
+ record.pending[k]={value:v,baseVersion,serial:++pendingSerial,marker:intent?.id};
 }
 let captureChain=Promise.resolve();
 function capture(){const task=captureChain.catch(()=>{}).then(captureNow);captureChain=task;return task;}
@@ -182,7 +183,7 @@ async function flush(){
    if(entry.conflict)continue;const result=await WA.api('appearance-save',{key,value:entry.value,baseVersion:entry.baseVersion},s.token);if(owner!==mine||(await WA.get()).profile?.account?.id!==mine)return;
    const remote=result.appearance;record.settings=remote.settings||{};record.versions=remote.versions||{};record.revision=remote.revision;observed=remote.revision;
    const current=record.pending[key];if(result.conflict){if(current)current.conflict=true;}
-   else if(current?.serial===entry.serial)delete record.pending[key];else if(current)current.baseVersion=record.versions[key]||0;
+   else{if(current?.serial===entry.serial)delete record.pending[key];else if(current)current.baseVersion=record.versions[key]||0;const intent=marker(key);if(intent?.id===entry.marker)rawRemove.call(localStorage,namespaced('pending:'+key));else if(intent)rawSet.call(localStorage,namespaced('pending:'+key),JSON.stringify({...intent,baseVersion:record.versions[key]||0}));}
    await persist();status();
   }
  })().catch(fail).finally(()=>{sending=null;status();if(!error&&navigator.onLine&&Object.values(record?.pending||{}).some(p=>!p.conflict))timer=setTimeout(()=>void flush(),200);});status();await sending;
@@ -197,29 +198,33 @@ function meaningful(settings){return !!(settings['presen-brand-image']||settings
 async function prepare(s){
  if(s.profile?.role!=='teacher'){await guest();return;}
  await legacyBackup;ready=false;owner=s.profile.account.id;record=await WA.get(cacheKey(owner))||empty();record.pending||={};pendingSerial=Math.max(0,...Object.values(record.pending).map(x=>x.serial||0));
+ for(const k of fields){const intent=marker(k);if(!intent)continue;let local=value(k);if(k==='custom_bg_wallpaper'&&value('custom_bg_wallpaper_db')==='1'&&(await initialOwner)===owner)local=await WA.get('wallpaper-source')||local;await stage(k,local,intent);}
  let remote;try{if(navigator.onLine)remote=(await WA.api('appearance-read',{},s.token)).appearance;}catch(e){error=e.message;}
  if(remote){record.settings=remote.settings||{};record.versions=remote.versions||{};record.revision=remote.revision;observed=remote.revision;}
- if(!record.legacyChecked){
-  let old=await WA.get('teacher-appearance-legacy:'+owner)||{...legacy};
-  const eligible=!!await WA.get('teacher-appearance-legacy:'+owner)||!legacyBinding&&(await initialOwner)===owner&&owner==='admin_01';
-  if(eligible&&meaningful(old)){await WA.change(()=>old,'teacher-appearance-legacy:'+owner);for(const[k,v]of Object.entries(old))if(!Object.hasOwn(record.settings,k)&&!record.pending[k])await stage(k,v);}
-  record.legacyChecked=true;
- }
+ const old=await WA.get('teacher-appearance-legacy:'+owner)||{...legacy};
+ const eligible=!!await WA.get('teacher-appearance-legacy:'+owner)||!legacyBinding&&(await initialOwner)===owner&&owner==='admin_01';
+ if(eligible&&meaningful(old))for(const[k,v]of Object.entries(old))if(!record.versions[k]&&!Object.hasOwn(record.settings,k)&&!record.pending[k])await stage(k,v);
+ record.legacyChecked=true;
  // Shared legacy keys must never expose the lecturer's images to student/guest pages.
  for(const k of managed)rawRemove.call(localStorage,k);rawSet.call(localStorage,'presen-appearance-owner',owner);
  await persist();await render();ready=true;status();void flush();
 }
 async function guest(){await legacyBackup;ready=false;owner=null;record=null;dirty.clear();for(const k of managed)rawRemove.call(localStorage,k);document.documentElement.dataset.theme='putih';for(const n of ['--primary','--p-accent','--p-on-accent'])document.documentElement.style.removeProperty(n);await window.PresenAppearance?.reloadAccount?.();}
+async function useCampusBrand(){
+ if(!ready||!owner)throw Error('Masuk sebagai dosen terlebih dahulu.');
+ const image=new Image();image.src=new URL('assets/logo-stkip-yapis-dompu.png',WA.ROOT).href;await image.decode();const canvas=document.createElement('canvas'),scale=Math.min(1,512/Math.max(image.naturalWidth,image.naturalHeight));canvas.width=Math.round(image.naturalWidth*scale);canvas.height=Math.round(image.naturalHeight*scale);canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);localStorage.setItem('presen-brand-image',canvas.toDataURL('image/png'));await window.PresenAppearance?.reloadAccount?.();await flush();
+}
 function status(){
- const panel=document.getElementById('presenAppearanceDialog');if(!panel)return;let box=panel.querySelector('#appearanceAccountSync');if(!box){box=document.createElement('section');box.id='appearanceAccountSync';box.className='p-appearance-account';box.innerHTML='<p role="status" id="appearanceAccountStatus"></p><button type="button" id="appearanceSyncNow">Sinkronkan tampilan</button><button type="button" id="appearanceKeepLocal" hidden>Pakai perubahan perangkat ini</button><button type="button" id="appearanceUseAccount" hidden>Pakai tampilan akun</button><p><small>Logo, tema, warna, dan wallpaper mengikuti akun ini di perangkat lain. Pengaturan kelas dan lembar tetap terpisah.</small></p>';panel.querySelector('.p-subtitle')?.after(box);box.querySelector('#appearanceSyncNow').onclick=()=>void flush().then(pull).catch(fail);box.querySelector('#appearanceKeepLocal').onclick=()=>void resolveConflicts(true);box.querySelector('#appearanceUseAccount').onclick=()=>void resolveConflicts(false);}
+
+ const panel=document.getElementById('presenAppearanceDialog');if(!panel)return;const brand=panel.querySelector('.p-brand-settings');if(brand&&!brand.querySelector('#pCampusBrand')){const button=document.createElement('button');button.type='button';button.id='pCampusBrand';button.textContent='Gunakan logo kampus STKIP Yapis Dompu';button.onclick=async()=>{button.disabled=true;try{await useCampusBrand();}catch(e){fail(e);}finally{button.disabled=false;}};brand.querySelector('h3')?.after(button);}let box=panel.querySelector('#appearanceAccountSync');if(!box){box=document.createElement('section');box.id='appearanceAccountSync';box.className='p-appearance-account';box.innerHTML='<p role="status" id="appearanceAccountStatus"></p><button type="button" id="appearanceSyncNow">Sinkronkan tampilan</button><button type="button" id="appearanceKeepLocal" hidden>Pakai perubahan perangkat ini</button><button type="button" id="appearanceUseAccount" hidden>Pakai tampilan akun</button><p><small>Logo, tema, warna, dan wallpaper mengikuti akun ini di perangkat lain. Pengaturan kelas dan lembar tetap terpisah.</small></p>';panel.querySelector('.p-subtitle')?.after(box);box.querySelector('#appearanceSyncNow').onclick=()=>void flush().then(pull).catch(fail);box.querySelector('#appearanceKeepLocal').onclick=()=>void resolveConflicts(true);box.querySelector('#appearanceUseAccount').onclick=()=>void resolveConflicts(false);}
  const pending=Object.values(record?.pending||{}),conflict=pending.some(p=>p.conflict);box.querySelector('#appearanceAccountStatus').textContent=error||conflict?'Tampilan belum tersinkron: '+(error||'pengaturan ini berubah di perangkat lain. Pilih salinan yang ingin digunakan.'):pending.length?(navigator.onLine?'Menyinkronkan tampilan ke akun…':'Tampilan tersimpan di perangkat · menunggu internet'):'Tampilan tersimpan di akun · tersedia di perangkat lain';box.querySelector('#appearanceKeepLocal').hidden=box.querySelector('#appearanceUseAccount').hidden=!conflict;
 }
 async function resolveConflicts(keep){for(const[k,p]of Object.entries(record.pending))if(p.conflict){if(keep){p.baseVersion=record.versions[k]||0;delete p.conflict;}else delete record.pending[k];}error='';await persist();await render();await flush();}
 const originalLogout=WA.logout;WA.logout=async(...args)=>{await flush();const previous=owner;ready=false;const result=await originalLogout(...args);if(result!==false)await guest();else{owner=previous;ready=true;}return result;};
 WA.on(()=>{if(!ready||applying)return;void WA.get().then(s=>{if(s.profile?.role!=='teacher'||s.profile.account.id!==owner){void guest();return;}if(Number(s.snapshot.appearance?.revision)>observed)void pull();});});
 window.addEventListener('online',()=>void flush().then(pull));window.addEventListener('focus',()=>void pull());document.addEventListener('visibilitychange',()=>{if(document.hidden)void flush();else void pull();});
-new MutationObserver(()=>{if(document.getElementById('presenAppearanceDialog')&&!document.getElementById('appearanceAccountSync'))status();}).observe(document.body,{childList:true,subtree:true});
-window.PresenTeacherPreferences={prepare,guest,flush,pull,normalizeImage,get ready(){return ready;}};
+new MutationObserver(()=>{if(document.getElementById('presenAppearanceDialog')&&(!document.getElementById('appearanceAccountSync')||!document.getElementById('pCampusBrand')))status();}).observe(document.body,{childList:true,subtree:true});
+window.PresenTeacherPreferences={prepare,guest,flush,pull,normalizeImage,useCampusBrand,get ready(){return ready;}};
 })();
 
 ;

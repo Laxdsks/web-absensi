@@ -44,3 +44,14 @@ Penghapusan wallpaper dan pemulihan logo bawaan ikut disinkronkan. Perubahan pad
 ### Ukuran tanggal seragam
 
 Pada **Tanggal pertemuan**, ukuran huruf tanggal berlaku untuk **semua pertemuan** secara bawaan. Ketik misalnya **5 pt**, lalu tekan **Simpan tanggal**. Angka tanggal pertemuan lain dan kolom baru akan mengikuti ukuran itu, tanpa mengubah ukuran kotak tabel. Nilai ukuran tetap dibawa saat berpindah pilihan pertemuan dalam dialog. Lepaskan **Ukuran seragam untuk semua pertemuan** bila ingin membuat pengecualian hanya pada satu pertemuan. Tanggal, warna, dan format lain pada pertemuan yang berbeda tetap dipertahankan.
+
+
+### Logo utama di semua halaman
+
+Logo di samping **Database & Absensi** adalah **Logo aplikasi/kampus** pada menu Tampilan. Perubahan logo dicatat segera agar tetap dipulihkan bila halaman cepat dimuat ulang. Logo yang disimpan di akun muncul pada beranda dan bilah navigasi Data mahasiswa, Lembar absen, serta Lembar ujian di perangkat lain. Pilihan **Gunakan logo kampus STKIP Yapis Dompu** memakai berkas logo kampus yang sudah tersedia; Anda tetap dapat mengunggah logo sendiri. Logo kop pada kertas dapat diatur tersendiri pada lembar masing-masing.
+
+### Monitoring berdasarkan kelas dan pertemuan
+
+Monitoring membuka prodi, semester, kelas, tahun akademik, periode, dan mata kuliah yang sedang digunakan. **Ganti kelas atau mata kuliah** membuka pilihan berurutan; ringkasan tidak mencampur kelas, semester, tahun, atau mata kuliah yang berbeda. Pilih pertemuan untuk melihat jumlah **Hadir, Sakit, Izin, Tidak hadir**, serta mahasiswa yang belum tercatat pada pertemuan itu. Menekan kartu status menyaring daftar mahasiswa, tanpa mengubah dasar ringkasannya.
+
+Gunakan **Rekap mahasiswa** untuk melihat akumulasi H/S/I/A per mahasiswa dalam kelas dan mata kuliah terpilih. Ketuk mahasiswa untuk membuka riwayat pertemuannya, lalu detail untuk melihat alasan, foto bukti, tinjauan, dan lokasi. Filter tanggal, tinjauan, dan urutan berada pada bagian yang dapat dibuka; **Reset pencarian** mempertahankan pilihan kelas.
