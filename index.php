@@ -491,7 +491,7 @@ $form_context['semester'] = ctype_digit($saved_semester) && (int)$saved_semester
         }
     </style>
 <script src="assets/native-export.js?v=20261025-presen-1210-date-font-r2" defer></script>
-    <script src="app/runtime-teacher-1.2.10.js" defer></script>
+    <script src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-date-font-r2" defer></script>
     <link rel="stylesheet" href="assets/teacher-tools.css?v=20261025-presen-1210-date-font-r2">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
