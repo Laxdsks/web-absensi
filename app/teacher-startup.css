@@ -1,6 +1,8 @@
 html.presen-workspace-loading body>:not(#introOverlay):not(#authOverlay):not(#presenTeacherRecovery):not(script):not(style),html.presen-workspace-loading body>:not(#introOverlay):not(#authOverlay):not(#presenTeacherRecovery):not(script):not(style) *{visibility:hidden!important}
 html.presen-workspace-loading #authOverlay .auth-card{visibility:hidden!important}
 html[data-teacher-page-state=ready] .portal-data .content-card{animation:none!important}
-#presenTeacherRecovery{visibility:visible!important;position:fixed;inset:0;z-index:2147483600;background:#102538;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;font:16px/1.5 system-ui,sans-serif}
-#presenTeacherRecovery h1{font-size:22px}#presenTeacherRecovery button{padding:12px 20px;border:0;border-radius:8px;background:#fff;color:#102538;font:600 16px system-ui;cursor:pointer}
-
+#presenTeacherRecovery{visibility:visible!important;position:fixed;inset:auto 12px 12px;z-index:2147483600;max-width:620px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #66869d;border-radius:10px;background:#173b52;color:#fff;font:13px/1.5 system-ui,sans-serif;box-shadow:0 4px 16px #0002}
+#presenTeacherRecovery button{flex:none;min-height:40px;padding:8px 12px;border:0;border-radius:7px;background:#fff;color:#15344b;font:600 12px system-ui;cursor:pointer}
+#presenFallbackNav{visibility:visible!important;position:relative;z-index:100;display:flex;gap:8px;overflow:auto;margin:10px;padding:10px;background:#173b52;border-radius:10px;font:13px/1.5 system-ui,sans-serif}
+#presenFallbackNav a{visibility:visible!important;display:inline-block;flex:none;min-height:40px;padding:9px 12px;color:#fff;text-decoration:none;border:1px solid #65859a;border-radius:7px}
+@media print{#presenTeacherRecovery,#presenFallbackNav{display:none!important}}

@@ -133,13 +133,13 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="app-build" content="exam-20261009-blank-fields-v2">
-    <script src="assets/app-audio.js?v=20261025-presen-1210-responsive-r1" defer></script>
-    <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261025-presen-1210-responsive-r1">
-    <script src="assets/sheet-signatures.js?v=20261025-presen-1210-responsive-r1" defer></script>
-    <script src="assets/sheet-spacing.js?v=20261025-presen-1210-responsive-r1" defer></script>
+
+
+
+
     <title>Lembar Ujian - <?php echo $escape($kelas_lama . ' / ' . $semester_lama); ?></title>
-    <link rel="stylesheet" href="app/vendor/fontawesome/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="app/vendor/fontawesome/css/all.min.css">
+    <link href="app/vendor/jakarta/400.css" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'"><link href="app/vendor/jakarta/500.css" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'"><link href="app/vendor/jakarta/600.css" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'"><link href="app/vendor/jakarta/700.css" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <style>
         :root { --app-bg:#0b0f19; --panel:rgba(15,23,42,.96); --text:#f8fafc; --muted:#cbd5e1; --border:rgba(255,255,255,.16); --accent:#38bdf8; }
         html[data-theme="putih"] { --app-bg:#e8edf5; --panel:rgba(255,255,255,.97); --text:#0f172a; --muted:#475569; --border:rgba(15,23,42,.18); --accent:#2563eb; }
@@ -275,12 +275,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         @media(max-width:700px),(hover:none) { .hide-toolbar-inline { display:none !important; } }
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
     </style>
-<script src="assets/native-export.js?v=20261025-presen-1210-responsive-r1" defer></script>
-    <script src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-responsive-r1" defer></script>
-<link rel="stylesheet" href="app/teacher-mobile.css?v=20261025-presen-1210-responsive-r1"><link rel="stylesheet" href="app/teacher-guide.css?v=20261025-presen-1210-responsive-r1"><script src="app/teacher-guide.js?v=20261025-presen-1210-responsive-r1" defer></script>
-<link rel="stylesheet" href="assets/sheet-fit.css?v=20261025-presen-1210-responsive-r1"><script src="assets/sheet-fit.js?v=20261025-presen-1210-responsive-r1" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261025-presen-1210-responsive-r1"><script src="app/portal.js?v=20261025-presen-1210-responsive-r1" defer></script><script src="app/teacher-appearance.js?v=20261025-presen-1210-responsive-r1" defer></script><script src="app/workspace.js?v=20261025-presen-1210-responsive-r1" defer></script><script src="app/account-tools.js?v=20261025-presen-1210-responsive-r1" defer></script><script src="app/inbox.js?v=20261025-presen-1210-responsive-r1" defer></script><script src="app/grade-assistant.js?v=20261025-presen-1210-responsive-r1" defer></script>
-<script src="app/evidence.js?v=20261025-presen-1210-responsive-r1" defer></script><script src="app/monitoring.js?v=20261025-presen-1210-responsive-r1" defer></script><script src="app/experience.js?v=20261025-presen-1210-responsive-r1" defer></script><link rel="stylesheet" href="app/experience.css?v=20261025-presen-1210-responsive-r1">
+    <?php wa_teacher_shell_assets(); ?>
 </head>
 <body class="portal-sheet">
     <button type="button" class="toolbar-toggle-btn" id="toggleToolbarBtn" onclick="toggleToolbar()" aria-controls="topToolbar">⌃ Menu</button>
@@ -602,7 +597,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         window.addEventListener('resize',jadwalkanPenandaHalamanUjian);
         document.addEventListener('input',jadwalkanPenandaHalamanUjian);
         document.addEventListener('change',jadwalkanPenandaHalamanUjian);
-        document.addEventListener('DOMContentLoaded',()=>{
+        window.WAWhenCore(()=>{
             SheetSignatures.install({root:paper, storageKey:storageKey + '-signatures', onChange:jadwalkanPenandaHalamanUjian});
             jadwalkanPenandaHalamanUjian();
             const watched=paper.querySelector('#examTableBlock')||paper;
