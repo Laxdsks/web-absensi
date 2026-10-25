@@ -29,14 +29,19 @@ async function normalizeImage(data,kind='wallpaper'){
  for(let n=0;n<5;n++){canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);const encoded=canvas.toDataURL('image/webp',.9-n*.07);if(encoded.length<=1400000)return encoded;scale*=.8;}
  throw Error('Gambar terlalu besar untuk disinkronkan. Gunakan gambar yang lebih kecil.');
 }
+const stageTickets=new Map();
 async function stage(k,v){
+ const target=record,identity=owner,ticket=(stageTickets.get(k)||0)+1,baseVersion=target?.pending[k]?.baseVersion??target?.versions[k]??0;stageTickets.set(k,ticket);
  if(['presen-brand-image','custom_bg_wallpaper'].includes(k)&&v)v=await normalizeImage(v,k==='presen-brand-image'?'brand':'wallpaper');
+ if(owner!==identity||record!==target||stageTickets.get(k)!==ticket)return;
  if(record.pending[k]?.value===v||!record.pending[k]&&((record.settings[k]??null)===v))return;
- record.pending[k]={value:v,baseVersion:record.pending[k]?.baseVersion??record.versions[k]??0,serial:++pendingSerial};
+ record.pending[k]={value:v,baseVersion,serial:++pendingSerial};
 }
-async function capture(){
+let captureChain=Promise.resolve();
+function capture(){const task=captureChain.catch(()=>{}).then(captureNow);captureChain=task;return task;}
+async function captureNow(){
  if(!ready||applying||!record)return;const mine=owner,keys=[...dirty];dirty.clear();
- for(const k of keys){let v=value(k);if(k==='custom_bg_wallpaper'&&value('custom_bg_wallpaper_db')==='1')v=await WA.get('wallpaper-source')||v;if(mine!==owner)return;await stage(k,v);}
+ for(const k of keys){let v=value(k);if(k==='custom_bg_wallpaper'&&value('custom_bg_wallpaper_db')==='1')v=await WA.get('wallpaper-source')||v;if(mine!==owner)return;await stage(k,v);if(mine!==owner)return;}
  await persist();status();
 }
 function combined(){return {...record?.settings,...Object.fromEntries(Object.entries(record?.pending||{}).map(([k,p])=>[k,p.value]))};}
