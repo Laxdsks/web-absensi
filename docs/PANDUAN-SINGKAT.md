@@ -39,3 +39,8 @@ Tema, warna utama, logo aplikasi/kampus, wallpaper, ukuran logo, serta skala dan
 Untuk gambar lama yang hanya ada di laptop, buka kembali web di laptop tersebut saat online setelah pembaruan. Pengaturan lama yang dapat dikaitkan ke akun itu akan diambil tanpa perlu mengunggah ulang. Setelah status tersimpan di akun muncul, buka ulang web pada HP dengan akun yang sama. Gambar yang sudah terhapus dari penyimpanan laptop tidak dapat dipulihkan dari server jika belum pernah tersinkron.
 
 Penghapusan wallpaper dan pemulihan logo bawaan ikut disinkronkan. Perubahan pada pengaturan yang berbeda dari dua perangkat dapat digabung; jika pengaturan yang sama berubah bersamaan, menu Tampilan menyediakan pilihan salinan perangkat atau salinan akun. Logo pada kop lembar absen/ujian tersimpan bersama kelas dan mata kuliah lembar tersebut. Akun dosen lain dan mahasiswa tidak mendapatkan gambar tampilan pribadi dosen.
+
+
+### Ukuran tanggal seragam
+
+Pada **Tanggal pertemuan**, ukuran huruf tanggal berlaku untuk **semua pertemuan** secara bawaan. Ketik misalnya **5 pt**, lalu tekan **Simpan tanggal**. Angka tanggal pertemuan lain dan kolom baru akan mengikuti ukuran itu, tanpa mengubah ukuran kotak tabel. Nilai ukuran tetap dibawa saat berpindah pilihan pertemuan dalam dialog. Lepaskan **Ukuran seragam untuk semua pertemuan** bila ingin membuat pengecualian hanya pada satu pertemuan. Tanggal, warna, dan format lain pada pertemuan yang berbeda tetap dipertahankan.
