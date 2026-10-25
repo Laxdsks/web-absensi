@@ -158,7 +158,7 @@ if ($stmt) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data & Manajemen Mahasiswa - <?php echo htmlspecialchars($kelas); ?></title>
-    <script src="assets/app-audio.js?v=20261025-presen-1210-courses-r1" defer></script>
+    <script src="assets/app-audio.js?v=20261025-presen-1210-appearance-r1" defer></script>
     <link rel="stylesheet" href="app/vendor/fontawesome/css/all.min.css">
     <link href="app/vendor/jakarta/400.css" rel="stylesheet"><link href="app/vendor/jakarta/500.css" rel="stylesheet"><link href="app/vendor/jakarta/600.css" rel="stylesheet"><link href="app/vendor/jakarta/700.css" rel="stylesheet">
     <style>
@@ -374,11 +374,11 @@ if ($stmt) {
         }
     </style>
     <script src="app/vendor/tesseract.min.js" defer></script>
-<script src="assets/native-export.js?v=20261025-presen-1210-courses-r1" defer></script>
-    <script src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-courses-r1" defer></script>
-<link rel="stylesheet" href="app/guide.css?v=20261025-presen-1210-courses-r1"><script src="app/guide.js?v=20261025-presen-1210-courses-r1" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261025-presen-1210-courses-r1"><script src="app/portal.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/appearance.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/workspace.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/account-tools.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/inbox.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/grade-assistant.js?v=20261025-presen-1210-courses-r1" defer></script>
-<script src="app/evidence.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/monitoring.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/experience.js?v=20261025-presen-1210-courses-r1" defer></script><link rel="stylesheet" href="app/experience.css?v=20261025-presen-1210-courses-r1">
+<script src="assets/native-export.js?v=20261025-presen-1210-appearance-r1" defer></script>
+    <script src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<link rel="stylesheet" href="app/guide.css?v=20261025-presen-1210-appearance-r1"><script src="app/guide.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261025-presen-1210-appearance-r1"><script src="app/portal.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/teacher-appearance.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/workspace.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/account-tools.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/inbox.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/grade-assistant.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<script src="app/evidence.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/monitoring.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/experience.js?v=20261025-presen-1210-appearance-r1" defer></script><link rel="stylesheet" href="app/experience.css?v=20261025-presen-1210-appearance-r1">
 </head>
 <body class="portal-data">
     <div class="toast-container" id="toastContainer"></div>

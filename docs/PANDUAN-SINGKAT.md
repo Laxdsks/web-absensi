@@ -30,3 +30,12 @@ Pilih kelas, tahun akademik, dan periode yang benar, lalu pilih **Mata kuliah** 
 Gunakan **Kelola → Tambah & gunakan** untuk mengetik mata kuliah baru. Pilihan yang sama dipakai di data mahasiswa, lembar absen, lembar ujian, dan rekap nilai. Nama baru juga bisa diketik di formulir sesi QR. Setiap mata kuliah memiliki sesi, tanggal, kehadiran, dan nilai sendiri; daftar mahasiswa tetap mengikuti kelas.
 
 **Hapus** di menu Kelola hanya menghapus pilihan dari daftar, bukan absen/nilainya. Tambahkan nama yang sama jika ingin membukanya kembali. Saat offline, pilihan disimpan di perangkat dan dikirim setelah online; tunggu status sinkronisasi selesai sebelum membuka dari perangkat lain.
+
+
+### Tampilan akun di perangkat lain
+
+Tema, warna utama, logo aplikasi/kampus, wallpaper, ukuran logo, serta skala dan posisi wallpaper disimpan khusus di akun dosen. Buka **Tampilan** untuk mengubahnya; status **Tampilan tersimpan di akun** menandakan pengaturan sudah tersedia di perangkat lain. Saat offline, perubahan ditahan di perangkat dan disinkronkan setelah tersambung. **Sinkronkan tampilan** dapat dipakai untuk memeriksa perubahan terbaru.
+
+Untuk gambar lama yang hanya ada di laptop, buka kembali web di laptop tersebut saat online setelah pembaruan. Pengaturan lama yang dapat dikaitkan ke akun itu akan diambil tanpa perlu mengunggah ulang. Setelah status tersimpan di akun muncul, buka ulang web pada HP dengan akun yang sama. Gambar yang sudah terhapus dari penyimpanan laptop tidak dapat dipulihkan dari server jika belum pernah tersinkron.
+
+Penghapusan wallpaper dan pemulihan logo bawaan ikut disinkronkan. Perubahan pada pengaturan yang berbeda dari dua perangkat dapat digabung; jika pengaturan yang sama berubah bersamaan, menu Tampilan menyediakan pilihan salinan perangkat atau salinan akun. Logo pada kop lembar absen/ujian tersimpan bersama kelas dan mata kuliah lembar tersebut. Akun dosen lain dan mahasiswa tidak mendapatkan gambar tampilan pribadi dosen.
