@@ -9,7 +9,6 @@ function teacherCore(){return fs.readFileSync(path.join(root,'app/core.js'),'utf
 // These generated public entry points retain one source for each implementation.
 for(const file of fs.readdirSync(path.join(root,'app')))if(/^(runtime-teacher|core)-[0-9].*\.js$/.test(file))fs.unlinkSync(path.join(root,'app',file));
 fs.writeFileSync(path.join(root,'app','core-'+version+'.js'),fs.readFileSync(path.join(root,'app/core.js')));
-fs.writeFileSync(path.join(root,'app','runtime-teacher-'+version+'.js'),['app/core.js','app/teacher-performance.js','app/teacher-preferences.js','app/courses.js','assets/offline-bridge.js','app/meeting-picker.js','assets/teacher-tools.js','app/class-invites.js','app/icon-settings.js'].map(file=>(file==='app/core.js'?teacherCore():fs.readFileSync(path.join(root,file),'utf8'))).join('\n;\n'));
 // The teacher variant exposes an account reload hook without changing student APK assets.
 const appearance=fs.readFileSync(path.join(root,'app/appearance.js'),'utf8'),appearanceExport='window.PresenAppearance={open,apply,ready:appearanceReady};';
 if(!appearance.includes(appearanceExport))throw Error('Update the teacher appearance adapter for the shared export.');
@@ -18,7 +17,8 @@ fs.writeFileSync(path.join(root,'app/teacher-appearance.js'),appearance.replace(
 const guide=fs.readFileSync(path.join(root,'app/guide.js'),'utf8'),guideSplit=guide.indexOf(",host=document.createElement('div');");
 if(guideSplit<0)throw Error('Update the teacher guide adapter for the shared chapter catalogue.');
 fs.writeFileSync(path.join(root,'app/teacher-guide.js'),guide.slice(0,guideSplit)+';\n'+fs.readFileSync(path.join(root,'app/teacher-guide-tour.js'),'utf8')+'\n})();\n');
-for(const file of ['index.php','data_siswa.php','absen.php','ujian.php','music_player.php','app/index.html','app-sw.js']){const target=path.join(root,file);fs.writeFileSync(target,fs.readFileSync(target,'utf8').replace(/(runtime-teacher|core)-\d+\.\d+\.\d+\.js/g,(_,name)=>name+'-'+version+'.js'));}
+for(const file of ['index.php','data_siswa.php','absen.php','ujian.php','music_player.php','app_core.php','app/index.html','app-sw.js']){const target=path.join(root,file);fs.writeFileSync(target,fs.readFileSync(target,'utf8').replace(/(runtime-teacher|core)-\d+\.\d+\.\d+\.js/g,(_,name)=>name+'-'+version+'.js'));}
+require('./build-teacher-bundle.cjs').build(version,teacherCore);
 // Teacher pages must request one coherent set of layout assets after deployment.
 const build=fs.readFileSync(path.join(root,'app_core.php'),'utf8').match(/const WA_BUILD = '([^']+)'/)[1];
 require('./build-teacher-worker.cjs')(build);
