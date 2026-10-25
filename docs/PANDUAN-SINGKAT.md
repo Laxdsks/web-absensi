@@ -21,3 +21,12 @@ Seret titik di atas ikon untuk memindahkannya. Tekan **›** untuk memperkecil m
 3. Jika offline, tunjukkan QR balasan kepada dosen. Tombol QR tersimpan dapat membuka kembali balasan ketika halaman ditutup. Periksa riwayat dan sinkronkan ketika internet kembali.
 
 Panduan pada Presen Go hanya berisi kegiatan mahasiswa. Data akun dan penyimpanan pribadi aplikasi lama tidak dihapus oleh pemasangan baru. Sinkronkan aplikasi lama sebelum pindah perangkat; pemindahan otomatis data privat antaraplikasi dibatasi Android. Lihat ANDROID-2.md untuk batas pemulihan dan penyimpanan kunci.
+
+
+### Mata kuliah tersimpan di akun
+
+Pilih kelas, tahun akademik, dan periode yang benar, lalu pilih **Mata kuliah** pada beranda atau pita alat. Daftar dan pilihan terakhir tersimpan khusus untuk akun dosen dan kelas tersebut. Mata kuliah yang sudah memiliki sesi atau lembar tersimpan muncul otomatis; perangkat baru akan membukanya setelah login dan sinkronisasi.
+
+Gunakan **Kelola → Tambah & gunakan** untuk mengetik mata kuliah baru. Pilihan yang sama dipakai di data mahasiswa, lembar absen, lembar ujian, dan rekap nilai. Nama baru juga bisa diketik di formulir sesi QR. Setiap mata kuliah memiliki sesi, tanggal, kehadiran, dan nilai sendiri; daftar mahasiswa tetap mengikuti kelas.
+
+**Hapus** di menu Kelola hanya menghapus pilihan dari daftar, bukan absen/nilainya. Tambahkan nama yang sama jika ingin membukanya kembali. Saat offline, pilihan disimpan di perangkat dan dikirim setelah online; tunggu status sinkronisasi selesai sebelum membuka dari perangkat lain.
