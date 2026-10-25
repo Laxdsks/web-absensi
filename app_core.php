@@ -1,7 +1,21 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261025-presen-129-r1';
+const WA_BUILD = '20261025-presen-1210-r1';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
+
+function wa_teacher_startup_head(): void {
+    echo <<<'HTML'
+<script>document.documentElement.classList.add('presen-workspace-loading');document.documentElement.dataset.teacherPageState='loading';setTimeout(()=>{if(document.documentElement.dataset.teacherPageState==='ready')return;if(window.PresenTeacherStartup){PresenTeacherStartup.fail();return;}const box=document.createElement('main');box.id='presenTeacherRecovery';box.innerHTML='<h1>Halaman belum selesai dimuat</h1><p>Muat ulang untuk mencoba kembali.</p><button type="button">Muat ulang halaman</button>';box.querySelector('button').onclick=()=>location.reload();(document.body||document.documentElement).append(box);document.getElementById('introOverlay')?.remove();document.documentElement.dataset.teacherPageState='error';},20000);</script>
+<style id="presenTeacherStartupStyle">
+html.presen-workspace-loading body>:not(#introOverlay):not(#authOverlay):not(#presenTeacherRecovery):not(script):not(style),html.presen-workspace-loading body>:not(#introOverlay):not(#authOverlay):not(#presenTeacherRecovery):not(script):not(style) *{visibility:hidden!important}
+html.presen-workspace-loading #authOverlay .auth-card{visibility:hidden!important}
+html[data-teacher-page-state=ready] .portal-data .content-card{animation:none!important}
+#presenTeacherRecovery{visibility:visible!important;position:fixed;inset:0;z-index:2147483600;background:#102538;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;font:16px/1.5 system-ui,sans-serif}
+#presenTeacherRecovery h1{font-size:22px}#presenTeacherRecovery button{padding:12px 20px;border:0;border-radius:8px;background:#fff;color:#102538;font:600 16px system-ui;cursor:pointer}
+</style>
+<script src="app/teacher-startup.js"></script>
+HTML;
+}
 
 function wa_db(): mysqli {
     static $db;

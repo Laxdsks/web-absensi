@@ -94,7 +94,7 @@
         applicationFrame.name = 'absensi_music_application_content';
         applicationFrame.title = 'Halaman aplikasi absensi';
         applicationFrame.hidden = true;
-        applicationFrame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff;z-index:2147483000';
+        applicationFrame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;background:var(--p-bg,#102538);z-index:2147483000';
         applicationFrame.addEventListener('load', () => {
             try {
                 const destination = applicationDestination(applicationFrame.contentWindow.location.href);

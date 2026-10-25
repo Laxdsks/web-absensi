@@ -2,7 +2,7 @@
 (()=>{
 'use strict';
 if(!window.PresenUI||document.getElementById('main'))return;
-const page=location.pathname.split('/').pop(),pages={
+const page=location.pathname.split('/').pop()||'index.php',pages={
  'index.php':['Beranda','grid','Klik untuk membuka halaman awal.'],
  'data_siswa.php':['Data mahasiswa','users','Atur, impor, dan koreksi daftar mahasiswa kelas ini.'],
  'absen.php':['Lembar absen','sheet','Isi kehadiran, kelola QR, dan buka rekap nilai.'],
