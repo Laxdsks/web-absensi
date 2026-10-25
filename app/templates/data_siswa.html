@@ -354,7 +354,20 @@ window.addEventListener('pageshow',e=>{if(e.persisted&&finished){unhide();docume
 
 #paperSheet #tabelAbsen .wa-date-label{position:absolute;z-index:2;left:50%;top:50%;display:block;white-space:nowrap;line-height:1.15;font-size:var(--wa-date-font,6px)!important;transform:translate(-50%,-50%) rotate(-45deg);transform-origin:center;pointer-events:none;text-decoration:inherit}
 .sheet-date-dialog .date-size-sync{display:flex;gap:10px;align-items:center}.sheet-date-dialog .date-size-sync input{width:20px;min-height:20px;flex:none}
+.wa-print-grid{display:none!important}
 @media print {
+ [data-wa-print-grid-host]{position:relative}
+ .wa-print-grid{display:block!important;position:absolute;left:0;top:0;overflow:visible;z-index:4;pointer-events:none}
+ /* The recap uses A4 landscape with 10 mm margins. Give it that physical
+    width before measuring cells, rather than the browser viewport width. */
+ body.cetak-rekap #rekapModalOverlay{width:277mm!important;max-width:277mm!important}
+ body.cetak-rekap #rekapModalOverlay .rekap-modal-content{transform:none!important;animation:none!important;transition:none!important}
+ #paperSheet #tabelAbsen th.date-entry:focus{outline:none!important}
+ #tabelRekapNilai tbody>tr,#examTableBlock tbody>tr,#examScaleBlock tbody>tr{break-inside:avoid!important;page-break-inside:avoid!important}
+ body.cetak-rekap #tabelRekapNilai{border-collapse:separate!important;border-spacing:0!important;border:0!important}
+ body.cetak-rekap #tabelRekapNilai th,body.cetak-rekap #tabelRekapNilai td{border:0!important;border-right:1px solid #000!important;border-bottom:1px solid #000!important}
+ body.cetak-rekap #tabelRekapNilai thead>tr:first-child>th{border-top:1px solid #000!important}
+ body.cetak-rekap #tabelRekapNilai thead>tr:first-child>th:first-child,body.cetak-rekap #tabelRekapNilai tbody>tr>td:first-child{border-left:1px solid #000!important}
  /* Separate painted edges survive Chromium page fragmentation and positioned date labels. */
  #paperSheet #tabelAbsen{border-collapse:separate!important;border-spacing:0!important;border:0!important}
  #paperSheet #tabelAbsen th,#paperSheet #tabelAbsen td{border:0!important;border-right:1px solid #000!important;border-bottom:1px solid #000!important;background:#fff!important}
@@ -836,7 +849,7 @@ html[data-theme] .portal-sheet #topToolbar.p-ribbon { position:fixed; top:8px; }
 /* Informational toasts must not intercept menu clicks underneath them. */
 .toast-container,.toast-container .toast{pointer-events:none}
 .toast-container .p-toast-close{pointer-events:auto}
-</style><script data-teacher-bundle src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-visible-shell-r1" defer></script></head>
+</style><script data-teacher-bundle src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-print-grid-r1" defer></script></head>
 <body class="portal-data">
     <div class="toast-container" id="toastContainer"></div>
     <div class="container">

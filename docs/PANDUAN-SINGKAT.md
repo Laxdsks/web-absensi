@@ -41,9 +41,9 @@ Untuk gambar lama yang hanya ada di laptop, buka kembali web di laptop tersebut 
 Penghapusan wallpaper dan pemulihan logo bawaan ikut disinkronkan. Perubahan pada pengaturan yang berbeda dari dua perangkat dapat digabung; jika pengaturan yang sama berubah bersamaan, menu Tampilan menyediakan pilihan salinan perangkat atau salinan akun. Logo pada kop lembar absen/ujian tersimpan bersama kelas dan mata kuliah lembar tersebut. Akun dosen lain dan mahasiswa tidak mendapatkan gambar tampilan pribadi dosen.
 
 
-### Ukuran tanggal seragam
+### Format tanggal seragam
 
-Pada **Tanggal pertemuan**, ukuran huruf tanggal berlaku untuk **semua pertemuan** secara bawaan. Ketik misalnya **5 pt**, lalu tekan **Simpan tanggal**. Angka tanggal pertemuan lain dan kolom baru akan mengikuti ukuran itu, tanpa mengubah ukuran kotak tabel. Nilai ukuran tetap dibawa saat berpindah pilihan pertemuan dalam dialog. Lepaskan **Ukuran seragam untuk semua pertemuan** bila ingin membuat pengecualian hanya pada satu pertemuan. Tanggal, warna, dan format lain pada pertemuan yang berbeda tetap dipertahankan.
+Pada **Tanggal pertemuan**, ukuran, warna, tebal, miring dan garis bawah berlaku untuk **semua pertemuan**, termasuk kolom baru. Ketik misalnya **5 pt**, pilih format, lalu tekan **Simpan tanggal**. Format yang belum disimpan tetap dibawa saat berpindah pilihan pertemuan dalam dialog. Isi tanggal tiap pertemuan tetap berbeda. Tombol B, I, U dan warna di bilah alat juga mengubah seluruh tanggal saat kotak tanggal dipilih. Ukuran kotak tabel tidak berubah.
 
 
 ### Logo utama di semua halaman
