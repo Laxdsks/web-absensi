@@ -124,10 +124,10 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
     <?php wa_teacher_startup_head(); ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="assets/app-audio.js?v=20261025-presen-1210-courses-r1" defer></script>
-    <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261025-presen-1210-courses-r1">
-    <script src="assets/sheet-signatures.js?v=20261025-presen-1210-courses-r1" defer></script>
-    <script src="assets/sheet-spacing.js?v=20261025-presen-1210-courses-r1" defer></script>
+    <script src="assets/app-audio.js?v=20261025-presen-1210-appearance-r1" defer></script>
+    <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261025-presen-1210-appearance-r1">
+    <script src="assets/sheet-signatures.js?v=20261025-presen-1210-appearance-r1" defer></script>
+    <script src="assets/sheet-spacing.js?v=20261025-presen-1210-appearance-r1" defer></script>
     <title>Lembar Daftar Hadir & Rekap Nilai - S1 <?php echo htmlspecialchars($kelas_lama); ?> - <?php echo htmlspecialchars($semester_lama); ?></title>
     <link rel="stylesheet" href="app/vendor/fontawesome/css/all.min.css">
     <link href="app/vendor/jakarta/400.css" rel="stylesheet"><link href="app/vendor/jakarta/500.css" rel="stylesheet"><link href="app/vendor/jakarta/600.css" rel="stylesheet"><link href="app/vendor/jakarta/700.css" rel="stylesheet">
@@ -492,17 +492,17 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         @media (max-width:700px),(hover:none) { .hide-toolbar-inline { display:none !important; } }
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
    </style>
-<script src="assets/native-export.js?v=20261025-presen-1210-courses-r1" defer></script>
-    <script src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-courses-r1" defer></script>
-    <link rel="stylesheet" href="assets/teacher-tools.css?v=20261025-presen-1210-courses-r1">
+<script src="assets/native-export.js?v=20261025-presen-1210-appearance-r1" defer></script>
+    <script src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-appearance-r1" defer></script>
+    <link rel="stylesheet" href="assets/teacher-tools.css?v=20261025-presen-1210-appearance-r1">
     <script src="app/vendor/qr.js" defer></script>
     <script src="app/vendor/scan.js" defer></script>
-    <script src="app/qr-files.js?v=20261025-presen-1210-courses-r1" defer></script>
-<link rel="stylesheet" href="app/guide.css?v=20261025-presen-1210-courses-r1"><script src="app/guide.js?v=20261025-presen-1210-courses-r1" defer></script>
-<link rel="stylesheet" href="assets/sheet-fit.css?v=20261025-presen-1210-courses-r1"><script src="assets/sheet-fit.js?v=20261025-presen-1210-courses-r1" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261025-presen-1210-courses-r1"><script src="app/portal.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/appearance.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/workspace.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/inbox.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/grade-assistant.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/locations.js?v=20261025-presen-1210-courses-r1" defer></script>
-<script src="app/account-tools.js?v=20261025-presen-1210-courses-r1" defer></script>
-<script src="app/evidence.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/monitoring.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/experience.js?v=20261025-presen-1210-courses-r1" defer></script><link rel="stylesheet" href="app/experience.css?v=20261025-presen-1210-courses-r1">
+    <script src="app/qr-files.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<link rel="stylesheet" href="app/guide.css?v=20261025-presen-1210-appearance-r1"><script src="app/guide.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<link rel="stylesheet" href="assets/sheet-fit.css?v=20261025-presen-1210-appearance-r1"><script src="assets/sheet-fit.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261025-presen-1210-appearance-r1"><script src="app/portal.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/teacher-appearance.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/workspace.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/inbox.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/grade-assistant.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/locations.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<script src="app/account-tools.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<script src="app/evidence.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/monitoring.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/experience.js?v=20261025-presen-1210-appearance-r1" defer></script><link rel="stylesheet" href="app/experience.css?v=20261025-presen-1210-appearance-r1">
 </head>
 <body class="portal-sheet">
 
@@ -1264,13 +1264,14 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             const file = event.target.files[0];
             if(file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = async function(e) {
                     const img = document.getElementById(imgId);
-                    img.src = e.target.result;
+                    try{img.src = await window.PresenTeacherPreferences.normalizeImage(e.target.result,'brand');}catch(error){showCustomModal('Logo belum disimpan',error.message);return;}
                     img.style.display = 'block';
                     document.getElementById(iconId).style.display = 'none';
                     document.getElementById(btnHapusId).style.display = 'inline-block';
                     img.closest('.logo-box').classList.add('has-image');
+                    document.dispatchEvent(new Event('sheet-logo-changed'));
                 }
                 reader.readAsDataURL(file);
             }
@@ -1284,6 +1285,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             document.getElementById(iconId).style.display = 'block';
             document.getElementById(btnHapusId).style.display = 'none';
             img.closest('.logo-box').classList.remove('has-image');
+            document.dispatchEvent(new Event('sheet-logo-changed'));
         }
 
         function aturUkuranLogo(delta) {

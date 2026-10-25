@@ -62,6 +62,8 @@ try {
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
+    if($action==='appearance-read'){wa_teacher($device);wa_response(['status'=>'success','appearance'=>wa_appearance_read($device)]);}
+    if($action==='appearance-save')wa_response(wa_appearance_save($device,$input));
     if($action==='create-class-invite')wa_response(['status'=>'success','invite'=>wa_create_class_invite($device,$input)]);
     if($action==='update-teacher-profile'){wa_teacher($device);wa_save_teacher_identity($device['account_id'],(string)($input['name']??''),(string)($input['title']??''));wa_response(['status'=>'success','teacher'=>wa_teacher_account($device['account_id'])]);}
     if($action==='resolve-session-qr'){

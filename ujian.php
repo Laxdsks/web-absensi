@@ -133,10 +133,10 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="app-build" content="exam-20261009-blank-fields-v2">
-    <script src="assets/app-audio.js?v=20261025-presen-1210-courses-r1" defer></script>
-    <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261025-presen-1210-courses-r1">
-    <script src="assets/sheet-signatures.js?v=20261025-presen-1210-courses-r1" defer></script>
-    <script src="assets/sheet-spacing.js?v=20261025-presen-1210-courses-r1" defer></script>
+    <script src="assets/app-audio.js?v=20261025-presen-1210-appearance-r1" defer></script>
+    <link rel="stylesheet" href="assets/sheet-signatures.css?v=20261025-presen-1210-appearance-r1">
+    <script src="assets/sheet-signatures.js?v=20261025-presen-1210-appearance-r1" defer></script>
+    <script src="assets/sheet-spacing.js?v=20261025-presen-1210-appearance-r1" defer></script>
     <title>Lembar Ujian - <?php echo $escape($kelas_lama . ' / ' . $semester_lama); ?></title>
     <link rel="stylesheet" href="app/vendor/fontawesome/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -275,12 +275,12 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         @media(max-width:700px),(hover:none) { .hide-toolbar-inline { display:none !important; } }
         @media print { #toggleToolbarBtn,#inspectorToggleBtn { display:none !important; } }
     </style>
-<script src="assets/native-export.js?v=20261025-presen-1210-courses-r1" defer></script>
-    <script src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-courses-r1" defer></script>
-<link rel="stylesheet" href="app/guide.css?v=20261025-presen-1210-courses-r1"><script src="app/guide.js?v=20261025-presen-1210-courses-r1" defer></script>
-<link rel="stylesheet" href="assets/sheet-fit.css?v=20261025-presen-1210-courses-r1"><script src="assets/sheet-fit.js?v=20261025-presen-1210-courses-r1" defer></script>
-<link rel="stylesheet" href="app/portal.css?v=20261025-presen-1210-courses-r1"><script src="app/portal.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/appearance.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/workspace.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/account-tools.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/inbox.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/grade-assistant.js?v=20261025-presen-1210-courses-r1" defer></script>
-<script src="app/evidence.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/monitoring.js?v=20261025-presen-1210-courses-r1" defer></script><script src="app/experience.js?v=20261025-presen-1210-courses-r1" defer></script><link rel="stylesheet" href="app/experience.css?v=20261025-presen-1210-courses-r1">
+<script src="assets/native-export.js?v=20261025-presen-1210-appearance-r1" defer></script>
+    <script src="app/runtime-teacher-1.2.10.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<link rel="stylesheet" href="app/guide.css?v=20261025-presen-1210-appearance-r1"><script src="app/guide.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<link rel="stylesheet" href="assets/sheet-fit.css?v=20261025-presen-1210-appearance-r1"><script src="assets/sheet-fit.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<link rel="stylesheet" href="app/portal.css?v=20261025-presen-1210-appearance-r1"><script src="app/portal.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/teacher-appearance.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/workspace.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/account-tools.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/inbox.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/grade-assistant.js?v=20261025-presen-1210-appearance-r1" defer></script>
+<script src="app/evidence.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/monitoring.js?v=20261025-presen-1210-appearance-r1" defer></script><script src="app/experience.js?v=20261025-presen-1210-appearance-r1" defer></script><link rel="stylesheet" href="app/experience.css?v=20261025-presen-1210-appearance-r1">
 </head>
 <body class="portal-sheet">
     <button type="button" class="toolbar-toggle-btn" id="toggleToolbarBtn" onclick="toggleToolbar()" aria-controls="topToolbar">⌃ Menu</button>
@@ -880,7 +880,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 if (!file) return;
                 if (!file.type.startsWith('image/')) { alert('Pilih berkas gambar untuk logo.'); return; }
                 const reader = new FileReader();
-                reader.onload = () => { setLogo(slot.id, reader.result); saveLogo(slot.id, reader.result); };
+                reader.onload = async () => { try{const data=await window.PresenTeacherPreferences.normalizeImage(reader.result,'brand');setLogo(slot.id,data);saveLogo(slot.id,data);document.dispatchEvent(new Event('sheet-logo-changed'));}catch(error){alert(error.message);} };
                 reader.readAsDataURL(file);
             });
             remove.addEventListener('click', event => {
@@ -889,7 +889,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 if (image.dataset.defaultSrc) { setLogo(slot.id, image.dataset.defaultSrc); remove.hidden = true; }
                 else { image.removeAttribute('src'); image.hidden = true; slot.querySelector('i').hidden = false; slot.classList.remove('has-logo'); }
                 input.value = '';
-                try { const saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); if (saved.logos) delete saved.logos[slot.id]; localStorage.setItem(storageKey, JSON.stringify(saved)); } catch (error) {}
+                try { const saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); if (saved.logos) delete saved.logos[slot.id]; localStorage.setItem(storageKey, JSON.stringify(saved));document.dispatchEvent(new Event('sheet-logo-changed')); } catch (error) {}
             });
         });
         function pilihElemen(event, el) {

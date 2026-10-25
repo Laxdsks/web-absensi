@@ -1,6 +1,6 @@
 <?php
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261025-presen-1210-courses-r1';
+const WA_BUILD = '20261025-presen-1210-appearance-r1';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_teacher_startup_head(): void {
@@ -13,7 +13,7 @@ html[data-teacher-page-state=ready] .portal-data .content-card{animation:none!im
 #presenTeacherRecovery{visibility:visible!important;position:fixed;inset:0;z-index:2147483600;background:#102538;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;font:16px/1.5 system-ui,sans-serif}
 #presenTeacherRecovery h1{font-size:22px}#presenTeacherRecovery button{padding:12px 20px;border:0;border-radius:8px;background:#fff;color:#102538;font:600 16px system-ui;cursor:pointer}
 </style>
-<script src="app/teacher-startup.js?v=20261025-presen-1210-courses-r1"></script>
+<script src="app/teacher-startup.js?v=20261025-presen-1210-appearance-r1"></script>
 HTML;
 }
 
@@ -295,9 +295,11 @@ function wa_snapshot(array $device): array {
     foreach($documents as &$row) { $row['ctx']=json_decode($row['ctx'],true); $row['content']=json_decode($row['content'],true); $row['revision']=(int)$row['revision']; } unset($row);
     foreach($registrations as &$row) { $row['ctx']=json_decode($row['ctx'],true); $row['approved']=(bool)$row['approved']; } unset($row);
     $catalogue=wa_courses_snapshot($device,$sessions,$documents);
+    $catalogue['appearance']=wa_appearance_read($device,true);
     $epoch=wa_student_data_epoch();
     return $catalogue+['tag'=>hash('sha256',wa_json([$profile['device'],$profile['account'],$roster,$sessions,$marks,$documents,$registrations,$catalogue,$epoch])),'profile'=>$profile,'roster'=>$roster,'sessions'=>$sessions,'marks'=>$marks,'documents'=>$documents,'registrations'=>$registrations,'resetEpoch'=>$epoch,'serverTime'=>wa_now(),'build'=>WA_BUILD];
 }
 function wa_audit(array $device,string $action,string $reference,array $details): void { wa_query('INSERT INTO wa_audit(device_id,action,reference_id,details,created_at) VALUES(?,?,?,?,?)',[$device['id'],$action,$reference,wa_json($details),wa_now()]); }
 
 require_once __DIR__.'/app_courses.php';
+require_once __DIR__.'/app_preferences.php';
