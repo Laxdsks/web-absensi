@@ -1,0 +1,32 @@
+html:not([data-wa-show-status="1"]) #waStatus{display:none!important}
+.wa-teacher-guide{position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;overflow:visible;background:transparent;pointer-events:none;z-index:2147483000;color:#183149;font:14px/1.5 system-ui,sans-serif;text-align:left;isolation:isolate}
+.wa-teacher-guide *{box-sizing:border-box;transition:none!important;animation:none!important;font-family:system-ui,sans-serif}
+.wa-teacher-guide [hidden]{display:none!important}
+.wa-teacher-guide button,.wa-teacher-guide select{font:inherit;cursor:pointer;touch-action:manipulation}
+.wa-teacher-guide button:focus-visible,.wa-teacher-guide select:focus-visible{outline:3px solid #3996e8;outline-offset:2px}
+.wa-teacher-guide .wa-guide-shade,.wa-teacher-guide .wa-guide-arrow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.wa-teacher-guide .wa-guide-shade{fill:#031827c9}
+.wa-teacher-guide .wa-guide-target{position:fixed;border:2px solid #fff;border-radius:7px;box-shadow:0 0 0 3px #4abdfd88;pointer-events:none}
+.wa-teacher-guide .wa-guide-dock{position:fixed;right:0;display:flex;flex-direction:column;pointer-events:auto;background:#fff;border:1px solid #becbd7;border-right:0;border-radius:12px 0 0 12px;box-shadow:0 2px 8px #0002;overflow:hidden}
+.wa-teacher-guide .wa-guide-dock button{border:0;background:#fff;color:#15344e;min-width:34px;min-height:36px;padding:4px;font-weight:700}
+.wa-teacher-guide .wa-guide-dock .wa-guide-grip{min-height:18px;cursor:ns-resize;touch-action:none;color:#728397}
+.wa-teacher-guide .wa-guide-dock.is-small{width:14px}.wa-teacher-guide .wa-guide-dock.is-small .wa-guide-grip,.wa-teacher-guide .wa-guide-dock.is-small .wa-guide-hide{display:none}.wa-teacher-guide .wa-guide-dock.is-small button{width:14px;min-width:14px;padding:0;min-height:48px;font-size:11px}
+.wa-guide-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#169367;margin-left:3px}.wa-guide-dot.pending{background:#d97706}
+.wa-teacher-guide .wa-guide-panel{position:fixed;pointer-events:auto;background:#fff;color:#183149;border:1px solid #cedbe6;border-radius:15px;box-shadow:0 12px 32px #0003;padding:15px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;max-width:calc(100vw - 24px);text-align:left}
+.wa-teacher-guide .wa-guide-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px;font-size:10px;font-weight:750;letter-spacing:.08em;color:#346485}
+.wa-teacher-guide .wa-guide-close{background:#eef4f8;border:0;border-radius:8px;font-size:24px;line-height:1;min-width:36px;min-height:36px;color:#183149;padding:0}
+.wa-teacher-guide .wa-guide-topic-label{display:block;margin:0;color:#52697c;font-size:11px;line-height:1.5}
+.wa-teacher-guide select{display:block;width:100%;min-height:40px;margin:4px 0 0;padding:7px 9px;border:1px solid #d5e1eb;border-radius:8px;background:#f7fafc;color:#183149;font-size:12px}
+.wa-teacher-guide .wa-guide-progress{height:3px;border-radius:3px;background:#e7eef4;margin:12px 0}.wa-teacher-guide .wa-guide-progress span{display:block;height:100%;background:#168cce;border-radius:3px}
+.wa-teacher-guide h3{margin:0 0 6px;font-size:18px;line-height:1.35;letter-spacing:-.02em;color:#123b56;font-weight:750;outline:none}
+.wa-teacher-guide p{margin:0;font-size:13px;line-height:1.55;color:#304c60;overflow-wrap:anywhere}
+.wa-teacher-guide .wa-guide-hint{margin-top:8px;padding:8px;border-radius:7px;background:#f0f5f9;font-size:11px}
+.wa-teacher-guide details{border:0;margin:8px 0 0;padding:0;color:#52697c;font-size:11px;line-height:1.4}.wa-teacher-guide summary{cursor:pointer;padding:6px 0;font-size:11px;font-weight:600}
+.wa-teacher-guide .wa-guide-example img{display:block;width:100%;max-height:120px;object-fit:contain;border:1px solid #dce6ee;border-radius:8px;margin-top:5px;background:#f7fafc}
+.wa-teacher-guide .wa-guide-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 0}
+.wa-teacher-guide .wa-guide-actions button{min-height:40px;border-radius:8px;border:1px solid #d0dde8;padding:8px 12px;font-size:12px;font-weight:650;background:#fff;color:#244b65;white-space:nowrap}
+.wa-teacher-guide .wa-guide-actions button:last-child{background:#1577b4;color:white;border-color:#1577b4}.wa-teacher-guide .wa-guide-actions button:disabled{opacity:.4;cursor:default}
+.wa-teacher-guide .wa-guide-count{font-size:11px;color:#657d91;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wa-teacher-guide .wa-guide-status{border-top:1px solid #e0e9f0;margin-top:10px;padding-top:3px}.wa-teacher-guide .wa-guide-status p,.wa-teacher-guide .wa-guide-status label{font-size:11px;line-height:1.5}.wa-teacher-guide .wa-guide-status label{display:flex;align-items:center;gap:6px;margin:6px 0 0}.wa-teacher-guide input[type=checkbox]{width:16px;height:16px;min-height:0;margin:0;flex:none}
+@media(max-width:500px){.wa-teacher-guide .wa-guide-panel{padding:12px}.wa-teacher-guide h3{font-size:16px}.wa-teacher-guide .wa-guide-progress{margin:9px 0}.wa-teacher-guide .wa-guide-heading{margin-bottom:5px}}
+@media print{.wa-teacher-guide{display:none!important}}
