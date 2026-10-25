@@ -108,5 +108,5 @@ const originalLogout=WA.logout;WA.logout=async(...args)=>{await flush();const pr
 WA.on(()=>{if(!ready||applying)return;void WA.get().then(s=>{if(s.profile?.role!=='teacher'||s.profile.account.id!==owner){void guest();return;}if(Number(s.snapshot.appearance?.revision)>observed)void pull();});});
 window.addEventListener('online',()=>void flush().then(pull));window.addEventListener('focus',()=>void pull());document.addEventListener('visibilitychange',()=>{if(document.hidden)void flush();else void pull();});
 new MutationObserver(()=>{if(document.getElementById('presenAppearanceDialog')&&(!document.getElementById('appearanceAccountSync')||!document.getElementById('pCampusBrand')))status();}).observe(document.body,{childList:true,subtree:true});
-window.PresenTeacherPreferences={prepare,guest,flush,pull,normalizeImage,useCampusBrand,get ready(){return ready;}};
+window.PresenTeacherPreferences={prepare,guest,flush,pull,saveLocal:capture,normalizeImage,useCampusBrand,get ready(){return ready;}};
 })();

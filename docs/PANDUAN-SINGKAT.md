@@ -55,3 +55,9 @@ Logo di samping **Database & Absensi** adalah **Logo aplikasi/kampus** pada menu
 Monitoring membuka prodi, semester, kelas, tahun akademik, periode, dan mata kuliah yang sedang digunakan. **Ganti kelas atau mata kuliah** membuka pilihan berurutan; ringkasan tidak mencampur kelas, semester, tahun, atau mata kuliah yang berbeda. Pilih pertemuan untuk melihat jumlah **Hadir, Sakit, Izin, Tidak hadir**, serta mahasiswa yang belum tercatat pada pertemuan itu. Menekan kartu status menyaring daftar mahasiswa, tanpa mengubah dasar ringkasannya.
 
 Gunakan **Rekap mahasiswa** untuk melihat akumulasi H/S/I/A per mahasiswa dalam kelas dan mata kuliah terpilih. Ketuk mahasiswa untuk membuka riwayat pertemuannya, lalu detail untuk melihat alasan, foto bukti, tinjauan, dan lokasi. Filter tanggal, tinjauan, dan urutan berada pada bagian yang dapat dibuka; **Reset pencarian** mempertahankan pilihan kelas.
+
+### Panduan interaktif dan web di HP
+
+Tekan **Panduan** di lembar atau ikon **?** pada tepi layar. Pilih topik, lalu gunakan **Kembali**, **Lanjut**, dan **Tutup**. Layar diredupkan dan panah menunjuk area yang dijelaskan. Area tetap dapat digunakan; panduan tidak mengirim absensi, mengubah nilai, atau menghapus data. Jika suatu area belum tersedia, buka **Lihat contoh tampilan** dan ikuti persyaratan langkah sebelumnya.
+
+Di HP, pemilih mata kuliah mengikuti tinggi isinya dan daftar mahasiswa memakai baris yang lebih rapat. Saat berpindah halaman, perubahan disimpan di perangkat terlebih dahulu dan sinkronisasi server berjalan di latar. Logo, tema, dan data tetap dipisahkan menurut akun. Transisi singkat mengikuti pengaturan kurangi gerakan pada perangkat.
