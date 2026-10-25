@@ -22,6 +22,25 @@ jar = http.cookiejar.CookieJar()
 client = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
 
 
+def verify_exam_layout(exam):
+    if not all(marker in exam for marker in ("examSupervisorBox", "examLecturerBox", "SheetSignatures.install")):
+        raise RuntimeError("The deployed exam signature blocks or installer are missing.")
+    entry = re.search(r'<script\b[^>]*\bdata-teacher-bundle\b[^>]*\bsrc="([^"]+)"', exam)
+    if not entry:
+        if "sheet-spacing.js" not in exam:
+            raise RuntimeError("The deployed exam spacing helper is missing.")
+        return
+    path = entry.group(1)
+    if not re.fullmatch(r'app/runtime-teacher-\d+\.\d+\.\d+\.js(?:\?[^"<>]*)?', path):
+        raise RuntimeError("Unexpected teacher bundle path.")
+    bundle = request(path)[0]
+    local = ROOT / path.split("?", 1)[0]
+    if hashlib.sha256(bundle).digest() != hashlib.sha256(local.read_bytes()).digest():
+        raise RuntimeError("Deployed teacher bundle does not match the tested revision.")
+    if not all(marker in bundle for marker in (b"/* assets/sheet-signatures.js */", b"/* assets/sheet-spacing.js */", b"window.pastikanJarakTandaTangan", b"PresenTeacherStartup?.core();")):
+        raise RuntimeError("The deployed bundle lacks exam signature or spacing helpers.")
+
+
 def request(path, data=None, headers=None):
     for _ in range(3):
         req = urllib.request.Request(BASE + path, data=data, headers=headers or {})
@@ -167,8 +186,7 @@ def main():
         for key in ("room-label", "time-label", "course-label"):
             if not re.search(r'<span[^>]*data-edit-key="' + key + r'"[^>]*>\s*</span>', exam):
                 raise RuntimeError("An exam field is no longer blank: " + key)
-        if not all(marker in exam for marker in ("examSupervisorBox", "examLecturerBox", "sheet-spacing.js")):
-            raise RuntimeError("The deployed exam signatures or spacing helper are missing.")
+        verify_exam_layout(exam)
         print("Deployed exam blank fields and both signature blocks verified.", flush=True)
         snapshot = api("snapshot")["snapshot"]
         if not isinstance(snapshot.get("roster"), list) or not snapshot.get("tag"):
