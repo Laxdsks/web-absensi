@@ -170,6 +170,7 @@ function wa_operation(array $device,array $op): array {
         $id=wa_id($op['account']??''); if(!wa_one('SELECT id FROM wa_accounts WHERE id=? AND owner_id=?',[$id,$device['account_id']]))throw new DomainException('Akun mahasiswa ini milik dosen lain.'); wa_query('UPDATE wa_accounts SET approved=0 WHERE id=?',[$id]); wa_query('UPDATE wa_devices SET revoked=1 WHERE account_id=?',[$id]); wa_audit($device,'revoke-student',$id,[]); return ['status'=>'success'];
     }
     $ctx=wa_teacher_context($device,$op['ctx']??[]);
+    if(in_array($type,['course-upsert','course-select','course-hide'],true))return wa_course_operation($device,$op,$ctx);
     if($type==='student-upsert'||$type==='student-delete') {
         $nim=wa_nim($op['nim']??'');
         $matches=array_values(array_filter(wa_roster($ctx),static function($s)use($nim){return strtoupper($s['nim'])===$nim;}));
