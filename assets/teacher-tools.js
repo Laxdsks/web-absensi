@@ -9,7 +9,7 @@
   const invitationButton=document.createElement('button');invitationButton.type='button';invitationButton.id='shareClassInvite';invitationButton.textContent='Undang mahasiswa';invitationButton.className='btn btn-dark';invitationButton.onclick=()=>void run(async()=>{const state=await WA.get();await window.PresenClassInvites.share(context(state),new URLSearchParams(location.search).get('matkul')||state.selection?.matkul||'');},invitationButton);(document.querySelector('#topToolbar .sheet-primary')||document.querySelector('#topToolbar .toolbar-group')||host).append(invitationButton);
 
   window.addEventListener('wa-global-reset',()=>{sessionQR=null;sessionCode='';host.querySelector('#codeDialog')?.close();});
-  let sessionQR = null, sessionCode = '', stream = null, scanTimer, renderKey = '', rendering = false;
+  let sessionQR = null, sessionCode = '', stream = null, scanTimer, renderKey = '', rendering = false, clockState=null,finalizing=false;
   const notify = text => { $('#toolNotice').textContent = text; $('#toolNotice').style.display='flex';window.PresenUI?.closable($('#toolNotice')); if(host.hidden) window.showToast?.(escape(text),'error'); };
   async function run(fn, button) {
     if (button) button.disabled = true;
@@ -76,7 +76,7 @@
     } catch (_) { notify('Izinkan kamera, atau pilih foto QR / tempel kode.'); }
   }
   function clock() {
-    void WA.get().then(state => {
+    const state=clockState;if(!state)return;{
       const now = WA.now(state);
       host.querySelectorAll('[data-end]').forEach(el => {
         const left = Math.max(0,Math.ceil((Number(el.dataset.end)-now)/1000));
@@ -84,7 +84,7 @@
       });
       if ($('#countdown')) $('#countdown').textContent = sessionQR ? (sessionQR.deadline<=now?'Sesi absensi selesai · tampilkan QR pertemuan terbaru':Math.ceil((sessionQR.deadline-now)/1000)+' detik tersisa') : '';
       if(sessionQR&&$('#codeDialog')?.open){const current=state.snapshot.sessions.find(x=>x.id===sessionQR.id),ended=sessionQR.deadline<=now||current?.version>sessionQR.version;$('#codeImage').hidden=ended;$('#shareCode').disabled=ended;if(current?.version>sessionQR.version)$('#countdown').textContent='QR sudah diperbarui. Tutup dan tampilkan QR terbaru.';}
-    });
+    }
   }
   function initialize(state) {
     host.hidden = false;
@@ -145,7 +145,7 @@
   async function render() {
     if(rendering) return; rendering=true;
     try {
-      const state=await WA.get();
+      const state=await WA.get();clockState=state;
       if(state.profile?.role!=='teacher'){host.hidden=true;return;}
       if(!$('#toolResults')) initialize(state);
       $('#toolConnection').textContent=(navigator.onLine?'Online':'Offline')+' · '+state.outbox.length+' perubahan belum tersinkron';
@@ -200,10 +200,8 @@
   if(!sheet&&state.profile?.role==='teacher'&&(!navigator.onLine||window.SERVER_CONFIG.accountId===state.profile.account.id)) document.getElementById('authOverlay').style.display='none';
   WA.on(()=>void render());window.addEventListener('online',()=>void render());window.addEventListener('offline',()=>void render());
   await render();
-  if(state.profile?.role==='teacher') {void WA.prepareOffline();void WA.sync();}
-  setInterval(()=>{clock();void WA.get().then(state=>{
-    if(state.profile?.role==='teacher'&&state.snapshot.sessions.some(session=>session.deadline<=WA.now(state)&&session.roster.some(nim=>!state.snapshot.marks.some(mark=>mark.scope===session.scope&&mark.slot===session.slot&&mark.nim===nim&&!!mark.mark)))) void WA.finalize();
-  });},1000);
-  setInterval(()=>void WA.sync(),5000);
+  if(state.profile?.role==='teacher')void WA.prepareOffline();
+  setInterval(()=>{if(document.hidden)return;clock();const state=clockState;if(!state||finalizing)return;const marks=new Set(state.snapshot.marks.filter(m=>m.mark).map(m=>m.scope+':'+m.slot+':'+m.nim));if(state.profile?.role==='teacher'&&state.snapshot.sessions.some(session=>session.deadline<=WA.now(state)&&session.roster.some(nim=>!marks.has(session.scope+':'+session.slot+':'+nim)))){finalizing=true;void WA.finalize().finally(()=>{finalizing=false;});}},1000);
+  window.PresenTeacherWork?.start();
   if(sheet&&params.get('qr')==='1') document.getElementById('openAttendanceQR').click();
 })();

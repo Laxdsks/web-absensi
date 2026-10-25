@@ -62,6 +62,8 @@ try {
         wa_response(['status'=>'success','token'=>$issued['token'],'snapshot'=>wa_snapshot($issued['device'])]);
     }
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
+    // Read-only refreshes must not hold the browser's PHP session lock while building responses.
+    if(in_array($action,['snapshot','appearance-read','maps-config'],true)&&session_status()===PHP_SESSION_ACTIVE)session_write_close();
     if($action==='appearance-read'){wa_teacher($device);wa_response(['status'=>'success','appearance'=>wa_appearance_read($device)]);}
     if($action==='appearance-save')wa_response(wa_appearance_save($device,$input));
     if($action==='create-class-invite')wa_response(['status'=>'success','invite'=>wa_create_class_invite($device,$input)]);
