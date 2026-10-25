@@ -7,7 +7,7 @@ function wa_teacher_startup_head(): void {
     echo <<<'HTML'
 <script>document.documentElement.classList.add('presen-workspace-loading');document.documentElement.dataset.teacherPageState='loading';setTimeout(()=>{if(document.documentElement.dataset.teacherPageState==='ready')return;if(window.PresenTeacherStartup){PresenTeacherStartup.fail();return;}const box=document.createElement('main');box.id='presenTeacherRecovery';box.innerHTML='<h1>Halaman belum selesai dimuat</h1><p>Muat ulang untuk mencoba kembali.</p><button type="button">Muat ulang halaman</button>';box.querySelector('button').onclick=()=>location.reload();(document.body||document.documentElement).append(box);document.getElementById('introOverlay')?.remove();document.documentElement.dataset.teacherPageState='error';},20000);</script>
 <style id="presenTeacherStartupStyle">
-html.presen-workspace-loading body>:not(#introOverlay):not(#authOverlay):not(#presenTeacherRecovery):not(script):not(style){visibility:hidden!important}
+html.presen-workspace-loading body>:not(#introOverlay):not(#authOverlay):not(#presenTeacherRecovery):not(script):not(style),html.presen-workspace-loading body>:not(#introOverlay):not(#authOverlay):not(#presenTeacherRecovery):not(script):not(style) *{visibility:hidden!important}
 html.presen-workspace-loading #authOverlay .auth-card{visibility:hidden!important}
 html[data-teacher-page-state=ready] .portal-data .content-card{animation:none!important}
 #presenTeacherRecovery{visibility:visible!important;position:fixed;inset:0;z-index:2147483600;background:#102538;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;font:16px/1.5 system-ui,sans-serif}
