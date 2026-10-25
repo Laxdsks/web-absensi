@@ -17,8 +17,8 @@ function marker(k){try{return JSON.parse(rawGet.call(localStorage,namespaced('pe
 function changed(k){if(!ready||applying||!owner)return;k=k==='custom_bg_wallpaper_db'?'custom_bg_wallpaper':k;rawSet.call(localStorage,namespaced('pending:'+k),JSON.stringify({id:crypto.randomUUID(),baseVersion:record.pending[k]?.baseVersion??record.versions[k]??0}));dirty.add(k);clearTimeout(timer);timer=setTimeout(()=>void capture().then(flush).catch(fail),180);}
 const dirty=new Set();
 proto.getItem=function(k){return this===localStorage&&managed.has(String(k))?(owner?value(String(k)):null):rawGet.call(this,k);};
-proto.setItem=function(k,v){if(this===localStorage&&managed.has(String(k))){if(owner){rawSet.call(this,namespaced(String(k)),String(v));changed(String(k));}return;}return rawSet.call(this,k,v);};
-proto.removeItem=function(k){if(this===localStorage&&managed.has(String(k))){if(owner){rawRemove.call(this,namespaced(String(k)));changed(String(k));}return;}return rawRemove.call(this,k);};
+proto.setItem=function(k,v){if(this===localStorage&&managed.has(String(k))){if(owner&&(value(String(k))!==String(v)||String(k)==='custom_bg_wallpaper_db')){rawSet.call(this,namespaced(String(k)),String(v));changed(String(k));}return;}return rawSet.call(this,k,v);};
+proto.removeItem=function(k){if(this===localStorage&&managed.has(String(k))){if(owner&&value(String(k))!==null){rawRemove.call(this,namespaced(String(k)));changed(String(k));}return;}return rawRemove.call(this,k);};
 function fail(e){error=e.message||'Tampilan belum tersinkron.';status();}
 async function persist(){if(owner&&record)await WA.change(()=>record,cacheKey(owner));}
 async function normalizeImage(data,kind='wallpaper'){
@@ -41,7 +41,7 @@ async function stage(k,v,intent=marker(k)){
 let captureChain=Promise.resolve();
 function capture(){const task=captureChain.catch(()=>{}).then(captureNow);captureChain=task;return task;}
 async function captureNow(){
- if(!ready||applying||!record)return;const mine=owner,keys=[...dirty];dirty.clear();
+ if(!ready||applying||!record)return;const mine=owner,keys=[...dirty];dirty.clear();if(!keys.length)return;
  for(const k of keys){let v=value(k);if(k==='custom_bg_wallpaper'&&value('custom_bg_wallpaper_db')==='1')v=await WA.get('wallpaper-source')||v;if(mine!==owner)return;await stage(k,v);if(mine!==owner)return;}
  await persist();status();
 }
@@ -59,7 +59,7 @@ async function render(){
  }finally{applying=false;}status();
 }
 async function flush(){
- clearTimeout(timer);await capture();if(sending)return sending;
+ clearTimeout(timer);await capture();if(sending)return sending;if(!Object.values(record?.pending||{}).some(p=>!p.conflict))return;
  const mine=owner;error='';sending=(async()=>{
   if(!mine||!record||!navigator.onLine)return;
   const s=await WA.get();if(s.profile?.role!=='teacher'||s.profile.account.id!==mine)return;
@@ -83,7 +83,7 @@ async function prepare(s){
  if(s.profile?.role!=='teacher'){await guest();return;}
  await legacyBackup;ready=false;owner=s.profile.account.id;record=await WA.get(cacheKey(owner))||empty();record.pending||={};pendingSerial=Math.max(0,...Object.values(record.pending).map(x=>x.serial||0));
  for(const k of fields){const intent=marker(k);if(!intent)continue;let local=value(k);if(k==='custom_bg_wallpaper'&&value('custom_bg_wallpaper_db')==='1'&&(await initialOwner)===owner)local=await WA.get('wallpaper-source')||local;await stage(k,local,intent);}
- let remote;try{if(navigator.onLine)remote=(await WA.api('appearance-read',{},s.token)).appearance;}catch(e){error=e.message;}
+ let remote;try{if(navigator.onLine&&!(record.legacyChecked&&record.revision===Number(s.snapshot.appearance?.revision)&&!meaningful(legacy)))remote=(await WA.api('appearance-read',{},s.token)).appearance;}catch(e){error=e.message;}
  if(remote){record.settings=remote.settings||{};record.versions=remote.versions||{};record.revision=remote.revision;observed=remote.revision;}
  const old=await WA.get('teacher-appearance-legacy:'+owner)||{...legacy};
  const eligible=!!await WA.get('teacher-appearance-legacy:'+owner)||!legacyBinding&&(await initialOwner)===owner&&owner==='admin_01';

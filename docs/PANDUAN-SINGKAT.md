@@ -61,3 +61,7 @@ Gunakan **Rekap mahasiswa** untuk melihat akumulasi H/S/I/A per mahasiswa dalam 
 Tekan **Panduan** di lembar atau ikon **?** pada tepi layar. Pilih topik, lalu gunakan **Kembali**, **Lanjut**, dan **Tutup**. Layar diredupkan dan panah menunjuk area yang dijelaskan. Area tetap dapat digunakan; panduan tidak mengirim absensi, mengubah nilai, atau menghapus data. Jika suatu area belum tersedia, buka **Lihat contoh tampilan** dan ikuti persyaratan langkah sebelumnya.
 
 Di HP, pemilih mata kuliah mengikuti tinggi isinya dan daftar mahasiswa memakai baris yang lebih rapat. Saat berpindah halaman, perubahan disimpan di perangkat terlebih dahulu dan sinkronisasi server berjalan di latar. Logo, tema, dan data tetap dipisahkan menurut akun. Transisi singkat mengikuti pengaturan kurangi gerakan pada perangkat.
+
+### Persiapan offline yang ringan
+
+Halaman biasa menyiapkan berkas dasar saja. Pustaka impor dan fitur tambahan tidak diunduh massal saat berpindah halaman. Jika memerlukan semua fitur tanpa internet, buka **Tampilan → Fitur tambahan saat offline → Unduh semua fitur untuk offline** saat sambungan memadai (sekitar 48 MB). Fitur impor yang dibuka saat online tetap memuat pustaka yang dibutuhkannya.

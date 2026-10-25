@@ -28,3 +28,7 @@
  .portal-data *{transition-property:color,background-color,border-color,box-shadow!important;transition-duration:120ms!important}
 }
 @media(prefers-reduced-motion:reduce){html[data-teacher-page-state=ready] body *{animation:none!important;scroll-behavior:auto!important}}
+
+/* Informational toasts must not intercept menu clicks underneath them. */
+.toast-container,.toast-container .toast{pointer-events:none}
+.toast-container .p-toast-close{pointer-events:auto}
