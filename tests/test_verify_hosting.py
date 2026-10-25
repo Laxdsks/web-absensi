@@ -111,3 +111,24 @@ class ExamBundleVerificationTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "Unexpected"):
                 verify.verify_exam_layout(html)
             request.assert_not_called()
+
+
+class RevisionEntryVerificationTests(unittest.TestCase):
+    def test_revision_path_is_accepted_and_compared_with_its_local_file(self):
+        build = verify.re.search(r"const WA_BUILD = '([^']+)'", (verify.ROOT / 'app_core.php').read_text())[1]
+        path = 'app/runtime-teacher-1.2.10-' + build + '.js?v=' + build
+        html = 'examSupervisorBox examLecturerBox SheetSignatures.install <script data-teacher-bundle src="' + path + '"></script>'
+        with patch.object(verify, 'request', return_value=((verify.ROOT / path.split('?')[0]).read_bytes(), {})):
+            verify.verify_exam_layout(html)
+
+
+class DeploymentManifestCoverageTests(unittest.TestCase):
+    def test_all_teacher_bundle_sources_are_in_the_hosting_manifest(self):
+        script = verify.ROOT / 'scripts/deploy_hosting.py'
+        spec = importlib.util.spec_from_file_location('deploy_hosting_manifest', script)
+        deploy = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(deploy)
+        bundle = (verify.ROOT / 'scripts/build-teacher-bundle.cjs').read_text()
+        required = set(verify.re.findall(r"'((?:app|assets)/[^']+\.(?:js|css))'", bundle))
+        deployed = {name for name, path, digest in deploy.local_files()}
+        self.assertFalse(required - deployed, 'Teacher source assets missing from deployment manifest: ' + ', '.join(sorted(required - deployed)))
