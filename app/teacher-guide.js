@@ -39,6 +39,12 @@ if(page==='index')groups.unshift(['Aplikasi mahasiswa: instal & gunakan',[
  step('Perbarui tanpa menghapus data','Kembali ke bagian unduhan ini untuk mengambil APK terbaru. Pasang sebagai pembaruan pada aplikasi yang sama. Jangan hapus aplikasi atau data hanya untuk memperbarui. Jika Android menolak pembaruan, simpan pesan kesalahannya dan hubungi pengelola sebelum menghapus apa pun.','#studentAppDownload','home')
 ]]);
 
+if(page==='index'){const appGroup=groups.find(g=>g[0]==='Aplikasi mahasiswa: instal & gunakan');if(appGroup)appGroup[1].splice(1,0,
+ step('Buat nama & logo APK sendiri','Tekan Atur nama & logo APK. Isi nama, pilih gambar, geser untuk memotongnya, lalu atur ukuran serta bentuk logo. Pengaturan tersimpan di akun dosen.','[data-brand-editor]','home'),
+ step('Simpan & buat APK','Tekan Simpan & buat APK. Proses antre dan penandatanganan dapat memerlukan beberapa menit. Jendela boleh ditutup; status serta tautan hasil tetap tersimpan.','[data-brand-editor]','home'),
+ step('Bagikan APK khusus','Setelah status siap, unduh APK khusus atau bagikan tautannya ke WhatsApp dan aplikasi lain. Untuk berbagi file, unduh lalu pilih APK melalui Bagikan file APK. APK khusus dipasang terpisah dari Presen Go; pembaruan APK khusus berikutnya mempertahankan identitas aplikasinya.','#studentAppDownload','home')
+);}
+
 // Keep guidance consistent with the current account-backed workflow.
 for(const [,steps] of groups)for(const s of steps){
  if(s.title==='Ekspor atau cetak')s.text='Word mengunduh DOCX dan Excel mengunduh XLSX dengan logo tertanam, teks, serta tabel yang dapat diedit. Pilih ukuran kertas dan orientasi; rekap nilai diekspor mendatar. Tanggal di Excel dibagi beberapa baris agar garis kotak tetap lurus. Pustaka ekspor dimuat saat pertama dipakai, jadi sambungkan internet pada penggunaan pertama.';

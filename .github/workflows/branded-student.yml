@@ -1,0 +1,56 @@
+name: Build account-branded student APKs
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+  pull_request:
+    paths: ['app_branding.php', 'app/teacher-branding.js', 'native/android/app/build.gradle', 'scripts/branding_worker.py', 'scripts/prepare_branded_assets.py', '.github/workflows/branded-student.yml']
+permissions:
+  contents: read
+concurrency:
+  group: presen-branded-${{ github.event_name == 'pull_request' && github.ref || 'worker' }}
+  cancel-in-progress: false
+jobs:
+  fixture:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - run: python3 -m pip install Pillow cryptography
+      - name: Build and verify a real branded APK with isolated fixtures
+        run: python3 tests/build_branded_fixture.py
+  worker:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - run: python3 -m pip install Pillow cryptography
+      - name: Build the next requested student package
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIRECTORY: ${{ secrets.FTP_DIRECTORY }}
+          FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftps' }}
+          FTP_PORT: ${{ vars.FTP_PORT || '21' }}
+          FTP_USE_INFINITYFREE_ACCOUNT: 'true'
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/branding_worker.py

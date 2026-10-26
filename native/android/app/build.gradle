@@ -1,4 +1,6 @@
 plugins { id 'com.android.application' }
+def studentBrand = project.hasProperty('studentBrandFile') ? new groovy.json.JsonSlurper().parse(file(project.property('studentBrandFile'))) : null
+if (studentBrand && (!(studentBrand.name instanceof String) || studentBrand.name.length() < 2 || studentBrand.name.length() > 40 || !(studentBrand['package'] ==~ /id\.webabsensi\.brand\.b[a-f0-9]{20}/) || !(studentBrand.revision instanceof Number) || studentBrand.revision < 1 || studentBrand.revision > 2000000000)) throw new GradleException('Invalid student branding')
 android {
  namespace 'id.webabsensi.app'
  compileSdk 35
@@ -21,7 +23,7 @@ android {
  flavorDimensions 'role'
  productFlavors {
   dosen { dimension 'role'; applicationIdSuffix '.dosen'; resValue 'string','app_name','Presen Pro'; buildConfigField 'String','APP_ROLE','"teacher"' }
-  mahasiswa { dimension 'role'; if (project.hasProperty('studentCurrentIdentity')) { applicationId 'id.webabsensi.presengo.mahasiswa' } else { applicationIdSuffix '.mahasiswa' }; resValue 'string','app_name','Presen Go'; buildConfigField 'String','APP_ROLE','"student"' }
+  mahasiswa { dimension 'role'; if (project.hasProperty('studentCurrentIdentity')) { applicationId 'id.webabsensi.presengo.mahasiswa' } else { applicationIdSuffix '.mahasiswa' }; if (studentBrand) { applicationId studentBrand['package']; versionCode studentBrand.revision as int; versionName '1.2.10-brand.'+studentBrand.revision }; resValue 'string','app_name',studentBrand ? groovy.json.JsonOutput.toJson(studentBrand.name) : 'Presen Go'; buildConfigField 'String','APP_ROLE','"student"' }
  }
  buildTypes {
   debug {
@@ -32,6 +34,7 @@ android {
  }
  sourceSets.dosen.assets.srcDirs += [layout.buildDirectory.dir('dosenOfflineAssets')]
  sourceSets.mahasiswa.assets.srcDirs += [layout.buildDirectory.dir('mahasiswaOfflineAssets')]
+ if (studentBrand) sourceSets.mahasiswa.res.srcDirs += [layout.buildDirectory.dir('studentBrandRes')]
 }
 tasks.register('bundleDosenOffline',Copy){
  into layout.buildDirectory.dir('dosenOfflineAssets')
@@ -43,5 +46,14 @@ tasks.register('bundleMahasiswaOffline',Copy){
  into layout.buildDirectory.dir('mahasiswaOfflineAssets')
  from('../../../app'){into 'app';include 'index.html','meeting-picker.js','class-invites.js','core.js','core-*.js','app.js','evidence.js','face-check.js','experience.js','experience.css','student-tools.js','icon-settings.js','qr-files.js','app.css','student.css','portal.css','portal.js','appearance.js','portal-background.svg','guide.js','guide.css','guide-images/student-*.png','icon.svg','icon-*.png','manifest.webmanifest','vendor/qr.js','vendor/scan.js','vendor/face/**'}
  from('../../../app-sw.js')
+ if (studentBrand) {
+  inputs.file file(project.property('studentBrandFile'))
+  outputs.dir layout.buildDirectory.dir('studentBrandRes')
+  doLast {
+   exec { commandLine 'python3', rootProject.file('../../scripts/prepare_branded_assets.py').absolutePath, file(project.property('studentBrandFile')).absolutePath, layout.buildDirectory.dir('mahasiswaOfflineAssets').get().asFile.absolutePath, layout.buildDirectory.dir('studentBrandRes').get().asFile.absolutePath }
+  }
+ }
 }
 tasks.configureEach{task->if(task.name in ['preDosenDebugBuild','preDosenReleaseBuild'])task.dependsOn 'bundleDosenOffline';if(task.name in ['preMahasiswaDebugBuild','preMahasiswaReleaseBuild'])task.dependsOn 'bundleMahasiswaOffline'}
+
+if (studentBrand) tasks.configureEach { task -> if (task.name.startsWith('mergeMahasiswa') && task.name.endsWith('Resources')) task.dependsOn 'bundleMahasiswaOffline' }

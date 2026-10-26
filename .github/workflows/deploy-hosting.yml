@@ -31,7 +31,9 @@ jobs:
         with:
           fetch-depth: 2
       - name: Check deployment manifest
-        run: python3 scripts/deploy_hosting.py --dry-run
+        run: |
+          python3 scripts/deploy_hosting.py
+          python3 scripts/branding_worker.py --provision --dry-run
       - name: Check credential rotation verification
         run: python3 -m unittest discover -s tests -p 'test_verify_hosting.py'
       - name: Record existing data identities before deployment
@@ -60,7 +62,9 @@ jobs:
           FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftps' }}
           FTP_PORT: ${{ vars.FTP_PORT || '21' }}
           FTP_USE_INFINITYFREE_ACCOUNT: 'true'
-        run: python3 scripts/deploy_hosting.py
+        run: |
+          python3 scripts/deploy_hosting.py
+          python3 scripts/branding_worker.py --provision
       - name: Verify application and teacher access on live hosting
         run: python3 scripts/verify_hosting.py --preserve-baseline "$RUNNER_TEMP/attendance-baseline.json"
       - name: Prepare browser login verification
