@@ -15,6 +15,7 @@ if(page==='index')groups.unshift(['Aplikasi mahasiswa: instal & gunakan',[
 
 // Keep guidance consistent with the current account-backed workflow.
 for(const [,steps] of groups)for(const s of steps){
+ if(s.title==='Ekspor atau cetak')s.text='Word mengunduh DOCX dan Excel mengunduh XLSX dengan logo tertanam, teks, serta tabel yang dapat diedit. Pilih ukuran kertas dan orientasi; rekap nilai diekspor mendatar. Tanggal di Excel dibagi beberapa baris agar garis kotak tetap lurus. Pustaka ekspor dimuat saat pertama dipakai, jadi sambungkan internet pada penggunaan pertama.';
  if(s.title==='Isi identitas lembar')s.text='Ketuk identitas untuk mengedit. Perubahan disimpan di perangkat dan disinkronkan ke akun saat online. Gunakan kelas dan mata kuliah yang sama di perangkat lain.';
  if(s.title==='Tanggal pertemuan')s.text='Ketuk kotak tanggal untuk memilih atau mengedit tanggal DD/MM/TT. Teks ditampilkan miring tanpa memperbesar kotak tabel. Ukuran berlaku ke semua pertemuan secara bawaan; nonaktifkan pilihan itu jika ingin mengatur satu tanggal saja. Warna, tebal, miring, dan garis bawah ikut tersimpan untuk cetak.';
  if(s.title==='Riwayat kelas')s.text='Pilih prodi, tahun/periode, semester, kelas, mata kuliah, lalu pertemuan. Ringkasan mengikuti pilihan ini. Rekap mahasiswa menampilkan riwayat dalam kelas tersebut; ketuk catatan untuk melihat bukti dan lokasi.';

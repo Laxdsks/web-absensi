@@ -1353,5 +1353,25 @@
     "path": "app/vendor/xlsx.full.min.js",
     "sha256": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41",
     "bytes": 951904
+  },
+  {
+    "path": "app/vendor/office/docx-9.5.1.js",
+    "sha256": "bb2908d72ffd8a3d896b455563733d3a2e708e1384a5140e05b3c6dd0b2f676d",
+    "bytes": 807605
+  },
+  {
+    "path": "app/vendor/office/docx-LICENSE.txt",
+    "sha256": "b5b2364c0c95a26b2a2399d7e706a61acac680be1d5b180b00592ee85830bffb",
+    "bytes": 1072
+  },
+  {
+    "path": "app/vendor/office/exceljs-4.4.0.js",
+    "sha256": "7e49da68588e250dbb8bba190d2caa8ab3787cc0284bda1d8b2f805c4df742c9",
+    "bytes": 947702
+  },
+  {
+    "path": "app/vendor/office/exceljs-LICENSE.txt",
+    "sha256": "2ed526b7e7c7681dc2347995b5036ddf73dc27d0539cdea59b6d4a72b63a57a0",
+    "bytes": 1084
   }
 ]

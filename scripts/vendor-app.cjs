@@ -10,6 +10,8 @@ copy('@vladmandic/face-api','LICENSE','licenses/face-api-LICENSE');
 copy('qrcode-generator','qrcode.js','qr.js');copy('jsqr','dist/jsQR.js','scan.js');
 copy('tesseract.js','dist/tesseract.min.js');copy('tesseract.js','dist/worker.min.js');
 for(const f of fs.readdirSync(path.join(root,'node_modules/tesseract.js-core')))if(/\.wasm(?:\.js)?$/.test(f))copy('tesseract.js-core',f);
+copy('docx','dist/index.iife.js','office/docx-9.5.1.js');copy('exceljs','dist/exceljs.min.js','office/exceljs-4.4.0.js');
+copy('docx','LICENSE','office/docx-LICENSE.txt');copy('exceljs','LICENSE','office/exceljs-LICENSE.txt');
 copy('@e965/xlsx','dist/xlsx.full.min.js');copy('mammoth','mammoth.browser.min.js');
 copy('pdfjs-dist','build/pdf.min.mjs');copy('pdfjs-dist','build/pdf.worker.min.mjs');
 for(const dir of ['cmaps','standard_fonts','wasm']){const src=path.join(root,'node_modules/pdfjs-dist',dir);if(fs.existsSync(src))fs.cpSync(src,path.join(dest,dir),{recursive:true});}
