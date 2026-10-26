@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__.'/app_letterhead.php';
 session_start();
 require_once __DIR__ . '/auth_guard.php';
 $data_owner=wa_owner();
@@ -569,6 +570,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 <i class="fa-solid fa-file-invoice"></i> Lembar Ujian
             </a>
             <button onclick="mulaiTurInteraktif()" class="btn btn-primary" id="tourBtnGuide" title="Buka Panduan & Tur Interaktif"><i class="fa-solid fa-circle-question"></i> Panduan</button>
+            <button type="button" class="btn btn-dark" data-letterhead-reset title="Pulihkan teks dan dua logo kop bawaan">Kop bawaan</button>
             <button type="button" id="openAttendanceQR" class="btn btn-primary"><i class="fa-solid fa-qrcode"></i> Absensi QR</button>
             <button onclick="bukaRekapNilai()" class="btn btn-success" id="tourBtnRekap" title="Buka Kalkulasi Otomatis Rekapitulasi Nilai Akhir"><i class="fa-solid fa-calculator"></i> Rekap Nilai</button>
             <button onclick="tambahSiswa()" class="btn btn-success" id="tourBtnTambah" title="Sisipkan satu baris siswa/mahasiswa baru di bagian paling bawah"><i class="fa-solid fa-user-plus"></i> Sisip Baris</button>
@@ -627,28 +629,21 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             <!-- KOP SURAT CETAK FISIK RESMI STKIP YAPIS DOMPU (Sesuai Permintaan Foto 100%) -->
             <div class="sheet-header selectable-element" id="sheetHeader" data-type="Header Utama" onclick="pilihElemen(event, this)">
                 <div class="logo-wrapper left-logo selectable-element" id="logoLeftWrapper" data-type="Logo Kiri" onclick="pilihElemen(event, this)">
-                    <div class="logo-box" id="tourLogoBox">
-                        <img id="logoKiriPreview" src="" alt="" style="display:none;">
-                        <i class="fa-solid fa-image" id="logoKiriIcon"></i>
+                    <div class="logo-box has-image" id="tourLogoBox">
+                        <img id="logoKiriPreview" src="<?php echo wa_letterhead_logo('left'); ?>" data-default-src="<?php echo wa_letterhead_logo('left'); ?>" alt="Logo Yapis Dompu">
+                        <i class="fa-solid fa-image" id="logoKiriIcon" hidden style="display:none"></i>
                         <input type="file" accept="image/*" onchange="previewLogo(event, 'logoKiriPreview', 'logoKiriIcon', 'btnHapusKiri')">
                     </div>
-                    <button type="button" id="btnHapusKiri" class="btn-hapus-logo" onclick="hapusLogo('logoKiriPreview', 'logoKiriIcon', 'btnHapusKiri')">Hapus</button>
+                    <button type="button" id="btnHapusKiri" style="display:inline-block" class="btn-hapus-logo" onclick="hapusLogo('logoKiriPreview', 'logoKiriIcon', 'btnHapusKiri')">Hapus</button>
                 </div>
-                <div class="header-text" contenteditable="true">
-                    <span class="line-1">YAYASAN PENDIDIKAN ISLAM</span>
-                    <span class="line-2">SEKOLAH TINGGI KEGURUAN DAN ILMU PENDIDIKAN</span>
-                    <span class="line-3">(STKIP) YAPIS DOMPU</span>
-                    <span class="line-4">Status Akreditasi: Baik Sekali (SK. No. 554/SK/BAN-PT/Ak/PT/VIII/2023)</span>
-                    <span class="line-4">Jln. STKIP Yapis Dompu No. 1, Sori Sakolo, Dompu, Nusa Tenggara Barat</span>
-                    <span class="line-5">Email: akademik@stkipyapisdompu.ac.id | Website: www.stkipyapisdompu.ac.id</span>
-                </div>
+                <div class="header-text wa-letterhead" data-letterhead-version="2"><?php echo wa_letterhead_lines(); ?></div>
                 <div class="logo-wrapper right-logo selectable-element" id="logoRightWrapper" data-type="Logo Kanan" onclick="pilihElemen(event, this)">
-                    <div class="logo-box" id="boxLogoKanan">
-                        <img id="logoKananPreview" src="" alt="" style="display:none;">
-                        <i class="fa-solid fa-image" id="logoKananIcon"></i>
+                    <div class="logo-box has-image" id="boxLogoKanan">
+                        <img id="logoKananPreview" src="<?php echo wa_letterhead_logo('right'); ?>" data-default-src="<?php echo wa_letterhead_logo('right'); ?>" alt="Logo STKIP Yapis Dompu">
+                        <i class="fa-solid fa-image" id="logoKananIcon" hidden style="display:none"></i>
                         <input type="file" accept="image/*" onchange="previewLogo(event, 'logoKananPreview', 'logoKananIcon', 'btnHapusKanan')">
                     </div>
-                    <button type="button" id="btnHapusKanan" class="btn-hapus-logo" onclick="hapusLogo('logoKananPreview', 'logoKananIcon', 'btnHapusKanan')">Hapus</button>
+                    <button type="button" id="btnHapusKanan" style="display:inline-block" class="btn-hapus-logo" onclick="hapusLogo('logoKananPreview', 'logoKananIcon', 'btnHapusKanan')">Hapus</button>
                 </div>
             </div>
             
@@ -1124,6 +1119,7 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
         function ubahFontFamily() {
             const font = document.getElementById('fontFamilySelect').value;
             document.getElementById('paperSheet').style.setProperty('--global-font-family', font);
+            document.getElementById('paperSheet').style.setProperty('--wa-letterhead-font',font);
         }
 
         function ubahUkuranFontCustom() {
@@ -1253,8 +1249,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
                 reader.onload = async function(e) {
                     const img = document.getElementById(imgId);
                     try{img.src = await window.PresenTeacherPreferences.normalizeImage(e.target.result,'brand');}catch(error){showCustomModal('Logo belum disimpan',error.message);return;}
-                    img.style.display = 'block';
-                    document.getElementById(iconId).style.display = 'none';
+                    img.style.display = 'block';img.hidden=false;
+                    document.getElementById(iconId).hidden=true;document.getElementById(iconId).style.display = 'none';
                     document.getElementById(btnHapusId).style.display = 'inline-block';
                     img.closest('.logo-box').classList.add('has-image');
                     document.dispatchEvent(new Event('sheet-logo-changed'));
@@ -1267,8 +1263,8 @@ $label_peserta = $is_kuliah ? 'MAHASISWA' : 'PESERTA DIDIK';
             simpanStateUndo();
             const img = document.getElementById(imgId);
             img.src = '';
-            img.style.display = 'none';
-            document.getElementById(iconId).style.display = 'block';
+            img.style.display = 'none';img.hidden=true;
+            document.getElementById(iconId).hidden=false;document.getElementById(iconId).style.display = 'block';
             document.getElementById(btnHapusId).style.display = 'none';
             img.closest('.logo-box').classList.remove('has-image');
             document.dispatchEvent(new Event('sheet-logo-changed'));

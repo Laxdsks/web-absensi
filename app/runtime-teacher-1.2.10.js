@@ -13828,20 +13828,25 @@ try {
     function walk(node) {
       if (node.nodeType === 3) {
         const t = node.textContent.replace(/[\t\r\n]+/g, " ");
-        if (t) result.at(-1).push({ text: t, ...font(node.parentElement) });
+        if (t)
+          result.at(-1).push({
+            text: t,
+            ...font(node.parentElement),
+            ...(node.parentElement.closest("a[href]")
+              ? { href: node.parentElement.closest("a[href]").href }
+              : {}),
+          });
         return;
       }
       if (node.nodeType !== 1 || node.matches(skip) || node.hidden) return;
       if (node.matches("input,textarea,select")) {
-        result
-          .at(-1)
-          .push({
-            text:
-              node.value === "." && node.matches(".attendance-cell")
-                ? "•"
-                : node.value,
-            ...font(node),
-          });
+        result.at(-1).push({
+          text:
+            node.value === "." && node.matches(".attendance-cell")
+              ? "•"
+              : node.value,
+          ...font(node),
+        });
         return;
       }
       if (node.tagName === "BR") {
@@ -14057,17 +14062,26 @@ try {
       page = pageSettings(recap),
       blocks = [],
       header = paper.querySelector(".header-text,#examInstitution");
-    const hlines = [...header.children].flatMap((el) =>
-      lines(el).map((p) => ({ ...p, align: "center" })),
-    );
+    const hlines = [...header.children]
+      .flatMap((el) =>
+        lines(el).map((p) => ({
+          ...p,
+          align: "center",
+          runs: p.runs.map((r) => ({
+            ...r,
+            ...(recap ? { size: Math.min(r.size, 9) } : {}),
+          })),
+        })),
+      )
+      .filter((p) => p.runs.some((r) => r.text.trim()));
     const left = await picture(
         paper.querySelector("#logoKiriPreview,#logoLeftSlot img"),
       ),
       right = await picture(
         paper.querySelector("#logoKananPreview,#logoRightSlot img"),
       );
-    blocks.push(
-      layoutTable(
+    blocks.push({
+      ...layoutTable(
         [
           { paragraphs: [], images: left ? [left] : [], align: "center" },
           { paragraphs: hlines, align: "center" },
@@ -14079,37 +14093,72 @@ try {
           Math.floor(page.width * 0.14),
         ],
       ),
-    );
-    blocks.push({ type: "paragraph", ...plain("", 2), rule: true });
+      letterhead: true,
+    });
+    blocks.push({ type: "paragraph", ...plain("", 2), rule: "double" });
     const title = recap
       ? "REKAP NILAI"
       : exam
         ? paper.querySelector(".sheet-title")?.textContent.trim()
         : "LEMBAR ABSEN";
-    blocks.push({ type: "paragraph", ...plain(title, 11, true, "center") });
-    const cols = [{ paragraphs: [] }, { paragraphs: [] }];
-    // Query each column separately; commas in selector lists must not escape the row selector.
-    for (let i = 0; i < 2; i++) {
-      const column = paper.querySelector(
-        i ? "#metaRightBox,#examMetaRight" : "#metaLeftBox,#examMetaLeft",
-      );
-      cols[i].paragraphs = [...column.querySelectorAll(".meta-row")].map(
-        (row) =>
-          plain(
-            (row.querySelector(".meta-label")?.textContent.trim() || "") +
-              " : " +
-              (row.querySelector(".meta-val,.meta-value")?.textContent.trim() ||
-                ""),
-            Math.min(8, font(row).size),
+    const titleParagraph = plain(title, 11, true, "center");
+    const titleNode = exam ? paper.querySelector(".sheet-title") : null;
+    if (titleNode) titleParagraph.runs[0] = { text: title, ...font(titleNode) };
+    blocks.push({ type: "paragraph", ...titleParagraph, title: true });
+    const metaColumns = [
+      paper.querySelector("#metaLeftBox,#examMetaLeft"),
+      paper.querySelector("#metaRightBox,#examMetaRight"),
+    ];
+    const widths = [];
+    for (const col of metaColumns) {
+      const bounds = col.getBoundingClientRect(),
+        label = col.querySelector(".meta-label").getBoundingClientRect(),
+        colon = col
+          .querySelector(".meta-row")
+          .children[1].getBoundingClientRect();
+      const half = Math.floor(page.width / 2),
+        lw = Math.max(
+          Math.round(half * 0.15),
+          Math.min(
+            Math.round(half * 0.5),
+            Math.round((half * label.width) / Math.max(1, bounds.width)),
           ),
-      );
+        ),
+        cw = Math.max(
+          100,
+          Math.round((half * colon.width) / Math.max(1, bounds.width)),
+        );
+      widths.push(lw, cw, half - lw - cw);
     }
-    blocks.push(
-      layoutTable(cols, [
-        Math.floor(page.width / 2),
-        page.width - Math.floor(page.width / 2),
-      ]),
-    );
+    widths[5] += page.width - widths.reduce((a, b) => a + b, 0);
+    const metaRows = [],
+      count = Math.max(
+        ...metaColumns.map((c) => c.querySelectorAll(".meta-row").length),
+      );
+    for (let row = 0; row < count; row++) {
+      const cells = [];
+      metaColumns.forEach((col, side) => {
+        const item = col.querySelectorAll(".meta-row")[row];
+        for (let n = 0; n < 3; n++) {
+          const el = item?.children[n];
+          cells.push({
+            x: side * 3 + n,
+            cs: 1,
+            rs: 1,
+            border: false,
+            paragraphs: el
+              ? lines(el).map((p) => ({
+                  ...p,
+                  align: n === 1 ? "center" : "left",
+                }))
+              : [plain("")],
+            align: n === 1 ? "center" : "left",
+          });
+        }
+      });
+      metaRows.push(cells);
+    }
+    blocks.push({ type: "table", widths, rows: metaRows, metadata: true });
     blocks.push(
       tableModel(
         document.querySelector(
@@ -14174,6 +14223,32 @@ try {
               ),
             ),
           });
+        } else if (child.classList.contains("signature-details")) {
+          const name = child.querySelector(".signature-name"),
+            identity = child.querySelector(".signature-identity");
+          const width = Math.max(
+            25,
+            Math.min(
+              page.width / 40 - 8,
+              parseFloat(getComputedStyle(child).width) * 0.75 || 90,
+            ),
+          );
+          const nameLines = lines(name);
+          if (!nameLines[0].runs.length)
+            nameLines[0].runs = [
+              { text: "", size: 8, font: font(child).font, color: "111111" },
+            ];
+          paragraphs.push(
+            ...nameLines.map((p) => ({
+              ...p,
+              ruleWidth: width,
+              runs: p.runs.map((r) => ({ ...r, size: Math.min(8, r.size) })),
+            })),
+            ...lines(identity).map((p) => ({
+              ...p,
+              runs: p.runs.map((r) => ({ ...r, size: Math.min(8, r.size) })),
+            })),
+          );
         } else
           paragraphs.push(
             ...lines(child).map((p) => ({
@@ -14226,26 +14301,55 @@ try {
   async function word(m, D) {
     const none = { style: D.BorderStyle.NONE, size: 0, color: "FFFFFF" },
       line = { style: D.BorderStyle.SINGLE, size: 4, color: "111111" };
-    function paragraph(p) {
+    function paragraph(p, width = m.page.width) {
       return new D.Paragraph({
         alignment: p.align || "left",
-        spacing: {
-          before: 0,
-          after: 0,
-          line: Math.round(
-            (p.space || Math.max(6, ...p.runs.map((r) => r.size || 8)) * 1.15) *
-              20,
-          ),
+        run: {
+          size: Math.round(Math.max(2, ...p.runs.map((r) => r.size || 8)) * 2),
+          font: p.runs[0]?.font || "Arial",
+          snapToGrid: false,
         },
-        ...(p.rule ? { border: { bottom: line } } : {}),
-        children: p.runs.map(
-          (r) =>
-            new D.TextRun({
-              ...r,
-              size: Math.round(r.size * 2),
-              underline: r.underline ? {} : undefined,
-            }),
-        ),
+        spacing: {
+          before: p.title ? 80 : 0,
+          after: p.title ? 60 : p.ruleWidth ? 40 : 0,
+          line: p.space
+            ? Math.round(p.space * 20)
+            : Math.ceil(Math.max(2, ...p.runs.map((r) => r.size || 8)) * 24),
+          lineRule: p.space ? D.LineRuleType.EXACT : D.LineRuleType.AT_LEAST,
+        },
+        ...(p.ruleWidth
+          ? {
+              indent: {
+                right: Math.max(0, width - Math.ceil(p.ruleWidth * 20)),
+              },
+            }
+          : {}),
+        ...(p.rule || p.ruleWidth
+          ? {
+              border: {
+                bottom:
+                  p.rule === "double"
+                    ? {
+                        style: D.BorderStyle.DOUBLE,
+                        size: 12,
+                        color: "111111",
+                        space: 2,
+                      }
+                    : line,
+              },
+            }
+          : {}),
+        children: p.runs.map((r) => {
+          const run = new D.TextRun({
+            ...r,
+            snapToGrid: false,
+            size: Math.round(r.size * 2),
+            underline: r.underline || r.href ? {} : undefined,
+          });
+          return r.href && /^(https?:|mailto:)/i.test(r.href)
+            ? new D.ExternalHyperlink({ link: r.href, children: [run] })
+            : run;
+        }),
       });
     }
     function image(p) {
@@ -14281,7 +14385,7 @@ try {
                     cell.border ? line : none,
                   ]),
                 );
-              let children = cell.paragraphs.map(paragraph);
+              let children = cell.paragraphs.map((p) => paragraph(p, width));
               if (cell.date && textOf(cell)) {
                 const pic = dateImage(cell, Math.max(10, width / 15 - 2), 26);
                 children = [
@@ -14314,7 +14418,12 @@ try {
                 columnSpan: cell.cs,
                 rowSpan: cell.rs,
                 borders,
-                margins: { top: 20, bottom: 20, left: 25, right: 25 },
+                margins: {
+                  top: m.title === "REKAP NILAI" ? 10 : 20,
+                  bottom: m.title === "REKAP NILAI" ? 10 : 20,
+                  left: 25,
+                  right: 25,
+                },
                 verticalAlign: D.VerticalAlign.CENTER,
                 children: children.length
                   ? children
@@ -14345,7 +14454,12 @@ try {
       );
       children.push(
         new D.Paragraph({
-          spacing: { before: 0, after: 0, line: 40 },
+          spacing: {
+            before: 0,
+            after: 0,
+            line: 40,
+            lineRule: D.LineRuleType.EXACT,
+          },
           children: [],
         }),
       );
@@ -14365,6 +14479,7 @@ try {
         sections: [
           {
             properties: {
+              grid: { type: D.DocumentGridType.DEFAULT, linePitch: 0 },
               page: {
                 size: { width: m.page.w, height: m.page.h },
                 margin: {
@@ -14380,6 +14495,52 @@ try {
         ],
       }),
     );
+  }
+  function excelBlocks(blocks) {
+    return blocks.map((block) => {
+      if (!block.letterhead) return block;
+      const [left, middle, right] = block.rows[0],
+        paragraphs = middle.paragraphs.length ? middle.paragraphs : [plain("")],
+        count = paragraphs.length,
+        w = block.widths;
+      const rows = paragraphs.map((p, index) => {
+        const row = [];
+        if (!index) row.push({ ...left, x: 0, rs: count });
+        const linked = p.runs.filter((r) => r.href);
+        if (linked.length > 1) {
+          const parts = [[], []];
+          let side = 0;
+          for (const run of p.runs) {
+            const pipe = side === 0 ? run.text.indexOf("|") : -1;
+            if (pipe >= 0) {
+              if (pipe)
+                parts[0].push({ ...run, text: run.text.slice(0, pipe) });
+              side = 1;
+              if (pipe + 1 < run.text.length)
+                parts[1].push({ ...run, text: run.text.slice(pipe + 1) });
+            } else parts[side].push(run);
+          }
+          if (!parts[1].length) {
+            parts[0] = p.runs.slice(0, p.runs.indexOf(linked[1]));
+            parts[1] = p.runs.slice(p.runs.indexOf(linked[1]));
+          }
+          for (let i = 0; i < 2; i++)
+            row.push({
+              ...middle,
+              x: i + 1,
+              cs: 1,
+              paragraphs: [{ ...p, runs: parts[i] }],
+            });
+        } else row.push({ ...middle, x: 1, cs: 2, paragraphs: [p] });
+        if (!index) row.push({ ...right, x: 3, rs: count });
+        return row;
+      });
+      return {
+        ...block,
+        widths: [w[0], Math.floor(w[1] / 2), w[1] - Math.floor(w[1] / 2), w[2]],
+        rows,
+      };
+    });
   }
   async function excel(m, E) {
     const book = new E.Workbook();
@@ -14402,13 +14563,33 @@ try {
       },
       views: [{ showGridLines: false }],
     });
-    const main = m.blocks.find((t) => t.type === "table" && t.rows.length > 1),
-      base = main.widths,
-      total = base.reduce((a, b) => a + b, 0),
-      n = base.length,
-      bounds = [0];
-    base.forEach((w) => bounds.push(bounds.at(-1) + w));
-    ws.columns = base.map((w) => ({ width: Math.max(1, (w / 15 - 5) / 7) }));
+    const blocks = excelBlocks(m.blocks),
+      main = blocks.find(
+        (t) =>
+          t.type === "table" &&
+          !t.metadata &&
+          !t.letterhead &&
+          t.rows.length > 1,
+      ),
+      total = m.page.width;
+    const boundaries = new Set([0, total]);
+    for (const block of blocks) {
+      if (block.type !== "table") continue;
+      let x = block.right ? total - block.widths.reduce((a, b) => a + b, 0) : 0;
+      boundaries.add(x);
+      for (const width of block.widths) {
+        x += width;
+        boundaries.add(x);
+      }
+    }
+    const bounds = [...boundaries]
+        .sort((a, b) => a - b)
+        .filter((x, i, all) => !i || x - all[i - 1] >= 15),
+      n = bounds.length - 1,
+      base = bounds.slice(1).map((x, i) => x - bounds[i]);
+    ws.columns = base.map((w) => ({
+      width: w / 15 <= 12 ? w / 180 : (w / 15 - 5) / 7,
+    }));
     let rowIndex = 1;
     function nearest(value) {
       let best = 0;
@@ -14427,7 +14608,7 @@ try {
         color: { argb: "FF" + (run.color || "111111") },
       };
     }
-    for (const block of m.blocks) {
+    for (const block of blocks) {
       if (block.type === "paragraph") {
         ws.mergeCells(rowIndex, 1, rowIndex, n);
         const cell = ws.getCell(rowIndex, 1);
@@ -14470,7 +14651,9 @@ try {
             value = textOf(item),
             runs = item.paragraphs.flatMap((p, i) => [
               ...(i ? [{ text: "\n", size: 8 }] : []),
-              ...p.runs,
+              ...p.runs.map((r) =>
+                p.ruleWidth ? { ...r, underline: true } : r,
+              ),
             ]);
           cell.value = {
             richText: runs.map((run) => ({
@@ -14480,10 +14663,20 @@ try {
           };
           cell.numFmt = "@";
           cell.font = setFont(runs[0] || {});
+          const hrefs = [
+            ...new Set(runs.filter((r) => r.href).map((r) => r.href)),
+          ];
+          if (hrefs.length === 1) {
+            cell.value = { text: value, hyperlink: hrefs[0] };
+            cell.font = {
+              ...setFont(runs.find((r) => r.href)),
+              underline: true,
+            };
+          }
           cell.alignment = {
             horizontal: item.align || "left",
             vertical: "middle",
-            wrapText: true,
+            wrapText: !block.metadata || item.x % 3 === 2,
             shrinkToFit: !item.header,
           };
           if (item.date && value) {
@@ -14521,15 +14714,36 @@ try {
               factor = Math.min(1, (areaWidth - 8) / pic.width);
             ws.addImage(id, {
               tl: {
-                col: c1 - 1 + 0.08,
-                row: r1 - 1 + (item.signature ? 0.42 : 0.06),
+                nativeCol: c1 - 1,
+                nativeColOff: 4 * 9525,
+                nativeRow: r1 - 1,
+                nativeRowOff: Math.round(
+                  (item.signature
+                    ? Math.max(
+                        16,
+                        item.paragraphs
+                          .slice(
+                            0,
+                            item.paragraphs.findIndex((p) => p.space),
+                          )
+                          .reduce(
+                            (sum, p) =>
+                              sum +
+                              Math.max(6, ...p.runs.map((r) => r.size || 8)) *
+                                1.3,
+                            0,
+                          ),
+                      ) + 3
+                    : 3) * 12700,
+                ),
               },
               ext: { width: pic.width * factor, height: pic.height * factor },
               editAs: "oneCell",
             });
             height = Math.max(
               height,
-              pic.height * factor * 0.75 + (item.signature ? size * 5 : 6),
+              (pic.height * factor * 0.75) / Math.max(1, item.rs) +
+                (item.signature ? size * 5 : 6),
             );
           }
         }
@@ -14594,6 +14808,129 @@ try {
 })();
 
 } catch(error) {console.error("Teacher module app/office-export.js failed",error);window.PresenTeacherStartup?.fail();}
+
+;
+/* app/letterhead.js */
+try {
+/* Preserve editable contact text while restoring live, safe hyperlinks after hydration. */
+(() => {
+  "use strict";
+  const header = document.querySelector(".wa-letterhead");
+  if (!header) return;
+  let active = false;
+  const wired = new WeakSet();
+  function href(value) {
+    return value.includes("@") && !/^https?:/i.test(value)
+      ? "mailto:" + value
+      : value
+          .replace(/^http:\/\//i, "https://")
+          .replace(/^(?!https?:\/\/)/i, "https://");
+  }
+  function wire(a) {
+    if (!wired.has(a)) {
+      wired.add(a);
+      a.addEventListener("click", (e) => e.stopPropagation());
+    }
+  }
+  function links() {
+    if (active) return;
+    const line = header.querySelector('[data-edit-key="inst-contact"]');
+    if (
+      !line ||
+      document.activeElement === line ||
+      line.contains(document.activeElement)
+    )
+      return;
+    const value = line.textContent,
+      pattern =
+        /(?:[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|https?:\/\/[^\s|]+|www\.[^\s|]+)/gi;
+    const found = [...value.matchAll(pattern)],
+      existing = [...line.querySelectorAll("a")];
+    existing.forEach(wire);
+    if (
+      existing.length === found.length &&
+      existing.every(
+        (a, i) =>
+          a.textContent === found[i][0] &&
+          a.getAttribute("href") === href(found[i][0]),
+      )
+    )
+      return;
+    const parts = [];
+    let last = 0;
+    for (const m of value.matchAll(pattern)) {
+      parts.push(document.createTextNode(value.slice(last, m.index)));
+      const a = document.createElement("a");
+      a.textContent = m[0];
+      const email = m[0].includes("@") && !/^https?:/i.test(m[0]);
+      a.href = email
+        ? "mailto:" + m[0]
+        : m[0]
+            .replace(/^http:\/\//i, "https://")
+            .replace(/^(?!https?:\/\/)/i, "https://");
+      a.contentEditable = "false";
+      if (!email) {
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+      }
+      wire(a);
+      parts.push(a);
+      last = m.index + m[0].length;
+    }
+    parts.push(document.createTextNode(value.slice(last)));
+    const desired = document.createElement("span");
+    desired.append(...parts);
+    if (line.innerHTML === desired.innerHTML) return;
+    active = true;
+    line.replaceChildren(...desired.childNodes);
+    active = false;
+  }
+  function defaults() {
+    window.simpanStateUndo?.();
+    for (const field of header.querySelectorAll("[data-default-text]"))
+      field.textContent = field.dataset.defaultText;
+    for (const image of document.querySelectorAll(
+      "#logoKiriPreview,#logoKananPreview,.logo-slot img",
+    )) {
+      const value = image.dataset.defaultSrc;
+      if (!value) continue;
+      image.src = value;
+      image.hidden = false;
+      image.style.display = "block";
+      const box = image.closest(".logo-box,.logo-slot");
+      box?.classList.add(box.matches(".logo-box") ? "has-image" : "has-logo");
+      const icon = box?.querySelector("i");
+      if (icon) {
+        icon.hidden = true;
+        icon.style.display = "none";
+      }
+      const remove =
+        box?.parentElement.querySelector(".btn-hapus-logo") ||
+        box?.querySelector(".logo-remove");
+      if (remove) {
+        remove.hidden = false;
+        remove.style.display = "inline-block";
+      }
+      if (box?.matches(".logo-slot")) window.saveLogo?.(box.id, value);
+    }
+    links();
+    window.saveEdits?.();
+    header.dispatchEvent(new Event("input", { bubbles: true }));
+    document.dispatchEvent(new Event("sheet-logo-changed"));
+    window.WAFitSheetText?.();
+    window.simpanStateUndo?.();
+  }
+  for (const button of document.querySelectorAll("[data-letterhead-reset]"))
+    button.addEventListener("click", defaults);
+  header.addEventListener("focusout", () => queueMicrotask(links));
+  new MutationObserver(() => {
+    if (!active) links();
+  }).observe(header, { childList: true, subtree: true, characterData: true });
+  links();
+  window.PresenLetterhead = { restore: defaults, links };
+})();
+
+} catch(error) {console.error("Teacher module app/letterhead.js failed",error);window.PresenTeacherStartup?.fail();}
 
 ;
 /* assets/app-audio.js */

@@ -182,17 +182,20 @@ test(
               media.length >= (recap ? 2 : 3),
               "logos and signature embedded",
             );
+            const relationships = await zip
+              .file(
+                kind === "word"
+                  ? "word/_rels/document.xml.rels"
+                  : "xl/_rels/workbook.xml.rels",
+              )
+              .async("string");
             assert(
-              !(
-                await zip
-                  .file(
-                    kind === "word"
-                      ? "word/_rels/document.xml.rels"
-                      : "xl/_rels/workbook.xml.rels",
-                  )
-                  .async("string")
-              ).includes('TargetMode="External"'),
-              "no external image dependency",
+              ![...relationships.matchAll(/<Relationship\b[^>]*>/g)].some(
+                (m) =>
+                  m[0].includes('/image"') &&
+                  m[0].includes('TargetMode="External"'),
+              ),
+              "all images are embedded",
             );
             if (kind === "word") {
               const xml = await zip.file("word/document.xml").async("string");
@@ -200,6 +203,18 @@ test(
               assert(xml.includes("MAHASISWA EKSPOR 34 NAMA LENGKAP"));
               assert(xml.includes("KET") || recap);
               assert(xml.includes("STKIP"));
+              assert(
+                relationships.includes("mailto:akademik@stkipyapisdompu.ac.id"),
+              );
+              assert(
+                relationships.includes("https://www.stkipyapisdompu.ac.id"),
+              );
+              assert(
+                xml.includes('w:lineRule="atLeast"'),
+                "body text uses normal line spacing",
+              );
+              assert(xml.includes('w:lineRule="atLeast"'));
+              assert(xml.includes('w:val="double"'));
               if (page === "absen" && !recap) {
                 assert(xml.includes("•"));
                 assert(xml.includes("Tanggal pertemuan: 26/10/26"));
@@ -225,7 +240,7 @@ test(
               await wb.xlsx.load(bytes);
               const ws = wb.worksheets[0];
               assert.equal(ws.pageSetup.fitToWidth, 1);
-            assert.equal(ws.pageSetup.fitToHeight, 1);
+              assert.equal(ws.pageSetup.fitToHeight, 1);
               assert.equal(
                 ws.pageSetup.orientation,
                 recap ? "landscape" : "portrait",
