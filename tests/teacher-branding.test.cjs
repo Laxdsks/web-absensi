@@ -1,3 +1,4 @@
+const { PNG } = require("pngjs");
 const { test } = require("node:test"),
   assert = require("node:assert/strict"),
   fs = require("node:fs"),
@@ -57,6 +58,25 @@ test(
       await p.locator("[data-brand-editor]").click();
       await p.locator(".teacher-brand-dialog").waitFor();
       await p.locator("[name=brandName]").fill('Absen Kampus & "Uji"');
+      const artwork = new PNG({ width: 160, height: 80 });
+      for (let n = 0; n < artwork.data.length; n += 4) {
+        artwork.data[n] = 12;
+        artwork.data[n + 1] = 150;
+        artwork.data[n + 2] = 80;
+        artwork.data[n + 3] = 255;
+      }
+      await p
+        .locator("[data-brand-file]")
+        .setInputFiles({
+          name: "campus-logo.png",
+          mimeType: "image/png",
+          buffer: PNG.sync.write(artwork),
+        });
+      await p.waitForFunction(() =>
+        document
+          .querySelector("[data-brand-status]")
+          .textContent.includes("Logo dimuat"),
+      );
       await p.locator("[name=brandShape]").selectOption("circle");
       await p.locator("[name=brandScale]").fill("1.3");
       const c = p.locator(".teacher-brand-preview canvas");
@@ -82,6 +102,28 @@ test(
       assert.equal(state.branding.config.name, 'Absen Kampus & "Uji"');
       assert.equal(state.branding.config.shape, "circle");
       assert.equal(state.branding.config.scale, 1.3);
+      const cropped = PNG.sync.read(
+        Buffer.from(state.branding.config.icon.split(",")[1], "base64"),
+      );
+      assert.deepEqual(
+        [
+          ...cropped.data.subarray(
+            (256 * 512 + 256) * 4,
+            (256 * 512 + 256) * 4 + 4,
+          ),
+        ],
+        [12, 150, 80, 255],
+      );
+      assert.equal(
+        cropped.data[3],
+        0,
+        "circle crop is baked into the PNG transparency",
+      );
+      const shots = require("node:path").resolve("tests/results/branding");
+      fs.mkdirSync(shots, { recursive: true });
+      await p
+        .locator(".teacher-brand-dialog")
+        .screenshot({ path: shots + "/phone-editor.png" });
       assert(!JSON.stringify(state).includes("lease_hash"));
       assert(!JSON.stringify(state).includes("signingEnvelope"));
       assert(!JSON.stringify(state).includes(key));
@@ -221,6 +263,16 @@ test(
       assert.equal(
         await second.locator("[data-apk-download]").getAttribute("href"),
         url,
+      );
+      await second.context().setOffline(true);
+      await second.evaluate(() => WA.change((s) => ({ ...s, profile: null })));
+      await second.waitForFunction(
+        () => !document.querySelector(".teacher-brand-dialog"),
+      );
+      assert.equal(
+        await second.locator("#studentAppTitle").innerText(),
+        "Unduh & bagikan Presen Go",
+        "account data clears immediately even offline",
       );
     } finally {
       await browser.close();
