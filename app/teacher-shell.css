@@ -150,6 +150,9 @@
  #paperSheet #tabelAbsen tbody>tr:not(.page-preview-only){break-inside:avoid;page-break-inside:avoid}
 }
 
+/* Border width is independent of text size and zoom. Each shared edge paints once. */
+#paperSheet #tabelAbsen :is(th,td),#paperSheet :is(#examTableBlock,#examScaleBlock) :is(th,td){border-width:.75pt!important}
+
 .teacher-tools{color:var(--text-main,var(--ui-text,#e2e8f0));font:13px/1.5 'Plus Jakarta Sans',system-ui,sans-serif}
 .teacher-tools[hidden]{display:none!important}
 .teacher-tools h2{font-size:16px;margin:10px 0}.teacher-tools p{font-size:12px;margin:8px 0}

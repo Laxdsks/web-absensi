@@ -134,3 +134,6 @@
  #paperSheet #tabelAbsen thead{display:table-header-group!important}
  #paperSheet #tabelAbsen tbody>tr:not(.page-preview-only){break-inside:avoid;page-break-inside:avoid}
 }
+
+/* Border width is independent of text size and zoom. Each shared edge paints once. */
+#paperSheet #tabelAbsen :is(th,td),#paperSheet :is(#examTableBlock,#examScaleBlock) :is(th,td){border-width:.75pt!important}

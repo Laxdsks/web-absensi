@@ -26,10 +26,10 @@ for filename in sys.argv[1:]:
                 clip &= box
             command['_clip'] = clip
             drawings.append(command)
-        grids = [d for d in drawings if d['type'] == 's' and ((len(d['items']) >= 4 and d['rect'].width > 60 and .7 <= d['width'] <= .8) or (len(d['items']) >= 2 and d['rect'].width > 60 and d['rect'].height > 4 and .95 <= d['width'] <= 1.05))]
+        grids = [d for d in drawings if d['type'] == 's' and len(d['items']) >= 4 and d['rect'].width > 60 and .45 <= d['width'] <= 1.05]
         if not grids:
             continue
-        assert all(abs(d['width'] - .75) < .02 or abs(d['width'] - 1) < .02 for d in grids), (filename, 'Unexpected thick grid stroke')
+        assert all(abs(d['width'] - .75) < .02 for d in grids), (filename, 'Unexpected thick grid stroke')
         regions = [d['rect'] for d in grids]
         fills = [d['rect'] for d in drawings if d['fill'] is not None and max(d['fill']) < .1
                  and ((.3 < d['rect'].width < 1.3 and d['rect'].height > 4) or (.3 < d['rect'].height < 1.3 and d['rect'].width > 4))
@@ -69,7 +69,9 @@ for filename in sys.argv[1:]:
             for other_start, other_end in seen[key]:
                 assert min(end, other_end) - max(start, other_start) < .8, (filename, page.number, 'Duplicated grid edge', key)
             seen[key].append((start, end))
-        fitz.TOOLS.set_aa_level(0)
+        # Thin vector lines have partially covered pixels at preview zoom.
+        # Match normal PDF antialiasing and distinguish grey ink from white.
+        fitz.TOOLS.set_aa_level(8)
         for scale in [.75, 1, 600 / page.rect.width, 1.25]:
             image = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
             failures = []
@@ -79,7 +81,7 @@ for filename in sys.argv[1:]:
                     x = round((a.x + (b.x - a.x) * n / 9) * scale)
                     y = round((a.y + (b.y - a.y) * n / 9) * scale)
                     pixels = [(cx, y) for cx in range(x - 2, x + 3)] if vertical else [(x, cy) for cy in range(y - 2, y + 3)]
-                    hits += any(0 <= cx < image.width and 0 <= cy < image.height and max(image.pixel(cx, cy)) < 100 for cx, cy in pixels)
+                    hits += any(0 <= cx < image.width and 0 <= cy < image.height and max(image.pixel(cx, cy)) < 200 for cx, cy in pixels)
                 if hits < 7:
                     failures.append({'a': list(a), 'b': list(b), 'hits': hits})
             assert not failures, (filename, page.number, scale, failures[:5])
@@ -101,7 +103,7 @@ for filename in sys.argv[1:]:
                         y = cell['y'] + (cell['h'] * n / 9 if vertical else cell['h'] if side == 'bottom' else 0)
                         x, y = round(x * scale), round(y * scale)
                         pixels = [(cx, y) for cx in range(x - 2, x + 3)] if vertical else [(x, cy) for cy in range(y - 2, y + 3)]
-                        hits += any(0 <= cx < image.width and 0 <= cy < image.height and max(image.pixel(cx, cy)) < 100 for cx, cy in pixels)
+                        hits += any(0 <= cx < image.width and 0 <= cy < image.height and max(image.pixel(cx, cy)) < 200 for cx, cy in pixels)
                     assert hits >= 7, (filename, 'Missing intended cell border with location indicators', side, cell, scale, hits)
     assert checked > 100, (filename, 'No printable table strokes')
     reports.append({'file': filename, 'pages': len(document), 'bordersChecked': checked})

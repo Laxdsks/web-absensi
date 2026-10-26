@@ -549,6 +549,9 @@ window.addEventListener('pageshow',e=>{if(e.persisted&&finished){unhide();docume
  #paperSheet #tabelAbsen tbody>tr:not(.page-preview-only){break-inside:avoid;page-break-inside:avoid}
 }
 
+/* Border width is independent of text size and zoom. Each shared edge paints once. */
+#paperSheet #tabelAbsen :is(th,td),#paperSheet :is(#examTableBlock,#examScaleBlock) :is(th,td){border-width:.75pt!important}
+
 .teacher-tools{color:var(--text-main,var(--ui-text,#e2e8f0));font:13px/1.5 'Plus Jakarta Sans',system-ui,sans-serif}
 .teacher-tools[hidden]{display:none!important}
 .teacher-tools h2{font-size:16px;margin:10px 0}.teacher-tools p{font-size:12px;margin:8px 0}
@@ -1059,7 +1062,7 @@ html[data-theme] .portal-sheet #topToolbar.p-ribbon { position:fixed; top:8px; }
 #paperSheet .wa-letterhead [data-edit-key="inst-2"]{font-size:calc(var(--wa-sheet-body-font,12px)*1.3);font-weight:700;line-height:1.15;display:block;margin:0}
 #paperSheet .wa-letterhead [data-edit-key="inst-accreditation"],#paperSheet .wa-letterhead [data-edit-key="inst-address"],#paperSheet .wa-letterhead [data-edit-key="inst-contact"]{font-size:calc(var(--wa-sheet-body-font,12px)*.85);font-weight:400;line-height:1.15;display:block;margin:0}
 #paperSheet .wa-letterhead,#paperSheet .wa-letterhead *{font-family:var(--wa-letterhead-font,'Times New Roman',serif)}
-</style><script data-teacher-bundle src="app/runtime-teacher-1.2.10-20261026-presen-1210-logos-r14.js?v=20261026-presen-1210-logos-r14" defer></script></head>
+</style><script data-teacher-bundle src="app/runtime-teacher-1.2.10-20261026-presen-1210-grid-r15.js?v=20261026-presen-1210-grid-r15" defer></script></head>
 <body class="portal-sheet">
 
     
