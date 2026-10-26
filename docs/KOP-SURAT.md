@@ -1,0 +1,13 @@
+# Kop bawaan dan perbaikan Word
+
+Lembar absen dan ujian memakai teks serta dua logo dari kop kampus yang diberikan pengguna. Aset asli diekstrak dari PDF pengumuman wisuda yang telah dilampirkan, termasuk mask transparansi logo Yapis. Logo tidak digambar ulang. Kop berisi yayasan, nama sekolah, status akreditasi, alamat Sorisakolo, email, dan situs.
+
+Teks kop tetap dapat diedit atau dikosongkan. Logo dapat diunggah/dihapus; penghapusan tersimpan pada dokumen. Tombol **Kop bawaan** memulihkan enam baris dan kedua logo tanpa mengubah mahasiswa atau kehadiran. Kop yang sudah disesuaikan pada dokumen lama tetap dipertahankan; tombol ini dapat dipakai untuk menerapkan kop baru pada dokumen tersebut.
+
+Email dan alamat web tampil biru, bergaris bawah, dan dapat diklik. Saat teks kontak diedit atau dimuat kembali dari penyimpanan, alamat yang valid dibuat menjadi tautan lagi. Pengeditan/penghapusan teks tetap tersimpan antarperangkat. Tautan bawaan menuju `mailto:akademik@stkipyapisdompu.ac.id` dan `https://www.stkipyapisdompu.ac.id`.
+
+Ekspor DOCX menggunakan jarak baris **minimal** berdasarkan ukuran huruf terbesar, bukan angka jarak otomatis yang sebelumnya ditafsirkan kurang dari satu baris oleh Word. Tinggi teks boleh bertambah; huruf tidak dipaksa masuk ke tinggi tetap. Ukuran tanda paragraf mengikuti teks dan tidak dikunci ke kisi dokumen. Label, tanda `:`, dan isian metadata menjadi enam kolom tetap dengan posisi dari lembar, sehingga titik dua tidak bergeser mengikuti panjang label. Judul bergaris bawah, garis kop ganda, serta garis nama/NIDN yang mengikuti lebar identitas juga tersimpan.
+
+Email dan situs menjadi hyperlink asli dalam DOCX. Pada XLSX, kontak dibagi menjadi dua sel sejajar agar setiap alamat memiliki tautan aktif sendiri. Batas kolom tambahan yang digabung mempertahankan lebar tabel utama serta penempatan metadata. Gambar tanda tangan ditempatkan di ruang tanda tangan, tidak menutupi judul jabatan.
+
+Validasi lokal: `tests/letterhead-defaults.test.cjs` memeriksa logo asli, kop yang sama, warna tautan, klik situs, pengeditan kontak, penghapusan logo, pemulihan, dan muat ulang pada kedua lembar. `tests/office-export.test.cjs` memeriksa enam paket Office asli, hyperlink, garis, jarak baris, serta seluruh mahasiswa. Writer/Calc digunakan untuk memeriksa render keenam berkas dengan 35 mahasiswa. Pengujian tidak mengoperasikan Microsoft Word desktop secara langsung.

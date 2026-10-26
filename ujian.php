@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__.'/app_letterhead.php';
 session_start();
 $isGradeSubmission = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && (string)($_GET['aksi'] ?? '') === 'simpan_nilai';
 require_once __DIR__ . '/auth_guard.php';
@@ -288,6 +289,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         </div>
         <div class="toolbar-group">
             <button type="button" onclick="mulaiTurInteraktif()" title="Panduan langkah penggunaan">? Panduan</button>
+            <button type="button" class="btn btn-dark" data-letterhead-reset title="Pulihkan teks dan dua logo kop bawaan">Kop bawaan</button>
             <button type="button" onclick="ubahZoom(-0.1)" title="Perkecil lembar"><i class="fa-solid fa-magnifying-glass-minus"></i> Zoom −</button>
             <span class="zoom-label" id="zoomLabel">100%</span>
             <button type="button" onclick="ubahZoom(0.1)" title="Perbesar lembar"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom +</button>
@@ -331,21 +333,15 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         <section class="paper" id="paperSheet">
             <header class="sheet-header selectable-element" id="examHeader" data-type="Kop dan logo" onclick="pilihElemen(event,this)">
                 <label class="logo-slot selectable-element" id="logoLeftSlot" data-type="Logo kiri" onclick="pilihElemen(event,this)" title="Pilih atau geser logo kiri">
-                    <img alt="Logo kiri" src="<?php echo $logo_kiri_data; ?>"><i class="fa-solid fa-image" hidden></i>
+                    <img alt="Logo kiri" src="<?php echo wa_letterhead_logo('left'); ?>"><i class="fa-solid fa-image" hidden></i>
                     <input type="file" accept="image/*" aria-label="Pilih logo kiri">
-                    <button type="button" class="logo-remove" hidden>Pulihkan logo</button>
+                    <button type="button" class="logo-remove">Hapus logo</button>
                 </label>
-                <div class="institution selectable-element" id="examInstitution" data-type="Kop institusi" onclick="pilihElemen(event,this)">
-                    <span class="line line-one" contenteditable="true" data-edit-key="inst-1">STKIP YAPIS DOMPU</span>
-                    <span class="line line-two" contenteditable="true" data-edit-key="inst-2">SEKOLAH TINGGI KEGURUAN DAN ILMU PENDIDIKAN</span>
-                    <span class="line line-three" contenteditable="true" data-edit-key="inst-3">YAYASAN PENDIDIKAN ISLAM</span>
-                    <span class="contact" contenteditable="true" data-edit-key="inst-address">Jln. STKIP Yapis Dompu No. 1, Desa Sori Sakolo - Dompu, NTB</span>
-                    <span class="contact" contenteditable="true" data-edit-key="inst-contact">Email: akademik@stkipyapisdompu.ac.id | Website: www.stkipyapisdompu.ac.id</span>
-                </div>
+                <div class="institution selectable-element wa-letterhead" id="examInstitution" data-letterhead-version="2" data-type="Kop institusi" onclick="pilihElemen(event,this)"><?php echo wa_letterhead_lines(true); ?></div>
                 <label class="logo-slot selectable-element" id="logoRightSlot" data-type="Logo kanan" onclick="pilihElemen(event,this)" title="Pilih atau geser logo kanan">
-                    <img alt="Logo kanan" src="<?php echo $logo_kanan_data; ?>"><i class="fa-solid fa-image" hidden></i>
+                    <img alt="Logo kanan" src="<?php echo wa_letterhead_logo('right'); ?>"><i class="fa-solid fa-image" hidden></i>
                     <input type="file" accept="image/*" aria-label="Pilih logo kanan">
-                    <button type="button" class="logo-remove" hidden>Pulihkan logo</button>
+                    <button type="button" class="logo-remove">Hapus logo</button>
                 </label>
             </header>
 
@@ -862,7 +858,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         }
         function setLogo(slotId, src) {
             const slot = document.getElementById(slotId), img = slot.querySelector('img'), icon = slot.querySelector('i'), remove = slot.querySelector('.logo-remove');
-            img.src = src; img.hidden = false; icon.hidden = true; remove.hidden = src === img.dataset.defaultSrc; slot.classList.add('has-logo');
+            img.src = src; img.hidden = false; img.style.display='block'; icon.hidden = true; icon.style.display='none'; remove.hidden = false; slot.classList.add('has-logo');
         }
         function saveLogo(slotId, src) {
             try {
@@ -887,10 +883,9 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             remove.addEventListener('click', event => {
                 event.preventDefault(); event.stopPropagation();
                 const image = slot.querySelector('img');
-                if (image.dataset.defaultSrc) { setLogo(slot.id, image.dataset.defaultSrc); remove.hidden = true; }
-                else { image.removeAttribute('src'); image.hidden = true; slot.querySelector('i').hidden = false; slot.classList.remove('has-logo'); }
+                image.removeAttribute('src'); image.hidden = true; image.style.display='none'; slot.querySelector('i').hidden = false; slot.classList.remove('has-logo'); remove.hidden=true;
                 input.value = '';
-                try { const saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); if (saved.logos) delete saved.logos[slot.id]; localStorage.setItem(storageKey, JSON.stringify(saved));document.dispatchEvent(new Event('sheet-logo-changed')); } catch (error) {}
+                try { const saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); saved.logos=saved.logos||{};saved.logos[slot.id]=null; localStorage.setItem(storageKey, JSON.stringify(saved));document.dispatchEvent(new Event('sheet-logo-changed')); } catch (error) {}
             });
         });
         function pilihElemen(event, el) {
