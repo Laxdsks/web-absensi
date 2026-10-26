@@ -13040,11 +13040,12 @@ function measure(el,value,size){const s=getComputedStyle(el);ctx.font=`${s.fontS
 function fit(el){if(!el.getClientRects().length)return;const value=text(el);if(!value)return;const previous=sizes.get(el)||(el.hasAttribute('data-wa-fit-font')?{value:el.dataset.waFitFont,priority:el.dataset.waFitPriority||''}:null);if(previous)el.style.setProperty('font-size',previous.value,previous.priority);const style=getComputedStyle(el),base=parseFloat(style.fontSize),width=available(el);if(width<4)return;const needed=measure(el,value,base);if(needed>width-2){if(!previous){const original={value:el.style.getPropertyValue('font-size'),priority:el.style.getPropertyPriority('font-size')};sizes.set(el,original);el.dataset.waFitFont=original.value;el.dataset.waFitPriority=original.priority;}const size=Math.max(4,Math.floor(base*(width-2)/needed*100)/100);el.style.setProperty('font-size',size+'px','important');el.title=value;}else if(previous){sizes.delete(el);delete el.dataset.waFitFont;delete el.dataset.waFitPriority;}}
 function prepareTable(table){table.querySelectorAll('th br').forEach(br=>br.replaceWith(document.createTextNode(' ')));if(table.id==='tabelRekapNilai'){
  const header=table.tHead,rows=Array.from(table.tBodies[0]?.rows||[]),cols=Array.from(table.querySelectorAll('colgroup col'));
+ const printing=matchMedia('print').matches&&document.body.classList.contains('cetak-rekap');
+ if(printing){const widths=[3,18,12,4,5,4,4,4,6,7,7,5,5,6,5,5];cols.forEach((col,i)=>col.style.width=widths[i]+'%');table.style.width='100%';table.style.minWidth='0';return;}
  const leaf=[];let index=0;for(const cell of header.rows[0].cells){if(cell.rowSpan>1)leaf[index]=cell;index+=cell.colSpan;}
  index=0;for(const cell of header.rows[1].cells){while(leaf[index])index++;leaf[index++]=cell;}
  const font=Math.max(11,parseFloat(getComputedStyle(table).fontSize)),widths=leaf.map((cell,i)=>Math.ceil(Math.max(i===1?210:i===2?145:60,measure(cell,text(cell),font)+20,...rows.map(row=>{const item=row.cells[i];return item?.querySelector('input')?70:measure(item,text(item),font)+20;}))));
- const printing=matchMedia('print').matches&&document.body.classList.contains('cetak-rekap'),total=widths.reduce((a,b)=>a+b,0);
- cols.forEach((col,i)=>{col.style.width=printing?widths[i]/total*100+'%':widths[i]+'px';});table.style.width=printing?'100%':total+'px';table.style.minWidth=printing?'0':total+'px';
+ cols.forEach((col,i)=>col.style.width=widths[i]+'px');table.style.width=widths.reduce((a,b)=>a+b,0)+'px';table.style.minWidth=table.style.width;
 
  }
 }
@@ -13091,7 +13092,7 @@ function update(){scheduled=false;if(running)return;running=true;try{
  meta.filter(el=>!el.matches('.meta-label')).forEach(fit);
  for(const el of items)if(text(el))el.title=text(el);
  paper.querySelectorAll('.institution .line,.institution .contact,.header-text>*').forEach(fit);
- const recap=document.querySelector('#tabelRekapNilai');if(recap&&recap.getClientRects().length){prepareTable(recap);const cells=tableItems(recap);cells.forEach(restoreSize);const size=commonFont(cells,12);for(const el of cells)el.style.setProperty('font-size',size+'px','important');}
+ const recap=document.querySelector('#tabelRekapNilai');if(recap&&recap.getClientRects().length){prepareTable(recap);const cells=tableItems(recap);cells.forEach(restoreSize);const printing=matchMedia('print').matches&&document.body.classList.contains('cetak-rekap'),size=printing?7*4/3:commonFont(cells,12);for(const el of cells)el.style.setProperty('font-size',size+'px','important');}
  window.pastikanJarakTandaTangan?.();
  }finally{running=false;}}
 // Measure generated Office markup at its actual paper width before saving it.
@@ -13208,7 +13209,7 @@ window.WAFitAttendanceDates();
 try {
 (() => {
 let host;try{host=parent!==window&&parent.location.origin===location.origin?parent.AbsensiDesktop:null;}catch(_){}const native=window.Android||window.AbsensiDesktop||host;if(!native)return;
-function printableHTML(){window.pastikanJarakTandaTangan?.();const root=document.documentElement.cloneNode(true);const originals=document.querySelectorAll('input,textarea,select');root.querySelectorAll('input,textarea,select').forEach((el,i)=>{const value=originals[i];if(el.tagName==='INPUT'){el.setAttribute('value',value.value);if(value.checked)el.setAttribute('checked','');else el.removeAttribute('checked');}else if(el.tagName==='TEXTAREA')el.textContent=value.value;else Array.from(el.options).forEach((o,j)=>{if(value.options[j].selected)o.setAttribute('selected','');else o.removeAttribute('selected');});});root.querySelectorAll('.wa-guide,#waStatus,.p-screen-only,.p-dialog').forEach(el=>el.remove());root.querySelectorAll('script').forEach(el=>el.remove());return '<!doctype html>'+root.outerHTML;}window.AbsensiNativeExport={html:printableHTML};
+function printableHTML(){window.pastikanJarakTandaTangan?.();const root=document.documentElement.cloneNode(true);root.classList.remove('wa-vector-print-ready');root.querySelectorAll('.wa-print-grid').forEach(el=>el.remove());root.querySelectorAll('[data-wa-print-grid-host],[data-wa-vector-grid]').forEach(el=>{el.removeAttribute('data-wa-print-grid-host');el.removeAttribute('data-wa-vector-grid');});const originals=document.querySelectorAll('input,textarea,select');root.querySelectorAll('input,textarea,select').forEach((el,i)=>{const value=originals[i];if(el.tagName==='INPUT'){el.setAttribute('value',value.value);if(value.checked)el.setAttribute('checked','');else el.removeAttribute('checked');}else if(el.tagName==='TEXTAREA')el.textContent=value.value;else Array.from(el.options).forEach((o,j)=>{if(value.options[j].selected)o.setAttribute('selected','');else o.removeAttribute('selected');});});root.querySelectorAll('.wa-guide,#waStatus,.p-screen-only,.p-dialog').forEach(el=>el.remove());root.querySelectorAll('script').forEach(el=>el.remove());return '<!doctype html>'+root.outerHTML;}window.AbsensiNativeExport={html:printableHTML};
 const originalPrint=window.print.bind(window);window.print=()=>{if(native.printDocument)native.printDocument(printableHTML(),location.href);else if(native.print)native.print();else originalPrint();};
 const click=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(this.download&&/^(blob:|data:)/.test(this.href)){const name=this.download;fetch(this.href).then(r=>r.blob()).then(blob=>{const reader=new FileReader();reader.onload=()=>native.saveFile(name,blob.type,reader.result);reader.readAsDataURL(blob);}).catch(()=>alert('Berkas belum dapat disimpan. Coba lagi.'));return;}return click.call(this);};
 })();
@@ -14417,45 +14418,51 @@ try {
 ;
 /* assets/sheet-print-grid.js */
 try {
-/* Print grid strokes independently of CSS border fills, which PDF thumbnails
-   can round away at fractional pixel positions. No cell dimensions change. */
+/* One vector edge per table boundary. CSS border space is retained, but its
+   ink is hidden while these strokes print, so borders never stack or thicken. */
 (()=>{
  'use strict';
- const selector='#tabelAbsen,#examTableBlock table,#examScaleBlock table,#tabelRekapNilai';
+ const selector='#tabelAbsen,#examTableBlock table,#examScaleBlock table,#tabelRekapNilai,#rekapModalOverlay .grade-rubric';
  const ns='http://www.w3.org/2000/svg';let drawing=false;
- function clear(){document.querySelectorAll('.wa-print-grid').forEach(svg=>svg.remove());document.querySelectorAll('[data-wa-print-grid-host]').forEach(cell=>cell.removeAttribute('data-wa-print-grid-host'));}
+ document.documentElement.classList.add('wa-vector-print-ready');
+ function clear(){document.querySelectorAll('.wa-print-grid').forEach(svg=>svg.remove());document.querySelectorAll('[data-wa-print-grid-host]').forEach(cell=>cell.removeAttribute('data-wa-print-grid-host'));document.querySelectorAll('[data-wa-vector-grid]').forEach(table=>table.removeAttribute('data-wa-vector-grid'));}
  function drawGroup(table,group,cells){
   const origin=group.getBoundingClientRect();if(!origin.width||!origin.height)return;
-  const collapsed=getComputedStyle(table).borderCollapse==='collapse',segments=new Map();
-  function edge(axis,position,start,end){
-   const key=axis+':'+Math.round(position*32),item=segments.get(key)||{axis,position,ranges:[]};
+  const collapsed=getComputedStyle(table).borderCollapse==='collapse',tableBox=table.getBoundingClientRect(),segments=new Map();
+  function edge(axis,position,start,end,outer=false){
+   const key=Number(outer)+axis+':'+Math.round(position*32),item=segments.get(key)||{axis,position,ranges:[],outer};
    item.ranges.push([start,end]);segments.set(key,item);
   }
   for(const cell of cells){
    const r=cell.getBoundingClientRect(),style=getComputedStyle(cell),x=r.left-origin.left,y=r.top-origin.top;
    for(const side of ['Top','Right','Bottom','Left']){
+    if(side==='Top'&&Math.abs(r.top-tableBox.top)>1)continue;
+    if(side==='Left'&&Math.abs(r.left-tableBox.left)>1)continue;
     const width=parseFloat(style['border'+side+'Width']);if(!width||style['border'+side+'Style']==='none')continue;
-    const inset=collapsed?0:width/2;
-    if(side==='Top')edge('h',y+inset,x,x+r.width);
-    if(side==='Bottom')edge('h',y+r.height-inset,x,x+r.width);
-    if(side==='Left')edge('v',x+inset,y,y+r.height);
-    if(side==='Right')edge('v',x+r.width-inset,y,y+r.height);
+    // Keep the whole outer stroke inside the paper/modal clipping box.
+    const outer=side==='Top'||side==='Left'||(side==='Right'?Math.abs(r.right-tableBox.right)<1:Math.abs(r.bottom-tableBox.bottom)<1);
+    const inset=collapsed?0:outer?1:width/2;
+    if(side==='Top')edge('h',y+inset,x,x+r.width,true);
+    if(side==='Bottom')edge('h',y+r.height-inset,x,x+r.width,Math.abs(r.bottom-tableBox.bottom)<1);
+    if(side==='Left')edge('v',x+inset,y,y+r.height,true);
+    if(side==='Right')edge('v',x+r.width-inset,y,y+r.height,Math.abs(r.right-tableBox.right)<1);
    }
   }
-  let path='';
-  for(const {axis,position,ranges} of segments.values()){
+  const paths={inner:'',outer:''};
+  for(const {axis,position,ranges,outer} of segments.values()){
    ranges.sort((a,b)=>a[0]-b[0]);const merged=[];
    for(const range of ranges){const last=merged.at(-1);if(last&&range[0]<=last[1]+.1)last[1]=Math.max(last[1],range[1]);else merged.push(range.slice());}
-   for(const [a,b]of merged)path+=axis==='h'?`M${a},${position}H${b}`:`M${position},${a}V${b}`;
+   for(const [a,b]of merged)paths[outer?'outer':'inner']+=axis==='h'?`M${a},${position}H${b}`:`M${position},${a}V${b}`;
   }
-  const svg=document.createElementNS(ns,'svg'),ink=document.createElementNS(ns,'path');
+  const svg=document.createElementNS(ns,'svg');
   svg.classList.add('wa-print-grid');svg.setAttribute('aria-hidden','true');svg.setAttribute('viewBox',`0 0 ${origin.width} ${origin.height}`);svg.setAttribute('preserveAspectRatio','none');
   svg.style.width=svg.style.height='100%';
-  ink.setAttribute('d',path);ink.setAttribute('fill','none');ink.setAttribute('stroke','#000');ink.setAttribute('stroke-width',String(4/3));ink.setAttribute('stroke-linecap','square');ink.setAttribute('vector-effect','non-scaling-stroke');
+  for(const [kind,path]of Object.entries(paths)){if(!path)continue;const ink=document.createElementNS(ns,'path');ink.setAttribute('d',path);ink.setAttribute('fill','none');ink.setAttribute('stroke','#000');ink.setAttribute('stroke-width',kind==='outer'?String(4/3):'1');ink.setAttribute('stroke-linecap','square');ink.setAttribute('vector-effect','non-scaling-stroke');svg.append(ink);}
   // An SVG directly inside TR/THEAD creates anonymous table boxes in print.
   // Keep it out of flow inside a real cell, then align it to the whole group.
   const host=cells[0];if(!host)return;host.setAttribute('data-wa-print-grid-host','');
-  svg.append(ink);host.append(svg);const painted=svg.getBoundingClientRect();
+  host.append(svg);const painted=svg.getBoundingClientRect();
+  if(!painted.width||!painted.height){svg.remove();host.removeAttribute('data-wa-print-grid-host');return;}
   svg.style.width=(origin.width/painted.width*100)+'%';svg.style.height=(origin.height/painted.height*100)+'%';
   svg.style.left=(origin.left-painted.left)+'px';svg.style.top=(origin.top-painted.top)+'px';
  }
@@ -14467,6 +14474,7 @@ try {
    // when Chromium splits a long table across PDF pages.
    if(table.tHead)drawGroup(table,table.tHead,[...table.tHead.querySelectorAll('th,td')]);
    for(const body of table.tBodies)for(const row of body.rows)if(!row.classList.contains('page-preview-only'))drawGroup(table,row,[...row.cells]);
+   if(table.querySelector('.wa-print-grid'))table.setAttribute('data-wa-vector-grid','');
   }}finally{drawing=false;}
  }
  window.WAPrintGrid={draw,clear};window.addEventListener('beforeprint',draw);window.addEventListener('afterprint',clear);
