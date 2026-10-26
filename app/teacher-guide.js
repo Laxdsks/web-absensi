@@ -61,12 +61,15 @@ host.innerHTML=`<svg class="wa-guide-shade" hidden aria-hidden="true"><path fill
 <div class="wa-guide-dock"><button type="button" class="wa-guide-grip" aria-label="Geser posisi panduan">⋮</button><button type="button" class="wa-guide-open" aria-label="Buka panduan" aria-expanded="false">?<span class="wa-guide-dot"></span></button><button type="button" class="wa-guide-hide" aria-label="Perkecil panduan">›</button></div>
 <section class="wa-guide-panel" hidden role="region" aria-label="Panduan interaktif">
  <div class="wa-guide-heading"><span>PANDUAN INTERAKTIF</span><button type="button" class="wa-guide-close" aria-label="Tutup panduan">×</button></div>
+ <div class="wa-guide-body">
  <label class="wa-guide-topic-label">Topik panduan<select aria-label="Pilih panduan"></select></label>
  <div class="wa-guide-progress"><span></span></div>
  <div class="wa-guide-copy" aria-live="polite"><h3 tabindex="-1"></h3><p class="wa-guide-text"></p><p class="wa-guide-hint" hidden></p></div>
  <details class="wa-guide-example"><summary>Lihat contoh tampilan</summary><img alt="Contoh area yang dijelaskan"></details>
- <div class="wa-guide-actions"><button type="button" class="wa-guide-prev">← Kembali</button><span class="wa-guide-count"></span><button type="button" class="wa-guide-next">Lanjut →</button></div>
+
  <details class="wa-guide-status"><summary>Status sinkronisasi</summary><p class="wa-guide-sync"></p><label><input type="checkbox" class="wa-guide-status-toggle"> Tampilkan status di halaman</label></details>
+ </div>
+ <div class="wa-guide-actions"><button type="button" class="wa-guide-prev">← Kembali</button><span class="wa-guide-count"></span><button type="button" class="wa-guide-next">Lanjut →</button></div>
 </section>`;
 document.body.append(host);
 const q=s=>host.querySelector(s),dock=q('.wa-guide-dock'),panel=q('.wa-guide-panel'),frame=q('.wa-guide-target'),shade=q('.wa-guide-shade'),arrow=q('.wa-guide-arrow'),select=q('select');
@@ -125,7 +128,7 @@ function render(){
  const available=visible(target);q('.wa-guide-hint').hidden=available;q('.wa-guide-hint').textContent='Area ini muncul setelah langkah sebelumnya selesai. Lihat contoh atau lanjutkan panduan; data Anda tidak diubah oleh panduan.';
  q('.wa-guide-count').textContent=`${index+1} / ${groups[chapter][1].length}`;q('.wa-guide-progress span').style.width=((index+1)/groups[chapter][1].length*100)+'%';q('.wa-guide-prev').disabled=index===0;q('.wa-guide-next').textContent=index===groups[chapter][1].length-1?'Selesai ✓':'Lanjut →';
  if(available){const item=target.matches('table,tbody')?target.querySelector('tr')||target:target;item.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});}
- q('.wa-guide-copy').scrollTop=0;position();requestAnimationFrame(()=>{if(ticket===generation){position();q('h3').focus({preventScroll:true});}});
+ q('.wa-guide-body').scrollTop=0;position();requestAnimationFrame(()=>{if(ticket===generation){position();q('h3').focus({preventScroll:true});}});
 }
 function open(which=chapter){returnFocus=document.activeElement;chapter=clamp(Number(which)||0,0,groups.length-1);index=0;panel.hidden=false;dock.hidden=true;q('.wa-guide-open').setAttribute('aria-expanded','true');window.PresenWorkspace?.close();render();}
 q('.wa-guide-open').onclick=()=>{if(drag)return;if(dock.classList.contains('is-small')){dock.classList.remove('is-small');put('small',0);dockPosition();}else open();};
