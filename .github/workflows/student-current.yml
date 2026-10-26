@@ -98,3 +98,12 @@ jobs:
           else
             gh release create presen-go-1.2.10 native/android/prebuilt/Presen-Go-1.2.10.apk native/android/prebuilt/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'Presen Go 1.2.10 — Absen Mahasiswa Android' --notes-file docs/PRESEN-GO-1.2.10.md
           fi
+
+          # Stable link for the website; update only after signed-APK verification.
+          mkdir -p rolling-student
+          cp native/android/prebuilt/Presen-Go-1.2.10.apk rolling-student/Presen-Go.apk
+          if gh release view presen-go-current >/dev/null 2>&1; then
+            gh release upload presen-go-current rolling-student/Presen-Go.apk --clobber
+          else
+            gh release create presen-go-current rolling-student/Presen-Go.apk --target "$GITHUB_SHA" --title 'Presen Go — Unduhan mahasiswa terbaru' --notes 'APK mahasiswa terbaru yang telah diverifikasi. Tautan ini tetap sama pada pembaruan berikutnya.' --prerelease
+          fi
