@@ -209,8 +209,10 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         .signature-section { display:flex; justify-content:space-between; align-items:flex-start; clear:both; gap:20px; margin-top:28px; font-size:calc(9pt * var(--exam-font-scale)); break-inside:avoid; page-break-inside:avoid; }
         .signature-box { width:230px; max-width:48%; text-align:left; }
         .signature-space { height:72px; }
-        .signature-name { display:block; min-height:1.2em; border-bottom:1px solid #111; font-weight:700; }
-        .signature-identity [contenteditable] { display:inline-block; min-width:90px; min-height:1.2em; }
+        .signature-details { display:grid; width:max-content; max-width:100%; }
+        .signature-name { overflow-wrap:anywhere; display:block; min-height:1.2em; border-bottom:1px solid #111; font-weight:700; }
+        .signature-identity [contenteditable] { display:inline-block; min-width:0; max-width:100%; overflow-wrap:anywhere; min-height:1.2em; }
+        .signature-identity [contenteditable]:empty { min-width:3ch; }
         @media(max-width:700px) {
             body { padding:106px 4px 20px; }
             .toolbar { justify-content:center; }
@@ -411,15 +413,19 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 <div class="signature-box selectable-element" id="examSupervisorBox" data-type="Tanda tangan Pengawas Ujian" onclick="pilihElemen(event,this)">
                     <div contenteditable="true" data-edit-key="supervisor-title">Pengawas Ujian</div>
                     <div class="signature-space" data-signature-slot="pengawas" data-signature-label="Tanda tangan pengawas ujian"></div>
-                    <div class="signature-name" contenteditable="true" data-edit-key="supervisor-name" aria-label="Nama pengawas ujian"></div>
-                    <div class="signature-identity">NIDN. <span contenteditable="true" data-edit-key="supervisor-nidn" aria-label="NIDN pengawas ujian"></span></div>
+                    <div class="signature-details">
+                        <div class="signature-name" contenteditable="true" data-edit-key="supervisor-name" aria-label="Nama pengawas ujian"></div>
+                        <div class="signature-identity">NIDN. <span contenteditable="true" data-edit-key="supervisor-nidn" aria-label="NIDN pengawas ujian"></span></div>
+                    </div>
                 </div>
                 <div class="signature-box selectable-element" id="examLecturerBox" data-type="Tanda tangan Dosen Pengampu" onclick="pilihElemen(event,this)">
                     <div contenteditable="true" data-edit-key="lecturer-date">Dompu,</div>
                     <div contenteditable="true" data-edit-key="lecturer-title">Dosen Pengampu Mata Kuliah</div>
                     <div class="signature-space" data-signature-slot="dosen" data-signature-label="Tanda tangan dosen pengampu"></div>
-                    <div class="signature-name" contenteditable="true" data-edit-key="lecturer-name" aria-label="Nama dosen pengampu"></div>
-                    <div class="signature-identity">NIDN. <span contenteditable="true" data-edit-key="lecturer-nidn" aria-label="NIDN dosen pengampu"></span></div>
+                    <div class="signature-details">
+                        <div class="signature-name" contenteditable="true" data-edit-key="lecturer-name" aria-label="Nama dosen pengampu"></div>
+                        <div class="signature-identity">NIDN. <span contenteditable="true" data-edit-key="lecturer-nidn" aria-label="NIDN dosen pengampu"></span></div>
+                    </div>
                 </div>
             </section>
         </section>
@@ -684,7 +690,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
             const slot=box.querySelector('[data-signature-slot]'),image=slot?.querySelector('.sheet-signature-image:not([hidden])');
             const imageMarkup=image?.getAttribute('src')?`<img src="${escapeHtmlUjian(image.getAttribute('src'))}" alt="${escapeHtmlUjian(image.alt)}" style="display:block;width:220px;height:68px;object-fit:contain;object-position:left center">`:'';
             const name=textFor(`${key}-name`),nidn=textFor(`${key}-nidn`);
-            return `<td style="width:50%;border:0;padding:4px 5px;vertical-align:top;text-align:left;font:8pt 'Times New Roman',serif">${date}<div style="line-height:1.25">${title}</div><div style="height:72px">${imageMarkup}</div><div style="min-height:14pt;border-bottom:1px solid #111;font-weight:bold">${name||'&nbsp;'}</div><div style="line-height:1.4">NIDN. ${nidn}</div></td>`;
+            return `<td style="width:50%;border:0;padding:4px 5px;vertical-align:top;text-align:left;font:8pt 'Times New Roman',serif">${date}<div style="line-height:1.25">${title}</div><div style="height:72px">${imageMarkup}</div><div style="display:inline-block;max-width:100%"><div style="min-height:14pt;border-bottom:1px solid #111;font-weight:bold;overflow-wrap:anywhere">${name||'&nbsp;'}</div><div style="line-height:1.4">NIDN. ${nidn}</div></div></td>`;
         }
         function dokumenPenuhUjian(format) {
             const title=escapeHtmlUjian(paper.querySelector('.sheet-title')?.textContent.trim()||'DAFTAR HADIR UJIAN SEMESTER');
