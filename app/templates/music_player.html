@@ -129,7 +129,7 @@
 .sheet-date-dialog .date-size-sync{display:flex;gap:10px;align-items:center}.sheet-date-dialog .date-size-sync input{width:20px;min-height:20px;flex:none}
 .wa-print-grid{display:none!important}
 @media print {
- [data-wa-print-grid-host]{position:relative}
+ [data-wa-print-grid-host]{position:relative!important}
  .wa-print-grid{display:block!important;position:absolute;left:0;top:0;overflow:visible;z-index:4;pointer-events:none}
  html.wa-vector-print-ready [data-wa-vector-grid]{--wa-grid-ink:transparent}
  /* The recap uses A4 landscape with 10 mm margins. Give it that physical
@@ -646,7 +646,19 @@ html[data-theme] .portal-sheet #topToolbar.p-ribbon { position:fixed; top:8px; }
 /* Informational toasts must not intercept menu clicks underneath them. */
 .toast-container,.toast-container .toast{pointer-events:none}
 .toast-container .p-toast-close{pointer-events:auto}
-</style><script data-teacher-bundle src="app/runtime-teacher-1.2.10-20261026-presen-1210-exam-identity-r4.js?v=20261026-presen-1210-exam-identity-r4" defer></script></head>
+/* Location actions are an external overlay aligned inside the name column.
+   They never change a table cell's positioning or its printed borders. */
+.p-location-layer>.p-location-icon{position:absolute;top:50%;transform:translateY(-50%);display:flex!important;align-items:center;justify-content:center;width:var(--location-size,18px)!important;height:var(--location-size,18px)!important;min-height:0!important;padding:0!important;border:1px solid var(--p-line,#b9cdd8)!important;background:var(--p-surface,#eef7fa)!important;color:var(--p-accent,#087f8c)!important;border-radius:5px!important;cursor:pointer;box-shadow:0 1px 3px #092b401a}
+.p-location-layer>.p-location-icon .p-icon{width:72%;height:72%;stroke-width:1.8}
+.p-location-layer>.p-location-icon:hover{background:var(--p-accent,#087f8c)!important;color:var(--p-on-accent,#fff)!important}
+.p-location-layer>.p-location-icon:focus-visible{outline:2px solid var(--p-accent,#087f8c);outline-offset:1px}
+@media screen{#tabelAbsen input.p-location-name-input{padding-right:22px!important}}
+.p-inbox-sound{margin-top:14px}.p-inbox-sound>summary{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0}.p-inbox-sound-settings{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px;border:1px solid var(--p-line);border-radius:12px;background:var(--input-bg)}
+.p-inbox-sound-settings label{margin:0}.p-inbox-sound-settings .p-sound-enabled{min-height:38px;display:flex;align-items:center;gap:9px;grid-column:1/-1;font-size:13px}.p-sound-enabled input{width:18px;height:18px;accent-color:var(--p-accent)}.p-inbox-sound-settings .p-sound-volume{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:12px}.p-sound-volume input{grid-column:1/-1;width:100%;min-height:32px;accent-color:var(--p-accent)}.p-sound-volume output{font-variant-numeric:tabular-nums}.p-inbox-sound-settings [data-sound-status]{grid-column:1/-1;font-size:12px;line-height:1.5;margin:0;color:var(--p-muted)}
+.p-mail-layout [data-folder=attendance]>details:not(:nth-child(4)){display:none}
+@media(max-width:600px){.p-inbox-sound-settings{grid-template-columns:minmax(0,1fr)}.p-inbox-sound-settings button{justify-self:start}.p-inbox-sound-settings .p-sound-volume{min-width:0}}
+@media print{.p-location-layer,.p-location-layer>.p-location-icon{display:none!important}}
+</style><script data-teacher-bundle src="app/runtime-teacher-1.2.10-20261026-presen-1210-location-inbox-r5.js?v=20261026-presen-1210-location-inbox-r5" defer></script></head>
 <body>
 <div id="musicApplicationView" hidden><iframe id="musicApplicationFrame" name="absensi_music_standalone_app" title="Halaman aplikasi absensi"></iframe></div>
 <div id="musicView">

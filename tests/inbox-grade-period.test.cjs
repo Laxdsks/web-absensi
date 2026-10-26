@@ -6,6 +6,8 @@ test('one floating inbox, consistent identity fonts, grade review and embedded b
  p.on('pageerror',e=>errors.push(e.message));
  try{
   await context.route('**/*',route=>{const u=new URL(route.request().url());if(u.host==='router.project-osrm.org')return route.fulfill({contentType:'application/json',body:JSON.stringify({code:'Ok',routes:[{distance:8500,duration:1100,geometry:{type:'LineString',coordinates:[[118.4,-8.5],[118.462,-8.536]]}}]})});if(u.host==='nominatim.openstreetmap.org')return route.fulfill({contentType:'application/json',body:JSON.stringify({address:{city:'Dompu',state:'Nusa Tenggara Barat',country:'Indonesia'}})});return u.origin===new URL(BASE).origin?route.continue():route.abort();});
+  await context.addInitScript(()=>{const get=navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);navigator.geolocation.getCurrentPosition=(ok,err,options)=>get(p=>ok({coords:p.coords,timestamp:Date.now()}),err,options);});
+  await p.route('**/app_api.php',r=>r.request().postDataJSON()?.action==='maps-config'?r.fulfill({contentType:'application/json',body:JSON.stringify({status:'success',embedKey:'',javascriptKey:''})}):r.fallback());
   await p.goto(BASE+'index.php');await p.waitForFunction(()=>!!window.WA);const source=fs.readFileSync(path.join(__dirname,'../index.php'),'utf8');await p.evaluate(f=>WA.login('teacher',f),{username:'M.Fadillah',password:source.match(/\$pass === '([^']+)'/)[1]});
   const ctx={jenjang:'S1',prodi:'Pendidikan Bahasa Inggris',semester:'4',kelas:'C',year:'2027/2028',period:'Genap'},course='UI fixture',id='00000000-0000-4000-8000-000000000123';
   await p.evaluate(async({ctx,course,id})=>{const s=await WA.get(),scope=await WA.scope(ctx,course);await WA.change(()=>({...s,token:null,selection:{...ctx,matkul:course},outbox:[],snapshot:{roster:[{...ctx,id:1,nim:'C722202401001',nama:'ABUBAKAR ALIF THORIF',jk:'L'},{...ctx,id:2,nim:'C722202401002',nama:'AFDAL',jk:'L'}],sessions:[],documents:[],marks:[{scope,nim:'C722202401001',slot:1,mark:'.',location:{lat:-8.536,lon:118.462,accuracy:25,at:Date.now(),battery:84}}],registrations:[{id,nim:'NEW123',nama:'Mahasiswa baru',ctx,jk:'P',approved:false,created_at:Date.UTC(2026,9,22)}]}}));},{ctx,course,id});
@@ -16,7 +18,7 @@ test('one floating inbox, consistent identity fonts, grade review and embedded b
     await p.setViewportSize({width,height:900});
     for(const folder of ['registration','accounts']){
      await p.locator('[data-folder="'+folder+'"]').first().click();
-     const group=p.locator('#presenInboxDialog details').nth(folder==='registration'?0:2);await group.evaluate(e=>e.open=true);
+     const group=p.locator('#presenInboxDialog [data-inbox-content] details').nth(folder==='registration'?0:2);await group.evaluate(e=>e.open=true);
      const identity=group.locator('.p-registration-identity');
      assert.equal(await identity.locator('.p-registration-nim').innerText(),'NEW123');
      assert.equal(await identity.locator('time').innerText(),'Tanggal daftar: 22/10/2026');
@@ -30,15 +32,15 @@ test('one floating inbox, consistent identity fonts, grade review and embedded b
    await p.locator('#presenInboxDialog>.p-close').click();
    await p.locator('#presenInboxLauncher').click();await p.locator('[data-reject="'+id+'"]').click();await p.waitForFunction(async id=>(await WA.get()).outbox.some(x=>x.type==='reject'&&x.account===id),id);assert((await p.evaluate(()=>WA.get())).outbox.some(x=>x.type==='reject'&&x.account===id));await p.locator('#presenInboxDialog>.p-close').click();
   });
-  await p.goto(BASE+'absen.php?'+new URLSearchParams({...ctx,matkul:course}));await p.waitForFunction(()=>window.WASheetReady);
+  await p.goto(BASE+'absen.php?'+new URLSearchParams({...ctx,matkul:course}));await p.waitForFunction(()=>document.documentElement.dataset.teacherPageState==='ready');
   await t.test('identity names use one font size and academic selection survives navigation',async()=>{
-   await p.evaluate(()=>WAFitSheetText());const font=await p.locator('.name-input').evaluateAll(xs=>xs.map(x=>getComputedStyle(x).fontSize));assert.equal(font.length,2);assert.equal(font[0],font[1]);assert.match(await p.locator('#metaLeftBox').innerText(),/2027\/2028/);assert.match(await p.locator('#metaLeftBox').innerText(),/Genap/);assert.equal(await p.locator('#tabelAbsen thead th').first().evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
+   await p.waitForFunction(()=>document.querySelector('#metaLeftBox')?.textContent.includes('2027/2028'));await p.evaluate(()=>WAFitSheetText());const font=await p.locator('.name-input').evaluateAll(xs=>xs.map(x=>getComputedStyle(x).fontSize));assert.equal(font.length,2);assert.equal(font[0],font[1]);assert.match(await p.locator('#metaLeftBox').innerText(),/2027\/2028/);assert.match(await p.locator('#metaLeftBox').innerText(),/Genap/);assert.equal(await p.locator('#tabelAbsen thead th').first().evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
   });
   await t.test('review distinguishes empty UTS/UAS from explicit zero and offers a review action',async()=>{
    await p.evaluate(()=>bukaRekapNilai());let findings=await p.evaluate(()=>PresenGradeAssistant.inspect());assert.equal(findings.length,2);assert(findings[0].messages.some(x=>/belum diisi/.test(x)));const row=p.locator('#tbodyRekapNilai tr').first();await row.locator('.score-input').nth(3).fill('0');await row.locator('.score-input').nth(4).fill('0');findings=await p.evaluate(()=>PresenGradeAssistant.inspect());assert(!findings[0].messages.some(x=>/belum diisi/.test(x)));assert(findings[0].messages.some(x=>/Nilai [CDE]/.test(x)));await p.locator('#presenGradeAssistant').click();await p.locator('.p-dialog').getByRole('button',{name:'Tinjau',exact:true}).first().click();await p.evaluate(()=>tutupRekapNilai());
   });
   await t.test('map contains captured battery, city and a route without leaving the sheet',async()=>{
-   const before=p.url();await p.locator('.p-location-icon').click();await p.locator('.p-map-summary').getByText(/Baterai 84%/).waitFor();await p.locator('.p-map-place').getByText(/peta Google/).waitFor();await p.locator('#pMapRoute').click();await p.locator('.p-map-status').getByText(/Maps Embed API/).waitFor();assert.equal(p.url(),before);assert.match(await p.locator('.p-map-origin').innerText(),/-8.50000, 118.40000.*-8.53600, 118.46200/);assert.equal(await p.locator('.p-map-frame iframe').isVisible(),true);await p.locator('.p-map-dialog>.p-close').click();
+   const before=p.url();await p.locator('.p-location-icon').click();await p.locator('.p-map-summary').getByText(/Baterai 84%/).waitFor();await p.locator('.p-map-place').getByText(/Alamat|peta Google/).waitFor();await p.locator('#pMapRoute').click();await p.locator('.p-map-status').getByText(/Maps Embed API/).waitFor();assert.equal(p.url(),before);assert.match(await p.locator('.p-map-origin').innerText(),/-8.50000, 118.40000.*-8.53600, 118.46200/);assert.equal(await p.locator('.p-map-frame iframe').isVisible(),true);await p.locator('.p-map-dialog>.p-close').click();
   });
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}

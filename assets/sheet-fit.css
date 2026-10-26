@@ -90,7 +90,7 @@
 .sheet-date-dialog .date-size-sync{display:flex;gap:10px;align-items:center}.sheet-date-dialog .date-size-sync input{width:20px;min-height:20px;flex:none}
 .wa-print-grid{display:none!important}
 @media print {
- [data-wa-print-grid-host]{position:relative}
+ [data-wa-print-grid-host]{position:relative!important}
  .wa-print-grid{display:block!important;position:absolute;left:0;top:0;overflow:visible;z-index:4;pointer-events:none}
  html.wa-vector-print-ready [data-wa-vector-grid]{--wa-grid-ink:transparent}
  /* The recap uses A4 landscape with 10 mm margins. Give it that physical
