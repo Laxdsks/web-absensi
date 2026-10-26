@@ -28,6 +28,17 @@ const groups=[...(chapters[page]||chapters.index),['Offline & sinkronisasi',[ste
 (()=>{
 'use strict';
 if(student)return;
+if(page==='index')groups.unshift(['Aplikasi mahasiswa: instal & gunakan',[
+ step('Unduh atau bagikan APK','Pada bagian Unduh & bagikan Presen Go, tekan Unduh APK terbaru. Dosen dapat membagikan tautan melalui WhatsApp atau menu berbagi perangkat. Untuk berbagi file, unduh APK lalu pilih file tersebut.','#studentAppDownload','home'),
+ step('Pasang di Android','Buka APK dari Unduhan. Jika Android meminta izin, aktifkan Izinkan dari sumber ini hanya untuk browser atau pengelola file yang digunakan, lalu pilih Instal. Izin pemasangan tersebut dapat dimatikan lagi setelah selesai.','#studentAppDownload','home'),
+ step('Masuk ke kelas dosen','Buka Presen Go. Gunakan undangan kelas dari dosen agar data kelas terisi, lalu masukkan NIM dan nama sesuai daftar serta PIN akun mahasiswa. Pilih daftar jika belum memiliki akun dan tunggu persetujuan dosen. Jangan memakai akun administrator.','#studentAppDownload','home'),
+ step('Izinkan kamera dan lokasi','Berikan izin kamera dan lokasi saat diminta. Aktifkan Lokasi/GPS perangkat sebelum mengirim absensi. Jika ditolak, buka Pengaturan Android → Aplikasi → Presen Go → Izin, lalu aktifkan izin yang diperlukan.','#studentAppDownload','home'),
+ step('Absen QR atau wajah','Tunggu dosen membuka sesi pertemuan. Pilih QR lalu arahkan kamera ke seluruh kode terbaru dengan jelas; gunakan gambar QR jika tersedia. Untuk pilihan wajah, daftarkan wajah pemilik akun terlebih dahulu, lalu lakukan verifikasi saat sesi aktif. Keduanya merupakan pilihan cara absen.','#studentAppDownload','home'),
+ step('Kirim dan periksa hasil','Ikuti konfirmasi di layar setelah pemindaian atau verifikasi, lalu periksa status berhasil serta riwayat pertemuan. Jika sesi sudah selesai, gunakan sesi baru dari dosen. Jika masih antre/offline, sambungkan internet dan periksa status sinkronisasi sebelum menganggap absensi diterima.','#studentAppDownload','home'),
+ step('Sakit atau izin dengan bukti','Pilih Sakit atau Izin pada pertemuan yang sesuai. Isi alasan yang jelas dan lampirkan foto bukti sebelum dikirim. Dosen meninjau permohonan dari Pesan mahasiswa. QR balasan digunakan untuk pengajuan sakit/izin sesuai alur aplikasi, bukan pengganti lokasi yang dimatikan.','#studentAppDownload','home'),
+ step('Perbarui tanpa menghapus data','Kembali ke bagian unduhan ini untuk mengambil APK terbaru. Pasang sebagai pembaruan pada aplikasi yang sama. Jangan hapus aplikasi atau data hanya untuk memperbarui. Jika Android menolak pembaruan, simpan pesan kesalahannya dan hubungi pengelola sebelum menghapus apa pun.','#studentAppDownload','home')
+]]);
+
 // Keep guidance consistent with the current account-backed workflow.
 for(const [,steps] of groups)for(const s of steps){
  if(s.title==='Isi identitas lembar')s.text='Ketuk identitas untuk mengedit. Perubahan disimpan di perangkat dan disinkronkan ke akun saat online. Gunakan kelas dan mata kuliah yang sama di perangkat lain.';

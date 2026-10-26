@@ -12756,6 +12756,26 @@ window.PresenUI={icon,dialog,appearance,navigate,closable,setTheme,accent};windo
 } catch(error) {console.error("Teacher module app/portal.js failed",error);window.PresenTeacherStartup?.fail();}
 
 ;
+/* app/teacher-download.js */
+try {
+/* Verified student release; the rolling asset is updated only after APK checks. */
+(()=>{'use strict';
+if(!document.body.classList.contains('portal-home'))return;
+const url='https://github.com/Laxdsks/web-absensi/releases/download/presen-go-current/Presen-Go.apk',guideURL=new URL('app/panduan-mahasiswa.html',new URL('../',document.currentScript.src)).href,text='Unduh Presen Go, aplikasi absensi mahasiswa Android: '+url+'\nPanduan instalasi dan penggunaan: '+guideURL;
+const box=document.createElement('section');box.id='studentAppDownload';box.className='teacher-app-download';box.setAttribute('aria-labelledby','studentAppTitle');
+box.innerHTML='<div><span class="teacher-app-label">APLIKASI MAHASISWA · ANDROID</span><h2 id="studentAppTitle">Unduh & bagikan Presen Go</h2><p>Bagikan aplikasi kepada mahasiswa. Tautan ini selalu menuju APK terbaru yang sudah dirilis.</p></div><div class="teacher-app-actions"><a class="p-primary" data-apk-download>Unduh APK terbaru</a><button type="button" data-app-share>Bagikan tautan</button><a data-app-whatsapp target="_blank" rel="noopener noreferrer">Bagikan ke WhatsApp</a><button type="button" data-app-copy>Salin tautan</button><button type="button" data-app-file>Bagikan file APK</button><button type="button" data-app-guide>Panduan instal & penggunaan</button></div><p><a data-student-guide target="_blank" rel="noopener noreferrer">Buka panduan untuk mahasiswa</a></p><label class="teacher-app-link">Tautan unduhan<input readonly aria-label="Tautan aplikasi mahasiswa"></label><p class="teacher-app-help">Untuk membagikan file, unduh APK dahulu, lalu pilih file tersebut melalui tombol Bagikan file APK. Dukungan berbagi file mengikuti browser perangkat.</p><input type="file" accept=".apk,application/vnd.android.package-archive" data-apk-picker hidden><p role="status" aria-live="polite"></p>';
+(document.querySelector('.portal-hero')||document.querySelector('.main-card')).after(box);
+box.querySelector('[data-app-guide]').onclick=()=>{document.querySelector('.wa-guide-open')?.click();const select=document.querySelector('.wa-teacher-guide .wa-guide-panel select'),option=select&&[...select.options].find(o=>o.textContent.includes('Aplikasi mahasiswa:'));if(option){select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));}};
+const status=box.querySelector('[role=status]'),link=box.querySelector('input[readonly]'),picker=box.querySelector('[data-apk-picker]');link.value=url;box.querySelector('[data-student-guide]').href=guideURL;box.querySelector('[data-apk-download]').href=url;box.querySelector('[data-app-whatsapp]').href='https://wa.me/?text='+encodeURIComponent(text);
+box.querySelector('[data-app-copy]').onclick=async()=>{try{await navigator.clipboard.writeText(url);status.textContent='Tautan unduhan disalin.';}catch(_){link.focus();link.select();status.textContent='Pilih Salin pada tautan yang disorot.';}};
+box.querySelector('[data-app-share]').onclick=async()=>{if(!navigator.share){box.querySelector('[data-app-copy]').click();return;}try{await navigator.share({title:'Presen Go — Absen Mahasiswa',text:'Aplikasi absensi mahasiswa Android. Panduan instalasi dan penggunaan: '+guideURL,url});status.textContent='Tautan diserahkan ke aplikasi berbagi.';}catch(e){if(e.name!=='AbortError')status.textContent='Berbagi belum tersedia. Gunakan Salin tautan atau WhatsApp.';}};
+box.querySelector('[data-app-file]').onclick=()=>{if(!navigator.share||!navigator.canShare){status.textContent='Unduh APK, lalu lampirkan file unduhan melalui WhatsApp atau aplikasi pesan Anda.';return;}status.textContent='Pilih file APK Presen Go yang sudah Anda unduh.';picker.click();};
+picker.onchange=async()=>{const file=picker.files?.[0];picker.value='';if(!file)return;if(!/\.apk$/i.test(file.name)){status.textContent='Pilih file aplikasi berformat APK.';return;}if(!navigator.canShare({files:[file]})){status.textContent='Browser ini belum mendukung berbagi APK. Lampirkan file unduhan langsung dari aplikasi pesan Anda.';return;}try{await navigator.share({title:'Presen Go — Absen Mahasiswa',files:[file]});status.textContent='File APK diserahkan ke aplikasi berbagi.';}catch(e){if(e.name!=='AbortError')status.textContent='File belum dapat dibagikan. Lampirkan APK langsung dari aplikasi pesan Anda.';}};
+})();
+
+} catch(error) {console.error("Teacher module app/teacher-download.js failed",error);window.PresenTeacherStartup?.fail();}
+
+;
 /* app/teacher-appearance.js */
 try {
 /* One appearance panel; keeps existing wallpaper keys and source image pixels. */
@@ -14322,6 +14342,17 @@ const groups=[...(chapters[page]||chapters.index),['Offline & sinkronisasi',[ste
 (()=>{
 'use strict';
 if(student)return;
+if(page==='index')groups.unshift(['Aplikasi mahasiswa: instal & gunakan',[
+ step('Unduh atau bagikan APK','Pada bagian Unduh & bagikan Presen Go, tekan Unduh APK terbaru. Dosen dapat membagikan tautan melalui WhatsApp atau menu berbagi perangkat. Untuk berbagi file, unduh APK lalu pilih file tersebut.','#studentAppDownload','home'),
+ step('Pasang di Android','Buka APK dari Unduhan. Jika Android meminta izin, aktifkan Izinkan dari sumber ini hanya untuk browser atau pengelola file yang digunakan, lalu pilih Instal. Izin pemasangan tersebut dapat dimatikan lagi setelah selesai.','#studentAppDownload','home'),
+ step('Masuk ke kelas dosen','Buka Presen Go. Gunakan undangan kelas dari dosen agar data kelas terisi, lalu masukkan NIM dan nama sesuai daftar serta PIN akun mahasiswa. Pilih daftar jika belum memiliki akun dan tunggu persetujuan dosen. Jangan memakai akun administrator.','#studentAppDownload','home'),
+ step('Izinkan kamera dan lokasi','Berikan izin kamera dan lokasi saat diminta. Aktifkan Lokasi/GPS perangkat sebelum mengirim absensi. Jika ditolak, buka Pengaturan Android → Aplikasi → Presen Go → Izin, lalu aktifkan izin yang diperlukan.','#studentAppDownload','home'),
+ step('Absen QR atau wajah','Tunggu dosen membuka sesi pertemuan. Pilih QR lalu arahkan kamera ke seluruh kode terbaru dengan jelas; gunakan gambar QR jika tersedia. Untuk pilihan wajah, daftarkan wajah pemilik akun terlebih dahulu, lalu lakukan verifikasi saat sesi aktif. Keduanya merupakan pilihan cara absen.','#studentAppDownload','home'),
+ step('Kirim dan periksa hasil','Ikuti konfirmasi di layar setelah pemindaian atau verifikasi, lalu periksa status berhasil serta riwayat pertemuan. Jika sesi sudah selesai, gunakan sesi baru dari dosen. Jika masih antre/offline, sambungkan internet dan periksa status sinkronisasi sebelum menganggap absensi diterima.','#studentAppDownload','home'),
+ step('Sakit atau izin dengan bukti','Pilih Sakit atau Izin pada pertemuan yang sesuai. Isi alasan yang jelas dan lampirkan foto bukti sebelum dikirim. Dosen meninjau permohonan dari Pesan mahasiswa. QR balasan digunakan untuk pengajuan sakit/izin sesuai alur aplikasi, bukan pengganti lokasi yang dimatikan.','#studentAppDownload','home'),
+ step('Perbarui tanpa menghapus data','Kembali ke bagian unduhan ini untuk mengambil APK terbaru. Pasang sebagai pembaruan pada aplikasi yang sama. Jangan hapus aplikasi atau data hanya untuk memperbarui. Jika Android menolak pembaruan, simpan pesan kesalahannya dan hubungi pengelola sebelum menghapus apa pun.','#studentAppDownload','home')
+]]);
+
 // Keep guidance consistent with the current account-backed workflow.
 for(const [,steps] of groups)for(const s of steps){
  if(s.title==='Isi identitas lembar')s.text='Ketuk identitas untuk mengedit. Perubahan disimpan di perangkat dan disinkronkan ke akun saat online. Gunakan kelas dan mata kuliah yang sama di perangkat lain.';
