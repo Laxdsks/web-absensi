@@ -60,7 +60,28 @@
     if (!link.hidden) link.href = state.job.url;
     dialog.querySelector("[data-brand-share]").hidden = link.hidden;
   }
+  function clearAccount() {
+    state = null;
+    lastRead = 0;
+    image = null;
+    source = "";
+    dirty = false;
+    drag = null;
+    dialog?.close();
+    dialog?.remove();
+    dialog = null;
+    window.PresenStudentDownload?.reset();
+    progress.textContent = "";
+  }
   async function read(force = false, full = false) {
+    const s = await WA.get(),
+      id = s.profile?.role === "teacher" ? s.profile.account.id : null;
+    if (owner !== (id || "")) {
+      clearAccount();
+      owner = id || "";
+      force = true;
+    }
+    if (!id) return;
     if (fetching) {
       if (full) {
         await readWait;
@@ -70,24 +91,6 @@
     }
     if (!navigator.onLine || document.hidden) return;
     if (!force && Date.now() - lastRead < 10000) return;
-    const s = await WA.get(),
-      id = s.profile?.role === "teacher" ? s.profile.account.id : null;
-    if (!id) {
-      if (owner) {
-        owner = "";
-        state = null;
-        dialog?.close();
-        window.PresenStudentDownload?.reset();
-        progress.textContent = "";
-      }
-      return;
-    }
-    if (owner !== id) {
-      owner = id;
-      state = null;
-      dialog?.close();
-      window.PresenStudentDownload?.reset();
-    }
     fetching = true;
     readWait = new Promise((resolve) => (finishRead = resolve));
     try {
@@ -100,10 +103,11 @@
       lastRead = Date.now();
       renderStatus();
     } catch (error) {
-      progress.textContent = error.message;
+      if (owner === id) progress.textContent = error.message;
     } finally {
       fetching = false;
       finishRead();
+      if (owner && owner !== id) void read(true);
     }
   }
   function draw() {
@@ -118,8 +122,20 @@
     g.save();
     g.beginPath();
     if (shape === "circle") g.arc(256, 256, 254, 0, Math.PI * 2);
-    else if (shape === "round") g.roundRect(2, 2, 508, 508, 100);
-    else g.rect(0, 0, 512, 512);
+    else if (shape === "round") {
+      if (g.roundRect) g.roundRect(2, 2, 508, 508, 100);
+      else {
+        g.moveTo(102, 2);
+        g.lineTo(410, 2);
+        g.quadraticCurveTo(510, 2, 510, 102);
+        g.lineTo(510, 410);
+        g.quadraticCurveTo(510, 510, 410, 510);
+        g.lineTo(102, 510);
+        g.quadraticCurveTo(2, 510, 2, 410);
+        g.lineTo(2, 102);
+        g.quadraticCurveTo(2, 2, 102, 2);
+      }
+    } else g.rect(0, 0, 512, 512);
     g.clip();
     g.fillStyle = "#ffffff";
     g.fillRect(0, 0, 512, 512);
@@ -199,6 +215,8 @@
     for (const e of ["pointerup", "pointercancel"])
       c.addEventListener(e, () => (drag = null));
     dialog.querySelector("[data-brand-file]").onchange = async (e) => {
+      const target = dialog,
+        account = owner;
       const file = e.target.files?.[0];
       e.target.value = "";
       if (!file) return;
@@ -228,14 +246,17 @@
         normalized
           .getContext("2d")
           .drawImage(incoming, 0, 0, normalized.width, normalized.height);
-        source = normalized.toDataURL("image/png");
-        if (source.length > 1400000)
-          source = normalized.toDataURL("image/webp", 0.9);
-        if (source.length > 1400000)
+        let normalizedSource = normalized.toDataURL("image/png");
+        if (normalizedSource.length > 1400000)
+          normalizedSource = normalized.toDataURL("image/webp", 0.9);
+        if (normalizedSource.length > 1400000)
           throw Error(
             "Gambar masih terlalu besar. Pilih gambar lebih sederhana.",
           );
-        image = await decode(source);
+        const decoded = await decode(normalizedSource);
+        if (dialog !== target || owner !== account) return;
+        source = normalizedSource;
+        image = decoded;
         dialog.querySelector("[data-brand-center]").click();
         status.textContent =
           "Logo dimuat. Atur potongan dan ukurannya, lalu simpan.";
@@ -271,6 +292,8 @@
             y: +dialog.querySelector("[name=brandY]").value,
           },
         });
+        if (owner !== id || (await WA.get()).profile?.account?.id !== id)
+          return;
         state = result.branding;
         dirty = false;
         renderStatus();
@@ -289,13 +312,18 @@
     };
   }
   launch.onclick = async () => {
+    const account = (await WA.get()).profile?.account?.id;
+    if (!account) return;
     await read(true, true);
+    if (owner !== account || (await WA.get()).profile?.account?.id !== account)
+      return;
     create();
+    const target = dialog;
     controls(state?.config);
-    source = state?.config?.source || "";
-    image = null;
+    let selectedSource = state?.config?.source || "",
+      selectedImage = null;
     try {
-      if (!source) {
+      if (!selectedSource) {
         const fallback = new Image();
         fallback.src = new URL("app/icon-512.png", WA.ROOT);
         await fallback.decode();
@@ -303,10 +331,13 @@
         c.width = 512;
         c.height = 512;
         c.getContext("2d").drawImage(fallback, 0, 0, 512, 512);
-        source = c.toDataURL("image/png");
+        selectedSource = c.toDataURL("image/png");
       }
-      image = await decode(source);
+      selectedImage = await decode(selectedSource);
     } catch (_) {}
+    if (dialog !== target || owner !== account) return;
+    source = selectedSource;
+    image = selectedImage;
     dirty = false;
     draw();
     renderStatus();
