@@ -5,6 +5,7 @@ require_once __DIR__.'/app_attendance.php';
 require_once __DIR__.'/app_evidence.php';
 require_once __DIR__.'/app_push.php';
 require_once __DIR__.'/app_classes.php';
+require_once __DIR__.'/app_branding.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
@@ -20,6 +21,7 @@ try {
     if(strlen($raw)>4000000)wa_response(['status'=>'error','message'=>'Permintaan terlalu besar.'],413);
     $input=json_decode($raw,true,64,JSON_THROW_ON_ERROR); if(!is_array($input))throw new InvalidArgumentException('Permintaan tidak terbaca.');
     $action=(string)($input['action']??'');
+    if($action==='brand-worker'){wa_brand_worker_auth($raw);wa_response(['status'=>'success']+wa_brand_worker($input));}
     if($action==='teacher-directory'){
         $teachers=[];foreach(array_merge(['admin_01','dosen_01'],array_column(wa_rows("SELECT id FROM wa_teacher_accounts WHERE status='active' ORDER BY display_name"),'id')) as $id){$teacher=wa_teacher_account($id);if($teacher)$teachers[]=['id'=>$id,'name'=>wa_teacher_label($teacher)];}
         wa_response(['status'=>'success','teachers'=>$teachers]);
@@ -64,6 +66,9 @@ try {
     $device=wa_device(); if(!$device)wa_response(['status'=>'error','message'=>'Silakan masuk kembali.','code'=>'AUTH_REQUIRED'],401);
     // Read-only refreshes must not hold the browser's PHP session lock while building responses.
     if(in_array($action,['snapshot','appearance-read','maps-config'],true)&&session_status()===PHP_SESSION_ACTIVE)session_write_close();
+    if($action==='brand-status'){wa_response(['status'=>'success','branding'=>wa_brand_read($device,false)]);}
+    if($action==='brand-read'){wa_response(['status'=>'success','branding'=>wa_brand_read($device)]);}
+    if($action==='brand-save'){wa_response(['status'=>'success','branding'=>wa_brand_save($device,$input)]);}
     if($action==='appearance-read'){wa_teacher($device);wa_response(['status'=>'success','appearance'=>wa_appearance_read($device)]);}
     if($action==='appearance-save')wa_response(wa_appearance_save($device,$input));
     if($action==='create-class-invite')wa_response(['status'=>'success','invite'=>wa_create_class_invite($device,$input)]);

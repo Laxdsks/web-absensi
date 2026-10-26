@@ -16,3 +16,5 @@ tests/results/
 __pycache__/
 
 previous-current-installers/
+
+.wa_brand_worker.php

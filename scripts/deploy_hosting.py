@@ -16,7 +16,7 @@ import struct
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = (
-    "teacher-sw.js", "app/.htaccess", "app_preferences.php", "app_courses.php", "app_core.php", "app_classes.php", "teacher_accounts.php", "app_attendance.php", "app_evidence.php", "app_push.php",
+    "app_branding.php", "teacher-sw.js", "app/.htaccess", "app_preferences.php", "app_courses.php", "app_core.php", "app_classes.php", "teacher_accounts.php", "app_attendance.php", "app_evidence.php", "app_push.php",
     "assets/logo-stkip-yapis-dompu.png", "assets/teacher-tools.js", "assets/teacher-tools.css", "assets/app-audio.js", "assets/sheet-signatures.css", "assets/sheet-signatures.js", "assets/sheet-spacing.js", "assets/sheet-fit.js", "assets/sheet-fit.css", "assets/sheet-print-grid.js", "assets/offline-bridge.js", "assets/native-export.js",
     "auth_guard.php", "app_api.php", "music_player.php", "data_siswa.php", "absen.php", "ujian.php", "index.php", "app-sw.js",
 )
