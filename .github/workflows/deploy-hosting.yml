@@ -44,7 +44,7 @@ jobs:
           python3 - <<'PYTHON'
           import os, subprocess
           changed = set(subprocess.check_output(['git', 'diff', '--name-only', 'HEAD^', 'HEAD'], text=True).splitlines())
-          verification = {'scripts/verify_hosting.py', 'tests/test_verify_hosting.py', '.github/workflows/deploy-hosting.yml'}
+          verification = {'scripts/verify_hosting.py', 'tests/test_verify_hosting.py'}
           same_payload = os.environ['WA_EVENT_NAME'] == 'push' and bool(changed) and changed <= verification
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('changed=' + ('false' if same_payload else 'true') + '\n')
