@@ -75,7 +75,10 @@ def build(job,directory):
     sdk=Path(os.environ['ANDROID_HOME']);aapt=sorted(sdk.glob('build-tools/*/aapt'))[-1]
     details=subprocess.check_output([str(aapt),'dump','badging',str(unsigned)],text=True)
     if "package: name='"+config['package']+"'" not in details or "versionCode='"+str(config['revision'])+"'" not in details:raise RuntimeError('Compiled brand identity is incorrect.')
-    if 'application-label:'+repr(config['name']) not in details and "application-label:'"+config['name']+"'" not in details:raise RuntimeError('Compiled application name differs from the request.')
+    label=next((line[len("application-label:'"):-1] for line in details.splitlines() if line.startswith("application-label:'")),None)
+    if os.environ.get('WA_BRAND_DEBUG_LABEL')=='1':print('Compiled fixture label: '+repr(label),flush=True)
+    normalized=re.sub(r"\\(['\"\\])",r'\1',label or '')
+    if normalized!=config['name']:raise RuntimeError('Compiled application name differs from the request.')
     icon_path=re.search(r"application: .* icon='([^']+)'",details)
     if not icon_path:raise RuntimeError('Compiled launcher icon is missing.')
     from PIL import Image
@@ -85,18 +88,22 @@ def build(job,directory):
         if compiled.size!=expected.size or compiled.tobytes()!=expected.tobytes():raise RuntimeError('Compiled launcher icon differs from the requested logo.')
     return unsigned
 
+def sign_file(unsigned,identity_path,identity,directory):
+    signed=directory/'Presen-Student.apk'
+    signer=sorted(Path(os.environ['ANDROID_HOME']).glob('build-tools/*/apksigner'))[-1]
+    env={**os.environ,'WA_BRAND_KEYPASS':identity['password']}
+    subprocess.run([str(signer),'sign','--ks',str(identity_path),'--ks-type','PKCS12','--ks-pass','env:WA_BRAND_KEYPASS','--ks-key-alias','brand-release','--key-pass','env:WA_BRAND_KEYPASS','--v1-signing-enabled','false','--v2-signing-enabled','true','--v3-signing-enabled','true','--v4-signing-enabled','false','--out',str(signed),str(unsigned)],env=env,check=True,capture_output=True)
+    verified=subprocess.check_output([str(signer),'verify','--print-certs',str(signed)],text=True)
+    if 'certificate SHA-256 digest: '+identity['certificate'] not in verified:raise RuntimeError('Signing identity changed unexpectedly.')
+    return signed
+
 def run_job(key,job):
     with tempfile.TemporaryDirectory(prefix='presen-brand-') as temporary:
         directory=Path(temporary)
         try:
             identity_path,identity=encrypted_identity(key,job,directory)
             unsigned=build(job,directory)
-            signed=directory/'Presen-Student.apk'
-            signer=sorted(Path(os.environ['ANDROID_HOME']).glob('build-tools/*/apksigner'))[-1]
-            env={**os.environ,'WA_BRAND_KEYPASS':identity['password']}
-            subprocess.run([str(signer),'sign','--ks',str(identity_path),'--ks-type','PKCS12','--ks-pass','env:WA_BRAND_KEYPASS','--ks-key-alias','brand-release','--key-pass','env:WA_BRAND_KEYPASS','--v1-signing-enabled','false','--v2-signing-enabled','true','--v3-signing-enabled','true','--v4-signing-enabled','false','--out',str(signed),str(unsigned)],env=env,check=True,capture_output=True)
-            verified=subprocess.check_output([str(signer),'verify','--print-certs',str(signed)],text=True)
-            if 'certificate SHA-256 digest: '+identity['certificate'] not in verified:raise RuntimeError('Signing identity changed unexpectedly.')
+            signed=sign_file(unsigned,identity_path,identity,directory)
             tag='presen-brand-'+job['id'];repository='Laxdsks/web-absensi'
             exists=subprocess.run(['gh','release','view',tag,'--repo',repository],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
             if not exists:subprocess.run(['gh','release','create',tag,'--repo',repository,'--target',os.environ['GITHUB_SHA'],'--title','Aplikasi absensi mahasiswa — versi khusus','--notes','APK khusus akun dosen, dibangun dan ditandatangani otomatis.','--prerelease'],check=True,stdout=subprocess.DEVNULL)
