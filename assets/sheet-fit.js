@@ -7,11 +7,12 @@ function measure(el,value,size){const s=getComputedStyle(el);ctx.font=`${s.fontS
 function fit(el){if(!el.getClientRects().length)return;const value=text(el);if(!value)return;const previous=sizes.get(el)||(el.hasAttribute('data-wa-fit-font')?{value:el.dataset.waFitFont,priority:el.dataset.waFitPriority||''}:null);if(previous)el.style.setProperty('font-size',previous.value,previous.priority);const style=getComputedStyle(el),base=parseFloat(style.fontSize),width=available(el);if(width<4)return;const needed=measure(el,value,base);if(needed>width-2){if(!previous){const original={value:el.style.getPropertyValue('font-size'),priority:el.style.getPropertyPriority('font-size')};sizes.set(el,original);el.dataset.waFitFont=original.value;el.dataset.waFitPriority=original.priority;}const size=Math.max(4,Math.floor(base*(width-2)/needed*100)/100);el.style.setProperty('font-size',size+'px','important');el.title=value;}else if(previous){sizes.delete(el);delete el.dataset.waFitFont;delete el.dataset.waFitPriority;}}
 function prepareTable(table){table.querySelectorAll('th br').forEach(br=>br.replaceWith(document.createTextNode(' ')));if(table.id==='tabelRekapNilai'){
  const header=table.tHead,rows=Array.from(table.tBodies[0]?.rows||[]),cols=Array.from(table.querySelectorAll('colgroup col'));
+ const printing=matchMedia('print').matches&&document.body.classList.contains('cetak-rekap');
+ if(printing){const widths=[3,18,12,4,5,4,4,4,6,7,7,5,5,6,5,5];cols.forEach((col,i)=>col.style.width=widths[i]+'%');table.style.width='100%';table.style.minWidth='0';return;}
  const leaf=[];let index=0;for(const cell of header.rows[0].cells){if(cell.rowSpan>1)leaf[index]=cell;index+=cell.colSpan;}
  index=0;for(const cell of header.rows[1].cells){while(leaf[index])index++;leaf[index++]=cell;}
  const font=Math.max(11,parseFloat(getComputedStyle(table).fontSize)),widths=leaf.map((cell,i)=>Math.ceil(Math.max(i===1?210:i===2?145:60,measure(cell,text(cell),font)+20,...rows.map(row=>{const item=row.cells[i];return item?.querySelector('input')?70:measure(item,text(item),font)+20;}))));
- const printing=matchMedia('print').matches&&document.body.classList.contains('cetak-rekap'),total=widths.reduce((a,b)=>a+b,0);
- cols.forEach((col,i)=>{col.style.width=printing?widths[i]/total*100+'%':widths[i]+'px';});table.style.width=printing?'100%':total+'px';table.style.minWidth=printing?'0':total+'px';
+ cols.forEach((col,i)=>col.style.width=widths[i]+'px');table.style.width=widths.reduce((a,b)=>a+b,0)+'px';table.style.minWidth=table.style.width;
 
  }
 }
@@ -58,7 +59,7 @@ function update(){scheduled=false;if(running)return;running=true;try{
  meta.filter(el=>!el.matches('.meta-label')).forEach(fit);
  for(const el of items)if(text(el))el.title=text(el);
  paper.querySelectorAll('.institution .line,.institution .contact,.header-text>*').forEach(fit);
- const recap=document.querySelector('#tabelRekapNilai');if(recap&&recap.getClientRects().length){prepareTable(recap);const cells=tableItems(recap);cells.forEach(restoreSize);const size=commonFont(cells,12);for(const el of cells)el.style.setProperty('font-size',size+'px','important');}
+ const recap=document.querySelector('#tabelRekapNilai');if(recap&&recap.getClientRects().length){prepareTable(recap);const cells=tableItems(recap);cells.forEach(restoreSize);const printing=matchMedia('print').matches&&document.body.classList.contains('cetak-rekap'),size=printing?7*4/3:commonFont(cells,12);for(const el of cells)el.style.setProperty('font-size',size+'px','important');}
  window.pastikanJarakTandaTangan?.();
  }finally{running=false;}}
 // Measure generated Office markup at its actual paper width before saving it.
