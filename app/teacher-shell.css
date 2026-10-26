@@ -185,7 +185,7 @@ html:not([data-wa-show-status="1"]) #waStatus{display:none!important}
 .wa-teacher-guide .wa-guide-dock .wa-guide-grip{min-height:18px;cursor:ns-resize;touch-action:none;color:#728397}
 .wa-teacher-guide .wa-guide-dock.is-small{width:14px}.wa-teacher-guide .wa-guide-dock.is-small .wa-guide-grip,.wa-teacher-guide .wa-guide-dock.is-small .wa-guide-hide{display:none}.wa-teacher-guide .wa-guide-dock.is-small button{width:14px;min-width:14px;padding:0;min-height:48px;font-size:11px}
 .wa-guide-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#169367;margin-left:3px}.wa-guide-dot.pending{background:#d97706}
-.wa-teacher-guide .wa-guide-panel{position:fixed;pointer-events:auto;background:#fff;color:#183149;border:1px solid #cedbe6;border-radius:15px;box-shadow:0 12px 32px #0003;padding:15px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;max-width:calc(100vw - 24px);text-align:left}
+.wa-teacher-guide .wa-guide-panel{position:fixed;pointer-events:auto;background:#fff;color:#183149;border:1px solid #cedbe6;border-radius:15px;box-shadow:0 12px 32px #0003;padding:15px;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:contain;scrollbar-width:thin;max-width:calc(100vw - 24px);text-align:left}
 .wa-teacher-guide .wa-guide-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px;font-size:10px;font-weight:750;letter-spacing:.08em;color:#346485}
 .wa-teacher-guide .wa-guide-close{background:#eef4f8;border:0;border-radius:8px;font-size:24px;line-height:1;min-width:36px;min-height:36px;color:#183149;padding:0}
 .wa-teacher-guide .wa-guide-topic-label{display:block;margin:0;color:#52697c;font-size:11px;line-height:1.5}
@@ -203,6 +203,12 @@ html:not([data-wa-show-status="1"]) #waStatus{display:none!important}
 .wa-teacher-guide .wa-guide-status{border-top:1px solid #e0e9f0;margin-top:10px;padding-top:3px}.wa-teacher-guide .wa-guide-status p,.wa-teacher-guide .wa-guide-status label{font-size:11px;line-height:1.5}.wa-teacher-guide .wa-guide-status label{display:flex;align-items:center;gap:6px;margin:6px 0 0}.wa-teacher-guide input[type=checkbox]{width:16px;height:16px;min-height:0;margin:0;flex:none}
 @media(max-width:500px){.wa-teacher-guide .wa-guide-panel{padding:12px}.wa-teacher-guide h3{font-size:16px}.wa-teacher-guide .wa-guide-progress{margin:9px 0}.wa-teacher-guide .wa-guide-heading{margin-bottom:5px}}
 @media print{.wa-teacher-guide{display:none!important}}
+
+/* Only the explanation scrolls. Closing and step navigation remain reachable. */
+.wa-teacher-guide .wa-guide-body{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;flex:1 1 auto;padding:2px}
+.wa-teacher-guide .wa-guide-heading,.wa-teacher-guide .wa-guide-actions{flex-shrink:0}
+.wa-teacher-guide .wa-guide-actions{border-top:1px solid #e0e9f0;padding-top:6px}
+@media(max-width:500px){.wa-teacher-guide .wa-guide-panel{padding:10px}.wa-teacher-guide .wa-guide-close{min-width:32px;min-height:32px}.wa-teacher-guide .wa-guide-actions{margin-top:6px;padding-top:4px}.wa-teacher-guide .wa-guide-actions button{min-height:36px;padding:6px 10px}.wa-teacher-guide .wa-guide-heading{margin-bottom:4px}}
 
 /* Shared screen chrome. Printed sheets keep their original document styles. */
 :root{--p-surface:var(--card-bg,#fff);--p-text:var(--text-main,#132b43);--p-muted:var(--text-muted,#536a7d);--p-line:var(--card-border,#dce5ed);--p-accent:var(--primary,#2563eb);--p-on-accent:#fff;--p-bg:#eef3f7;--p-radius:14px}
