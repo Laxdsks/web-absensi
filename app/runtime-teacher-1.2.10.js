@@ -14498,7 +14498,44 @@ try {
   }
   function excelBlocks(blocks) {
     return blocks.map((block) => {
-      if (!block.letterhead) return block;
+      if (!block.letterhead) {
+        const cells =
+          block.type === "table" && block.rows.length === 1
+            ? block.rows[0]
+            : null;
+        if (!cells?.some((c) => c.signature)) return block;
+        const parts = cells.map((c) => {
+          const gap = c.paragraphs.findIndex((p) => p.space);
+          return {
+            cell: c,
+            head: gap < 0 ? c.paragraphs : c.paragraphs.slice(0, gap),
+            space: gap < 0 ? { runs: [], space: 54 } : c.paragraphs[gap],
+            tail: gap < 0 ? [] : c.paragraphs.slice(gap + 1),
+          };
+        });
+        return {
+          ...block,
+          rows: [
+            parts.map((p) => ({
+              ...p.cell,
+              signature: false,
+              paragraphs: p.head,
+              images: [],
+            })),
+            parts.map((p) => ({
+              ...p.cell,
+              signature: false,
+              paragraphs: [p.space],
+            })),
+            parts.map((p) => ({
+              ...p.cell,
+              signature: false,
+              paragraphs: p.tail,
+              images: [],
+            })),
+          ],
+        };
+      }
       const [left, middle, right] = block.rows[0],
         paragraphs = middle.paragraphs.length ? middle.paragraphs : [plain("")],
         count = paragraphs.length,

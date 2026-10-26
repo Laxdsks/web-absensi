@@ -256,6 +256,16 @@ test(
                 ),
               );
               assert(ws.getImages().length >= 2);
+              if (!recap) {
+                const signature = ws.getImages().at(-1),
+                  row = ws.getRow(signature.range.tl.nativeRow + 1),
+                  labels = [];
+                row.eachCell((cell) => labels.push(cell.text));
+                assert(
+                  labels.every((text) => !text.trim()),
+                  "signature image occupies an empty row, separate from headings and names",
+                );
+              }
               let borders = 0;
               ws.eachRow((row) =>
                 row.eachCell((cell) => {
