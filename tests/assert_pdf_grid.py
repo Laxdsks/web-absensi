@@ -2,6 +2,7 @@
 import collections
 import json
 import sys
+from pathlib import Path
 import fitz
 
 reports = []
@@ -83,6 +84,25 @@ for filename in sys.argv[1:]:
                     failures.append({'a': list(a), 'b': list(b), 'hits': hits})
             assert not failures, (filename, page.number, scale, failures[:5])
         checked += len(edges)
+    expected_path = Path(filename + '.geometry.json')
+    if expected_path.exists():
+        # Check the intended cell borders as well as the existing SVG strokes.
+        # Sampling only drawn paths misses a whole row shifted away from its cells.
+        assert len(document) == 1
+        page = document[0]
+        for scale in [.75, 1, 600 / page.rect.width, 1.25]:
+            image = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
+            for cell in json.loads(expected_path.read_text()):
+                for side in ['right', 'bottom', 'left', 'top']:
+                    hits = 0
+                    for n in range(1, 9):
+                        vertical = side in ['left', 'right']
+                        x = cell['x'] + (cell['w'] if side == 'right' else 0 if vertical else cell['w'] * n / 9)
+                        y = cell['y'] + (cell['h'] * n / 9 if vertical else cell['h'] if side == 'bottom' else 0)
+                        x, y = round(x * scale), round(y * scale)
+                        pixels = [(cx, y) for cx in range(x - 2, x + 3)] if vertical else [(x, cy) for cy in range(y - 2, y + 3)]
+                        hits += any(0 <= cx < image.width and 0 <= cy < image.height and max(image.pixel(cx, cy)) < 100 for cx, cy in pixels)
+                    assert hits >= 7, (filename, 'Missing intended cell border with location indicators', side, cell, scale, hits)
     assert checked > 100, (filename, 'No printable table strokes')
     reports.append({'file': filename, 'pages': len(document), 'bordersChecked': checked})
 print(json.dumps(reports))

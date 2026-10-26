@@ -55,8 +55,27 @@ async function show(nim,scope,context,slot){
  d.addEventListener('close',()=>{window.removeEventListener('wa-global-reset',resetDialog);cancel();placeId++;mapListener?.remove();marker?.setMap(null);iframe.removeAttribute('src');});
  try{const config=await WA.api('maps-config');key=config.embedKey||'';javascriptKey=config.javascriptKey||'';if(d.open&&mode==='point'){update();}}catch(_){}
 }
-async function render(){pending=false;if(!body||!paper)return;if(!window.PresenUI||!window.WASheetReady)return;const s=await WA.get();if(s.profile?.role!=='teacher')return;const params=Object.fromEntries(new URLSearchParams(location.search)),ctx=WA.ctx({...s.selection,...params}),scope=await WA.scope(ctx,params.matkul??s.selection?.matkul??'');const used=new Set();for(const row of body.querySelectorAll('tr:not(.page-preview-only)')){const nim=row.cells[1]?.querySelector('input')?.value,cell=row.cells[0];if(!cell)continue;const available=s.snapshot.marks.some(m=>m.nim===nim&&m.scope===scope&&valid(m.location));if(!available)continue;used.add(nim);let b=[...layer.children].find(x=>x.dataset.nim===nim);if(!b){b=document.createElement('button');b.type='button';b.dataset.nim=nim;b.className='p-location-icon p-screen-only';b.innerHTML=PresenUI.icon('pin');b.setAttribute('aria-label','Lokasi absensi '+(s.snapshot.roster.find(r=>r.nim===nim)?.nama||nim));b.title='Lokasi saat mengirim absensi';b.style.pointerEvents='auto';layer.append(b);}cell.classList.add('p-location-row-number');const pr=paper.getBoundingClientRect(),r=cell.getBoundingClientRect(),scale=pr.width/paper.offsetWidth||1;b.style.left=((r.left-pr.left)/scale-35)+'px';b.style.right='auto';b.style.top=((r.top+r.height/2-pr.top)/scale)+'px';b.onclick=e=>{e.stopPropagation();void show(nim,scope);};}for(const b of [...layer.children])if(!used.has(b.dataset.nim))b.remove();}
+async function render(){
+ pending=false;if(!body||!paper||matchMedia('print').matches)return;
+ if(!window.PresenUI||!window.WASheetReady)return;const s=await WA.get();if(s.profile?.role!=='teacher')return;
+ const params=Object.fromEntries(new URLSearchParams(location.search)),ctx=WA.ctx({...s.selection,...params}),scope=await WA.scope(ctx,params.matkul??s.selection?.matkul??''),used=new Set(),availableNims=new Set(s.snapshot.marks.filter(m=>m.scope===scope&&valid(m.location)).map(m=>m.nim)),buttons=new Map([...layer.children].map(b=>[b.dataset.nim,b]));
+ const pr=paper.getBoundingClientRect(),scale=pr.width/paper.offsetWidth||1;
+ // Old saved sheets may still carry the row-number positioning class. A location
+ // control must never change a grid cell's containing block, including in print.
+ body.querySelectorAll('.p-location-row-number').forEach(cell=>cell.classList.remove('p-location-row-number'));
+ for(const row of body.querySelectorAll('tr:not(.page-preview-only)')){
+  const nim=row.cells[1]?.querySelector('input')?.value,cell=row.cells[2],input=cell?.querySelector('.name-input');if(!cell||!input)continue;
+  const available=availableNims.has(nim);input.classList.toggle('p-location-name-input',available);if(!available)continue;
+  used.add(nim);let b=buttons.get(nim);
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.nim=nim;b.className='p-location-icon p-screen-only';b.innerHTML=PresenUI.icon('pin');b.style.pointerEvents='auto';layer.append(b);}
+  const name=input.value||nim;b.setAttribute('aria-label','Lihat lokasi absensi '+name);b.title='Lihat lokasi absensi '+name;
+  const r=cell.getBoundingClientRect(),size=Math.max(8,Math.min(18,r.height/scale-4));
+  b.style.setProperty('--location-size',size+'px');b.style.left=((r.right-pr.left)/scale-size-3)+'px';b.style.right='auto';b.style.top=((r.top+r.height/2-pr.top)/scale)+'px';
+  b.onclick=e=>{e.stopPropagation();void show(nim,scope);};
+ }
+ for(const b of [...layer.children])if(!used.has(b.dataset.nim))b.remove();
+}
 
 function schedule(){if(!pending){pending=true;requestAnimationFrame(()=>void render());}}
-if(body&&paper){new MutationObserver(schedule).observe(body,{childList:true,subtree:true});WA.on(schedule);window.addEventListener('presen-ui-ready',schedule);window.addEventListener('resize',schedule);window.addEventListener('scroll',schedule,true);new ResizeObserver(schedule).observe(paper);new MutationObserver(schedule).observe(paper,{attributes:true,attributeFilter:['style','class']});setTimeout(schedule,500);}window.PresenLocations={render,valid,open:show,address,addressText,normalizeAddress};
+if(body&&paper){new MutationObserver(schedule).observe(body,{childList:true,subtree:true});WA.on(schedule);window.addEventListener('presen-ui-ready',schedule);window.addEventListener('resize',schedule);window.addEventListener('afterprint',schedule);window.addEventListener('scroll',schedule,true);new ResizeObserver(schedule).observe(paper);new MutationObserver(schedule).observe(paper,{attributes:true,attributeFilter:['style','class']});setTimeout(schedule,500);}window.PresenLocations={render,valid,open:show,address,addressText,normalizeAddress};
 })();

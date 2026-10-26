@@ -26,7 +26,7 @@ function attendanceWidths(base){
  const widest=(selector,minimum)=>Math.max(minimum,...[...table.querySelectorAll(selector)].map(el=>measure(el,text(el),base)+20));
  const no=Math.max(28,measure(head.cells[0],text(head.cells[0]),base)+18),sex=Math.max(28,measure(head.cells[3],text(head.cells[3]),base)+18),ket=Math.max(30,measure(head.cells[5],text(head.cells[5]),base)+18);
  const nim=Math.min(width*.28,widest('.nim-input',96)),nameSpace=width-no-sex-ket-nim;
- const name=Math.min(Math.max(100,nameSpace-count*12),Math.max(150,widest('.name-input',150))),values=[no,nim,name,sex,Math.max(count*12,nameSpace-name),ket];
+ const name=Math.min(Math.max(100,nameSpace-count*12),Math.max(150,widest('.name-input',150)+22)),values=[no,nim,name,sex,Math.max(count*12,nameSpace-name),ket];
  table.style.tableLayout='fixed';[...head.cells].forEach((cell,i)=>{cell.style.width=values[i]/width*100+'%';cell.style.minWidth='0';});
 }
 function examWidths(base){
