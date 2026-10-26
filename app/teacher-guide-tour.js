@@ -40,7 +40,7 @@ const host=document.createElement('div');host.className='wa-guide wa-teacher-gui
 host.innerHTML=`<svg class="wa-guide-shade" hidden aria-hidden="true"><path fill-rule="evenodd"></path></svg>
 <div class="wa-guide-target" hidden aria-hidden="true"></div>
 <svg class="wa-guide-arrow" hidden aria-hidden="true"><defs><marker id="waGuideArrowHead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="white" stroke-width="1.5"/></marker></defs><path class="wa-guide-curve" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" marker-end="url(#waGuideArrowHead)"/></svg>
-<div class="wa-guide-dock"><button type="button" class="wa-guide-grip" aria-label="Geser posisi panduan">⋮</button><button type="button" class="wa-guide-open" aria-label="Buka panduan" aria-expanded="false">?<span class="wa-guide-dot"></span></button><button type="button" class="wa-guide-hide" aria-label="Perkecil panduan">›</button></div>
+<div class="wa-guide-dock"><button type="button" class="wa-guide-open" aria-label="Buka panduan" aria-expanded="false"></button></div>
 <section class="wa-guide-panel" hidden role="region" aria-label="Panduan interaktif">
  <div class="wa-guide-heading"><span>PANDUAN INTERAKTIF</span><button type="button" class="wa-guide-close" aria-label="Tutup panduan">×</button></div>
  <div class="wa-guide-body">
@@ -49,17 +49,18 @@ host.innerHTML=`<svg class="wa-guide-shade" hidden aria-hidden="true"><path fill
  <div class="wa-guide-copy" aria-live="polite"><h3 tabindex="-1"></h3><p class="wa-guide-text"></p><p class="wa-guide-hint" hidden></p></div>
  <details class="wa-guide-example"><summary>Lihat contoh tampilan</summary><img alt="Contoh area yang dijelaskan"></details>
 
- <details class="wa-guide-status"><summary>Status sinkronisasi</summary><p class="wa-guide-sync"></p><label><input type="checkbox" class="wa-guide-status-toggle"> Tampilkan status di halaman</label></details>
+ <details class="wa-guide-status"><summary>Status & tombol bantuan</summary><p>Ketuk garis tipis di tepi layar untuk membuka panduan atau inspektor. Seret untuk memindahkannya ke kiri, kanan, atau posisi lain. Di tepi layar tombol kembali menjadi garis tipis. Posisi tersimpan pada browser ini.</p><p class="wa-guide-sync"></p><label><input type="checkbox" class="wa-guide-status-toggle"> Tampilkan status di halaman</label></details>
  </div>
  <div class="wa-guide-actions"><button type="button" class="wa-guide-prev">← Kembali</button><span class="wa-guide-count"></span><button type="button" class="wa-guide-next">Lanjut →</button></div>
 </section>`;
 document.body.append(host);
 const q=s=>host.querySelector(s),dock=q('.wa-guide-dock'),panel=q('.wa-guide-panel'),frame=q('.wa-guide-target'),shade=q('.wa-guide-shade'),arrow=q('.wa-guide-arrow'),select=q('select');
-let chapter=0,index=0,target=null,returnFocus=null,drag=false,fraction=Number(get('position')||.46),scheduled=0,generation=0,cleanups=[],preparing=null,lastDialog=null;
-groups.forEach((g,i)=>select.add(new Option(g[0],i)));dock.classList.toggle('is-small',get('small')==='1');
+let chapter=0,index=0,target=null,returnFocus=null,scheduled=0,generation=0,cleanups=[],preparing=null,lastDialog=null;
+const edgeGuide=window.PresenEdgeTools.mount(q('.wa-guide-open'),{key:'guide',label:'Buka panduan',y:.55});
+groups.forEach((g,i)=>select.add(new Option(g[0],i)));
 const visible=el=>el&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
 function viewport(){const v=window.visualViewport;return{x:v?.offsetLeft||0,y:v?.offsetTop||0,w:v?.width||innerWidth,h:v?.height||innerHeight};}
-function dockPosition(){const v=viewport();dock.style.top=Math.max(v.y+12,Math.min(v.y+v.h-dock.offsetHeight-12,v.y+v.h*fraction))+'px';}
+function dockPosition(){edgeGuide.position();}
 function attach(){const dialog=[...document.querySelectorAll('dialog[open]')].filter(d=>!host.contains(d)).at(-1),parent=dialog||document.body;if(host.parentElement!==parent)parent.append(host);if(!panel.hidden&&host.showPopover){host.setAttribute('popover','manual');if(lastDialog!==dialog&&host.matches(':popover-open'))host.hidePopover();if(!host.matches(':popover-open'))host.showPopover();}lastDialog=dialog;}
 function release(){for(const fn of cleanups.splice(0).reverse())try{fn();}catch(_){}preparing=null;}
 function close(){generation++;panel.hidden=frame.hidden=true;shade.setAttribute('hidden','');arrow.setAttribute('hidden','');if(host.hasAttribute('popover')){if(host.matches(':popover-open'))host.hidePopover();host.removeAttribute('popover');}target=null;release();attach();dock.hidden=false;q('.wa-guide-open').setAttribute('aria-expanded','false');if(visible(returnFocus))returnFocus.focus({preventScroll:true});}
@@ -113,11 +114,10 @@ function render(){
  q('.wa-guide-body').scrollTop=0;position();requestAnimationFrame(()=>{if(ticket===generation){position();q('h3').focus({preventScroll:true});}});
 }
 function open(which=chapter){returnFocus=document.activeElement;chapter=clamp(Number(which)||0,0,groups.length-1);index=0;panel.hidden=false;dock.hidden=true;q('.wa-guide-open').setAttribute('aria-expanded','true');window.PresenWorkspace?.close();render();}
-q('.wa-guide-open').onclick=()=>{if(drag)return;if(dock.classList.contains('is-small')){dock.classList.remove('is-small');put('small',0);dockPosition();}else open();};
-q('.wa-guide-hide').onclick=()=>{close();dock.classList.add('is-small');put('small',1);dockPosition();};q('.wa-guide-close').onclick=close;
+q('.wa-guide-open').onclick=()=>open();q('.wa-guide-close').onclick=close;
 select.onchange=()=>{chapter=Number(select.value);index=0;render();};q('.wa-guide-prev').onclick=()=>{index=Math.max(0,index-1);render();};q('.wa-guide-next').onclick=()=>{if(index===groups[chapter][1].length-1)close();else{index++;render();}};
 const toggle=q('.wa-guide-status-toggle');toggle.checked=get('status')==='1';toggle.onchange=()=>{put('status',toggle.checked?'1':'0');document.documentElement.dataset.waShowStatus=toggle.checked?'1':'0';};
-const grip=q('.wa-guide-grip');grip.onpointerdown=e=>{drag=true;grip.setPointerCapture(e.pointerId);};grip.onpointermove=e=>{if(!drag)return;const v=viewport();fraction=(e.clientY-v.y)/v.h;dockPosition();};grip.onpointerup=()=>{drag=false;put('position',fraction);};grip.onpointercancel=()=>drag=false;
+
 async function status(){let s;try{s=await window.WA?.get();}catch(_){}const pending=s?.outbox?.length||0;q('.wa-guide-dot').classList.toggle('pending',!navigator.onLine||pending>0);q('.wa-guide-sync').textContent=(navigator.onLine?'Online':'Offline')+' · '+pending+' perubahan menunggu sinkronisasi';}
 void status();window.WA?.on(()=>void status());window.addEventListener('online',status);window.addEventListener('offline',status);
 new MutationObserver(records=>{if(panel.hidden||records.every(r=>host.contains(r.target)))return;attach();target=[...document.querySelectorAll(groups[chapter][1][index].target)].find(visible)||target;schedule();}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['open','hidden','class']});

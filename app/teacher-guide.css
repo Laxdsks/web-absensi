@@ -7,10 +7,6 @@ html:not([data-wa-show-status="1"]) #waStatus{display:none!important}
 .wa-teacher-guide .wa-guide-shade,.wa-teacher-guide .wa-guide-arrow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .wa-teacher-guide .wa-guide-shade{fill:#031827c9}
 .wa-teacher-guide .wa-guide-target{position:fixed;border:2px solid #fff;border-radius:7px;box-shadow:0 0 0 3px #4abdfd88;pointer-events:none}
-.wa-teacher-guide .wa-guide-dock{position:fixed;right:0;display:flex;flex-direction:column;pointer-events:auto;background:#fff;border:1px solid #becbd7;border-right:0;border-radius:12px 0 0 12px;box-shadow:0 2px 8px #0002;overflow:hidden}
-.wa-teacher-guide .wa-guide-dock button{border:0;background:#fff;color:#15344e;min-width:34px;min-height:36px;padding:4px;font-weight:700}
-.wa-teacher-guide .wa-guide-dock .wa-guide-grip{min-height:18px;cursor:ns-resize;touch-action:none;color:#728397}
-.wa-teacher-guide .wa-guide-dock.is-small{width:14px}.wa-teacher-guide .wa-guide-dock.is-small .wa-guide-grip,.wa-teacher-guide .wa-guide-dock.is-small .wa-guide-hide{display:none}.wa-teacher-guide .wa-guide-dock.is-small button{width:14px;min-width:14px;padding:0;min-height:48px;font-size:11px}
 .wa-guide-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#169367;margin-left:3px}.wa-guide-dot.pending{background:#d97706}
 .wa-teacher-guide .wa-guide-panel{position:fixed;pointer-events:auto;background:#fff;color:#183149;border:1px solid #cedbe6;border-radius:15px;box-shadow:0 12px 32px #0003;padding:15px;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:contain;scrollbar-width:thin;max-width:calc(100vw - 24px);text-align:left}
 .wa-teacher-guide .wa-guide-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px;font-size:10px;font-weight:750;letter-spacing:.08em;color:#346485}

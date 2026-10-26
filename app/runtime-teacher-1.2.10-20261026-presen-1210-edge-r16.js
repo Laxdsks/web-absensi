@@ -16161,6 +16161,126 @@ const main=document.getElementById('main');if(main)new MutationObserver(()=>void
 } catch(error) {console.error("Teacher module app/experience.js failed",error);window.PresenTeacherStartup?.fail();}
 
 ;
+/* app/teacher-edge-tools.js */
+try {
+/* Small teacher-only launchers. Dragging changes UI position, never sheet data. */
+(() => {
+  'use strict';
+  const icons = {
+    guide: '<circle cx="12" cy="12" r="8.5"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .4c0 1.8-2.5 2-2.5 3.6M12 16h.01"/>',
+    inspector: '<path d="M5 4v4m0 4v8M12 4v10m0 4v2M19 4v2m0 4v10M2 10h6M9 16h6M16 8h6"/>'
+  };
+  const viewport = () => {
+    const v = window.visualViewport;
+    return { x: v?.offsetLeft || 0, y: v?.offsetTop || 0, w: v?.width || innerWidth, h: v?.height || innerHeight };
+  };
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const mounted = new Set();
+  function mount(el, { key, label, y = .55 }) {
+    if (!el) return null;
+    const storage = 'presen-edge-tools-v1:' + key, defaults = { x: 1, y };
+    let state = { ...defaults }, pointer = null, suppress = false;
+    try {
+      const saved = JSON.parse(localStorage.getItem(storage));
+      if (Number.isFinite(saved?.x) && Number.isFinite(saved?.y))
+        state = { x: clamp(saved.x, 0, 1), y: clamp(saved.y, 0, 1) };
+    } catch (_) {}
+    el.classList.add('wa-edge-tool');
+    el.dataset.edgeTool = key;
+    el.type = 'button';
+    el.setAttribute('aria-label', label);
+    el.title = label + ' · Ketuk untuk membuka, seret untuk memindahkan';
+    el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icons[key] + '</svg>' + (key === 'guide' ? '<span class="wa-guide-dot" hidden></span>' : '');
+    function position() {
+      const v = viewport(), dock = state.x === 0 ? 'left' : state.x === 1 ? 'right' : 'free';
+      el.dataset.docked = dock;
+      const w = dock === 'free' ? 36 : 24, h = dock === 'free' ? 36 : 48;
+      const x = v.x + state.x * Math.max(0, v.w - w), top = v.y + 12 + state.y * Math.max(0, v.h - h - 24);
+      el.style.setProperty('left', x + 'px', 'important');
+      el.style.setProperty('top', top + 'px', 'important');
+    }
+    function save() { try { localStorage.setItem(storage, JSON.stringify(state)); } catch (_) {} }
+    function move(cx, cy, snap = true) {
+      const v = viewport(), side = snap && cx - v.x < 36 ? 0 : snap && v.x + v.w - cx < 36 ? 1 : null;
+      const w = side === null ? 36 : 24, h = side === null ? 36 : 48;
+      state.x = side ?? clamp((cx - v.x - w / 2) / Math.max(1, v.w - w), .001, .999);
+      state.y = clamp((cy - v.y - 12 - h / 2) / Math.max(1, v.h - h - 24), 0, 1);
+      position();
+    }
+    el.addEventListener('pointerdown', e => {
+      if (!e.isPrimary || e.button !== 0) return;
+      suppress = false;
+      const r = el.getBoundingClientRect();
+      pointer = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: r.x + r.width / 2, cy: r.y + r.height / 2, state: { ...state }, moved: false };
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener('pointermove', e => {
+      if (!pointer || pointer.id !== e.pointerId) return;
+      const dx = e.clientX - pointer.x, dy = e.clientY - pointer.y;
+      if (!pointer.moved && Math.hypot(dx, dy) < 6) return;
+      pointer.moved = true;
+      el.classList.add('is-dragging');
+      move(pointer.cx + dx, pointer.cy + dy, false);
+    });
+    function finish(e, cancel = false) {
+      if (!pointer || pointer.id !== e.pointerId) return;
+      const p = pointer; pointer = null;
+      el.classList.remove('is-dragging');
+      if (cancel) { state = p.state; position(); }
+      else if (p.moved) {
+        move(p.cx + e.clientX - p.x, p.cy + e.clientY - p.y);
+        // Keep the two edge handles separately reachable after a drop.
+        const r = el.getBoundingClientRect();
+        for (const other of mounted) {
+          if (other === el || !other.getClientRects().length) continue;
+          const b = other.getBoundingClientRect();
+          if (r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top) {
+            const v = viewport(), cy = b.bottom + r.height / 2 + 8;
+            move(r.x + r.width / 2, cy + r.height / 2 < v.y + v.h - 12 ? cy : b.top - r.height / 2 - 8);
+          }
+        }
+        suppress = true; save();
+      } else {
+        // Touch capture can suppress the browser's compatibility click. Activate
+        // a tap here once, then ignore its possible delayed native click.
+        e.preventDefault();
+        el.focus({ preventScroll: true });
+        el.click();
+        suppress = true;
+      }
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    }
+    el.addEventListener('pointerup', e => finish(e));
+    el.addEventListener('pointercancel', e => finish(e, true));
+    el.addEventListener('lostpointercapture', e => finish(e, true));
+    el.addEventListener('click', e => {
+      if (!suppress || e.detail === 0) return;
+      suppress = false; e.preventDefault(); e.stopImmediatePropagation();
+    }, true);
+    el.addEventListener('keydown', e => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home'].includes(e.key)) return;
+      e.preventDefault(); e.stopPropagation();
+      if (e.key === 'Home') { state = { ...defaults }; position(); }
+      else {
+        const r = el.getBoundingClientRect(), step = e.shiftKey ? 32 : 12;
+        move(r.x + r.width / 2 + (e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0), r.y + r.height / 2 + (e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0), false);
+      }
+      save();
+    });
+    mounted.add(el);
+    window.addEventListener('resize', position);
+    window.visualViewport?.addEventListener('resize', position);
+    window.visualViewport?.addEventListener('scroll', position);
+    position();
+    return { position };
+  }
+  window.PresenEdgeTools = { mount };
+  mount(document.getElementById('inspectorToggleBtn'), { key: 'inspector', label: 'Buka inspektor tata letak', y: .72 });
+})();
+
+} catch(error) {console.error("Teacher module app/teacher-edge-tools.js failed",error);window.PresenTeacherStartup?.fail();}
+
+;
 /* app/teacher-guide.js */
 try {
 /* Short contextual tours shared by the original teacher pages and student app. */
@@ -16231,7 +16351,7 @@ const host=document.createElement('div');host.className='wa-guide wa-teacher-gui
 host.innerHTML=`<svg class="wa-guide-shade" hidden aria-hidden="true"><path fill-rule="evenodd"></path></svg>
 <div class="wa-guide-target" hidden aria-hidden="true"></div>
 <svg class="wa-guide-arrow" hidden aria-hidden="true"><defs><marker id="waGuideArrowHead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="white" stroke-width="1.5"/></marker></defs><path class="wa-guide-curve" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" marker-end="url(#waGuideArrowHead)"/></svg>
-<div class="wa-guide-dock"><button type="button" class="wa-guide-grip" aria-label="Geser posisi panduan">⋮</button><button type="button" class="wa-guide-open" aria-label="Buka panduan" aria-expanded="false">?<span class="wa-guide-dot"></span></button><button type="button" class="wa-guide-hide" aria-label="Perkecil panduan">›</button></div>
+<div class="wa-guide-dock"><button type="button" class="wa-guide-open" aria-label="Buka panduan" aria-expanded="false"></button></div>
 <section class="wa-guide-panel" hidden role="region" aria-label="Panduan interaktif">
  <div class="wa-guide-heading"><span>PANDUAN INTERAKTIF</span><button type="button" class="wa-guide-close" aria-label="Tutup panduan">×</button></div>
  <div class="wa-guide-body">
@@ -16240,17 +16360,18 @@ host.innerHTML=`<svg class="wa-guide-shade" hidden aria-hidden="true"><path fill
  <div class="wa-guide-copy" aria-live="polite"><h3 tabindex="-1"></h3><p class="wa-guide-text"></p><p class="wa-guide-hint" hidden></p></div>
  <details class="wa-guide-example"><summary>Lihat contoh tampilan</summary><img alt="Contoh area yang dijelaskan"></details>
 
- <details class="wa-guide-status"><summary>Status sinkronisasi</summary><p class="wa-guide-sync"></p><label><input type="checkbox" class="wa-guide-status-toggle"> Tampilkan status di halaman</label></details>
+ <details class="wa-guide-status"><summary>Status & tombol bantuan</summary><p>Ketuk garis tipis di tepi layar untuk membuka panduan atau inspektor. Seret untuk memindahkannya ke kiri, kanan, atau posisi lain. Di tepi layar tombol kembali menjadi garis tipis. Posisi tersimpan pada browser ini.</p><p class="wa-guide-sync"></p><label><input type="checkbox" class="wa-guide-status-toggle"> Tampilkan status di halaman</label></details>
  </div>
  <div class="wa-guide-actions"><button type="button" class="wa-guide-prev">← Kembali</button><span class="wa-guide-count"></span><button type="button" class="wa-guide-next">Lanjut →</button></div>
 </section>`;
 document.body.append(host);
 const q=s=>host.querySelector(s),dock=q('.wa-guide-dock'),panel=q('.wa-guide-panel'),frame=q('.wa-guide-target'),shade=q('.wa-guide-shade'),arrow=q('.wa-guide-arrow'),select=q('select');
-let chapter=0,index=0,target=null,returnFocus=null,drag=false,fraction=Number(get('position')||.46),scheduled=0,generation=0,cleanups=[],preparing=null,lastDialog=null;
-groups.forEach((g,i)=>select.add(new Option(g[0],i)));dock.classList.toggle('is-small',get('small')==='1');
+let chapter=0,index=0,target=null,returnFocus=null,scheduled=0,generation=0,cleanups=[],preparing=null,lastDialog=null;
+const edgeGuide=window.PresenEdgeTools.mount(q('.wa-guide-open'),{key:'guide',label:'Buka panduan',y:.55});
+groups.forEach((g,i)=>select.add(new Option(g[0],i)));
 const visible=el=>el&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
 function viewport(){const v=window.visualViewport;return{x:v?.offsetLeft||0,y:v?.offsetTop||0,w:v?.width||innerWidth,h:v?.height||innerHeight};}
-function dockPosition(){const v=viewport();dock.style.top=Math.max(v.y+12,Math.min(v.y+v.h-dock.offsetHeight-12,v.y+v.h*fraction))+'px';}
+function dockPosition(){edgeGuide.position();}
 function attach(){const dialog=[...document.querySelectorAll('dialog[open]')].filter(d=>!host.contains(d)).at(-1),parent=dialog||document.body;if(host.parentElement!==parent)parent.append(host);if(!panel.hidden&&host.showPopover){host.setAttribute('popover','manual');if(lastDialog!==dialog&&host.matches(':popover-open'))host.hidePopover();if(!host.matches(':popover-open'))host.showPopover();}lastDialog=dialog;}
 function release(){for(const fn of cleanups.splice(0).reverse())try{fn();}catch(_){}preparing=null;}
 function close(){generation++;panel.hidden=frame.hidden=true;shade.setAttribute('hidden','');arrow.setAttribute('hidden','');if(host.hasAttribute('popover')){if(host.matches(':popover-open'))host.hidePopover();host.removeAttribute('popover');}target=null;release();attach();dock.hidden=false;q('.wa-guide-open').setAttribute('aria-expanded','false');if(visible(returnFocus))returnFocus.focus({preventScroll:true});}
@@ -16304,11 +16425,10 @@ function render(){
  q('.wa-guide-body').scrollTop=0;position();requestAnimationFrame(()=>{if(ticket===generation){position();q('h3').focus({preventScroll:true});}});
 }
 function open(which=chapter){returnFocus=document.activeElement;chapter=clamp(Number(which)||0,0,groups.length-1);index=0;panel.hidden=false;dock.hidden=true;q('.wa-guide-open').setAttribute('aria-expanded','true');window.PresenWorkspace?.close();render();}
-q('.wa-guide-open').onclick=()=>{if(drag)return;if(dock.classList.contains('is-small')){dock.classList.remove('is-small');put('small',0);dockPosition();}else open();};
-q('.wa-guide-hide').onclick=()=>{close();dock.classList.add('is-small');put('small',1);dockPosition();};q('.wa-guide-close').onclick=close;
+q('.wa-guide-open').onclick=()=>open();q('.wa-guide-close').onclick=close;
 select.onchange=()=>{chapter=Number(select.value);index=0;render();};q('.wa-guide-prev').onclick=()=>{index=Math.max(0,index-1);render();};q('.wa-guide-next').onclick=()=>{if(index===groups[chapter][1].length-1)close();else{index++;render();}};
 const toggle=q('.wa-guide-status-toggle');toggle.checked=get('status')==='1';toggle.onchange=()=>{put('status',toggle.checked?'1':'0');document.documentElement.dataset.waShowStatus=toggle.checked?'1':'0';};
-const grip=q('.wa-guide-grip');grip.onpointerdown=e=>{drag=true;grip.setPointerCapture(e.pointerId);};grip.onpointermove=e=>{if(!drag)return;const v=viewport();fraction=(e.clientY-v.y)/v.h;dockPosition();};grip.onpointerup=()=>{drag=false;put('position',fraction);};grip.onpointercancel=()=>drag=false;
+
 async function status(){let s;try{s=await window.WA?.get();}catch(_){}const pending=s?.outbox?.length||0;q('.wa-guide-dot').classList.toggle('pending',!navigator.onLine||pending>0);q('.wa-guide-sync').textContent=(navigator.onLine?'Online':'Offline')+' · '+pending+' perubahan menunggu sinkronisasi';}
 void status();window.WA?.on(()=>void status());window.addEventListener('online',status);window.addEventListener('offline',status);
 new MutationObserver(records=>{if(panel.hidden||records.every(r=>host.contains(r.target)))return;attach();target=[...document.querySelectorAll(groups[chapter][1][index].target)].find(visible)||target;schedule();}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['open','hidden','class']});

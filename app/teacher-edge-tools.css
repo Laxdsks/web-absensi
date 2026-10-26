@@ -1,0 +1,16 @@
+/* A 24 × 48 touch target paints only a slim rail when docked at an edge. */
+.wa-edge-tool.wa-edge-tool{position:fixed!important;right:auto!important;bottom:auto!important;transform:none!important;margin:0!important;padding:0!important;width:36px!important;height:36px!important;min-width:0!important;min-height:0!important;max-width:none!important;border:1px solid var(--ui-border,var(--border,#cbd5e1))!important;border-radius:50%!important;background:var(--ui-panel,var(--panel,#fff))!important;color:var(--ui-text,var(--text,#183149))!important;box-shadow:0 2px 8px #0002!important;z-index:10001;cursor:grab!important;touch-action:none!important;user-select:none;-webkit-user-select:none;overflow:visible!important;transition:none!important;animation:none!important}
+.wa-edge-tool.wa-edge-tool>svg{position:absolute;left:9px;top:9px;width:16px;height:16px;pointer-events:none}
+.wa-edge-tool.wa-edge-tool[data-docked=left],.wa-edge-tool.wa-edge-tool[data-docked=right]{width:24px!important;height:48px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.wa-edge-tool[data-docked=left]::before,.wa-edge-tool[data-docked=right]::before{content:"";position:absolute;top:8px;width:4px;height:32px;border-radius:4px;background:var(--ui-accent,var(--p-accent,#168cce));box-shadow:0 0 0 1px #ffffffa0}
+.wa-edge-tool[data-docked=left]::before{left:3px}.wa-edge-tool[data-docked=right]::before{right:3px}
+.wa-edge-tool.wa-edge-tool[data-docked=left]>svg,.wa-edge-tool.wa-edge-tool[data-docked=right]>svg{opacity:0;top:15px;left:4px}
+@media(hover:hover){.wa-edge-tool.wa-edge-tool[data-docked]:hover{background:var(--ui-panel,var(--panel,#fff))!important;border-radius:12px!important;box-shadow:0 2px 8px #0002!important}.wa-edge-tool[data-docked]:hover::before{opacity:0}.wa-edge-tool.wa-edge-tool[data-docked]:hover>svg{opacity:1}}
+.wa-edge-tool.wa-edge-tool:focus-visible{outline:2px solid var(--ui-accent,#168cce)!important;outline-offset:-2px!important;border-radius:10px!important}
+.wa-edge-tool.wa-edge-tool:focus-visible>svg{opacity:1}.wa-edge-tool:focus-visible::before{opacity:0}
+.wa-edge-tool.wa-edge-tool.is-dragging{cursor:grabbing!important;box-shadow:0 3px 12px #0003!important}
+.wa-teacher-guide .wa-guide-dock{display:contents!important}
+.wa-teacher-guide .wa-guide-dock[hidden]{display:none!important}
+.wa-teacher-guide .wa-guide-dock .wa-edge-tool{pointer-events:auto}
+#inspectorToggleBtn.wa-edge-tool:not(.show){display:none!important}
+@media print{.wa-edge-tool.wa-edge-tool{display:none!important}}
