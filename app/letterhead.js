@@ -113,5 +113,64 @@
     if (!active) links();
   }).observe(header, { childList: true, subtree: true, characterData: true });
   links();
-  window.PresenLetterhead = { restore: defaults, links };
+  function upgradeContent(content, page, owner) {
+    if (owner !== "admin_01" || Number(content?.letterheadLogoVersion) >= 1)
+      return content;
+    const ids =
+        page === "absen"
+          ? ["logoKiriPreview", "logoKananPreview"]
+          : ["logoLeftSlot", "logoRightSlot"],
+      logos = {
+        ...content.logos,
+        [ids[0]]: "letterhead:left",
+        [ids[1]]: "letterhead:right",
+      };
+    const text = { ...content.text },
+      key = (id) => '[data-edit-key="' + id + '"]';
+    if (
+      String(text[key("inst-1")] || "").trim() === "STKIP YAPIS DOMPU" &&
+      String(text[key("inst-3")] || "").trim() === "YAYASAN PENDIDIKAN ISLAM"
+    ) {
+      for (const id of ["inst-1", "inst-2", "inst-3"])
+        text[key(id)] =
+          header.querySelector(key(id))?.dataset.defaultText || text[key(id)];
+      if (
+        text[key("inst-contact")] ===
+        "Email: akademik@stkipyapisdompu.ac.id | Website: www.stkipyapisdompu.ac.id"
+      )
+        text[key("inst-contact")] = header.querySelector(
+          key("inst-contact"),
+        ).dataset.defaultText;
+      if (
+        text[key("inst-address")] ===
+        "Jln. STKIP Yapis Dompu No. 1, Desa Sori Sakolo - Dompu, NTB"
+      )
+        text[key("inst-address")] = header.querySelector(
+          key("inst-address"),
+        ).dataset.defaultText;
+    }
+    return { ...content, logos, text, letterheadLogoVersion: 1 };
+  }
+  function resolveLogo(value) {
+    const side =
+      value === "letterhead:left"
+        ? "left"
+        : value === "letterhead:right"
+          ? "right"
+          : null;
+    if (!side) return value;
+    return (
+      document.querySelector(
+        side === "left"
+          ? "#logoKiriPreview,#logoLeftSlot img"
+          : "#logoKananPreview,#logoRightSlot img",
+      )?.dataset.defaultSrc || null
+    );
+  }
+  window.PresenLetterhead = {
+    restore: defaults,
+    links,
+    upgradeContent,
+    resolveLogo,
+  };
 })();

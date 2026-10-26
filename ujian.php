@@ -766,7 +766,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
         function ubahZoom(delta) { zoomLevel = Math.max(.6, Math.min(1.6, Math.round((zoomLevel + delta) * 10) / 10)); updateZoom(); }
         function resetZoom() { zoomLevel = 1; updateZoom(); }
 
-        function readSavedEdits() {
+        function readSavedEdits(options={}) {
             try {
                 const saved = JSON.parse(localStorage.getItem(storageKey) || '{}') || {};
                 if (saved.blankCourseVersion !== 1) {
@@ -786,6 +786,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                 }
                 document.querySelectorAll('[data-edit-key]').forEach(el => {
                     const key = el.dataset.editKey;
+                    if(options.preserveLetterhead&&key.startsWith('inst-'))return;
                     if (Object.prototype.hasOwnProperty.call(saved.text || {}, key)) {
                         let text = String(saved.text[key] ?? '');
                         // Hilangkan isian garis bawaan lama, sambil mempertahankan jawaban yang diketik dosen.
@@ -794,7 +795,7 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
                         el.textContent = text;
                     }
                 });
-                ['logoLeftSlot', 'logoRightSlot'].forEach(id => { if (saved.logos && saved.logos[id]) setLogo(id, saved.logos[id]); });
+                if(!options.preserveLetterhead)['logoLeftSlot', 'logoRightSlot'].forEach(id => { if (saved.logos && saved.logos[id]) setLogo(id, saved.logos[id]); });
                 Object.entries(saved.positions || {}).forEach(([id, transform]) => { const el = document.getElementById(id); if (el && el.matches('.selectable-element')) el.style.transform = transform; });
                 Object.entries(saved.paragraphSpacing || {}).forEach(([id, setting]) => {
                     const el = document.getElementById(id);

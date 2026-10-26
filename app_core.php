@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__.'/app_letterhead.php';
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261026-presen-1210-signature-r13';
+const WA_BUILD = '20261026-presen-1210-logos-r14';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_teacher_startup_head(): void {
@@ -256,8 +257,9 @@ function wa_finalize(): void {
     }
 }
 
-function wa_document(array $ctx, string $course, string $kind): ?array { $row=wa_one('SELECT * FROM wa_documents WHERE scope=? AND kind=?',[wa_scope($ctx,$course),$kind]); if($row)$row['content']=json_decode($row['content'],true); return $row; }
+function wa_document(array $ctx, string $course, string $kind): ?array { $row=wa_one('SELECT * FROM wa_documents WHERE scope=? AND kind=?',[wa_scope($ctx,$course),$kind]); if($row)$row['content']=wa_letterhead_upgrade($row['kind'],json_decode($row['content'],true)?:[],wa_context_owner(wa_ctx($ctx))); return $row; }
 function wa_save_document(array $ctx, string $course, string $kind, array $content, ?int $expected): array {
+    $content=wa_letterhead_upgrade($kind,$content,wa_context_owner(wa_ctx($ctx)));
     if (!in_array($kind,['grade','attendance-layout','exam-layout','attendance-sheet','exam-sheet'],true) || strlen(wa_json($content))>3000000) throw new InvalidArgumentException('Dokumen tidak valid atau terlalu besar.');
     $scope=wa_scope($ctx,$course);
     $old=wa_one('SELECT * FROM wa_documents WHERE scope=? AND kind=? FOR UPDATE',[$scope,$kind]);
@@ -288,7 +290,7 @@ function wa_snapshot(array $device): array {
     foreach($sessions as &$row) { $row['teacher_pub']=$teacherKeys[$row['teacher_id']]??''; $row['ctx']=json_decode($row['ctx'],true); $row['roster']=$device['role']==='teacher'?json_decode($row['roster'],true):[]; foreach(['slot','starts','deadline','ends','version']as$k)$row[$k]=(int)$row[$k]; } unset($row);
     $availableEvidence=[];foreach(wa_rows('SELECT id,sha256 FROM wa_evidence WHERE owner_id=?',[wa_owner()]) as $photo)$availableEvidence[$photo['id']]=$photo['sha256'];
     foreach($marks as &$row) { $row['attachments']=json_decode($row['attachments']??'[]',true)?:[];$row['verification']=json_decode($row['verification']??'null',true);$row['evidence_ready']=count($row['attachments'])>0&&!array_filter($row['attachments'],static fn($ref)=>($availableEvidence[$ref['id']]??'')!==$ref['hash']); $row['location']=$row['location']?json_decode($row['location'],true):null; $row['slot']=(int)$row['slot']; $row['revision']=(int)$row['revision']; $row['recorded_at']=(int)$row['recorded_at']; } unset($row);
-    foreach($documents as &$row) { $row['ctx']=json_decode($row['ctx'],true); $row['content']=json_decode($row['content'],true); $row['revision']=(int)$row['revision']; } unset($row);
+    foreach($documents as &$row) { $row['ctx']=json_decode($row['ctx'],true); $row['content']=wa_letterhead_upgrade($row['kind'],json_decode($row['content'],true)?:[],$device['account_id']); $row['revision']=(int)$row['revision']; } unset($row);
     foreach($registrations as &$row) { $row['ctx']=json_decode($row['ctx'],true); $row['approved']=(bool)$row['approved']; } unset($row);
     $catalogue=wa_courses_snapshot($device,$sessions,$documents);
     $catalogue['appearance']=wa_appearance_read($device,true);
