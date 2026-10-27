@@ -366,15 +366,15 @@ $logo_kanan_data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACmCAIAAA
 
             <div class="table-wrap selectable-element" id="examTableBlock" data-type="Tabel mahasiswa dan nilai" onclick="pilihElemen(event,this)">
                 <table aria-label="Daftar hadir ujian dan nilai mahasiswa">
-                    <colgroup><col style="width:5%"><col style="width:15%"><col style="width:27%"><col style="width:15%"><col style="width:9%"><col style="width:8%"><col style="width:21%"></colgroup>
-                    <thead><tr><th>No.<br>Urut</th><th>NIM</th><th>Nama Mahasiswa</th><th>Skor</th><th colspan="2">Nilai<br><small>Huruf &nbsp; | &nbsp; Mutu</small></th><th>KET</th></tr></thead>
+                    <colgroup><col style="width:4%"><col style="width:15%"><col style="width:28%"><col style="width:15%"><col style="width:9%"><col style="width:8%"><col style="width:21%"></colgroup>
+                    <thead><tr><th scope="col" aria-label="Nomor urut">NO</th><th>NIM</th><th>Nama Mahasiswa</th><th>Skor</th><th colspan="2">Nilai<br><small>Huruf &nbsp; | &nbsp; Mutu</small></th><th>KET</th></tr></thead>
                     <tbody>
                     <?php if ($data_siswa): foreach ($data_siswa as $i => $siswa):
                         $nim = (string)($siswa['nim'] ?? '');
                         $nilai = $nilai_by_nim[$nim] ?? [];
                     ?>
                         <tr>
-                            <td class="center"><?php echo $i + 1; ?></td>
+                            <td class="center row-no"><?php echo $i + 1; ?></td>
                             <td class="center"><?php echo $escape($nim); ?></td>
                             <td class="name"><?php echo $escape($siswa['nama'] ?? ''); ?></td>
                             <td class="center"><?php echo array_key_exists('skor_akhir', $nilai) ? $escape(number_format((float)$nilai['skor_akhir'], 2, ',', '.')) : ''; ?></td>
