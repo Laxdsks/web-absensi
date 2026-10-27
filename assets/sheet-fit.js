@@ -33,7 +33,8 @@ function examWidths(base){
  const table=paper.querySelector('#examTableBlock table');if(table){
   const width=table.parentElement.clientWidth,rows=[...table.querySelectorAll('tbody tr:not(.page-preview-only)')];
   const needed=(i,min)=>Math.max(min,...rows.map(row=>row.cells[i]?measure(row.cells[i],text(row.cells[i]),base)+20:min));
-  const nim=needed(1,100),name=needed(2,175),fixed=[56,nim,name,50,55,55,40],total=fixed.reduce((a,b)=>a+b,0);
+  const header=table.tHead?.rows[0]?.cells[0],no=Math.max(28,header?measure(header,text(header),base)+18:28,...rows.map(row=>row.cells[0]?measure(row.cells[0],text(row.cells[0]),base)+8:28));
+  const nim=needed(1,100),name=needed(2,175),fixed=[no,nim,name,50,55,55,40],total=fixed.reduce((a,b)=>a+b,0);
   const extra=Math.max(0,width-total);fixed[2]+=extra*.7;fixed[6]+=extra*.3;
   table.querySelectorAll('colgroup col').forEach((col,i)=>col.style.width=fixed[i]/Math.max(width,total)*100+'%');
  }

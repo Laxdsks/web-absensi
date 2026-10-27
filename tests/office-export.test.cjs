@@ -68,6 +68,7 @@ test(
       const out = path.resolve("tests/results/office-export");
       fs.mkdirSync(out, { recursive: true });
       const fixtures = [];
+      let attendanceNumberWidth = 0;
       for (const page of ["absen", "ujian"]) {
         await p.goto(
           BASE +
@@ -78,6 +79,11 @@ test(
         await p.waitForFunction(
           () => document.documentElement.dataset.teacherPageState === "ready",
         );
+        if (page === "ujian") {
+          await p.reload();
+          await p.waitForFunction(() => document.documentElement.dataset.teacherPageState === "ready");
+          assert(await p.locator('#examTableBlock tbody tr:not(.page-preview-only)>td:first-child').evaluateAll(cells => cells.every(c => getComputedStyle(c).textAlign === 'center')), 'rehydrated exam numbering stays centered');
+        }
         assert.equal(
           await p.locator('script[src*="vendor/office/"]').count(),
           0,
@@ -126,6 +132,18 @@ test(
           WAFitSheetText();
         });
         await p.waitForTimeout(100);
+        if (page === "absen") attendanceNumberWidth = await p.locator('#tabelAbsen tbody tr:first-child td:first-child').evaluate(el => el.getBoundingClientRect().width);
+        if (page === "ujian") {
+          for (const media of ["screen", "print"]) {
+            await p.emulateMedia({ media });
+            await p.evaluate(() => WAFitSheetText());
+            const numbering = await p.locator('#examTableBlock tbody tr:not(.page-preview-only)').evaluateAll(rows => rows.map(row => ({center: getComputedStyle(row.cells[0]).textAlign === 'center', width: row.cells[0].getBoundingClientRect().width, table: row.closest('table').getBoundingClientRect().width})));
+            assert.equal(numbering.length, 35);
+            assert(numbering.every(n => n.center && n.width < n.table * .055 && n.width <= attendanceNumberWidth + 4), 'exam numbers remain centered and compact like attendance in ' + media);
+          }
+          await p.emulateMedia({ media: "screen" });
+
+        }
         for (const recap of page === "absen" ? [false, true] : [false]) {
           if (recap) {
             await p.setViewportSize({ width: 393, height: 852 });
@@ -215,6 +233,14 @@ test(
               );
               assert(xml.includes('w:lineRule="atLeast"'));
               assert(xml.includes('w:val="double"'));
+              if (page === "ujian") {
+                const table = [...xml.matchAll(/<w:tbl\b[\s\S]*?<\/w:tbl>/g)].map(m => m[0]).find(t => t.includes('NIM') && t.includes(nim));
+                const rows = [...table.matchAll(/<w:tr\b[\s\S]*?<\/w:tr>/g)].slice(1);
+                assert.equal(rows.length, 35);
+                assert(rows.every(row => row[0].match(/<w:tc\b[\s\S]*?<\/w:tc>/)?.[0].includes('w:val="center"')), 'Word numbering is centered');
+                const cols = [...table.matchAll(/<w:gridCol w:w="(\d+)"/g)].map(m => +m[1]);
+                assert(cols[0] / cols.reduce((a,b) => a+b,0) < .055, 'Word number column stays compact');
+              }
               if (page === "absen" && !recap) {
                 assert(xml.includes("•"));
                 assert(xml.includes("Tanggal pertemuan: 26/10/26"));
@@ -250,6 +276,11 @@ test(
                 row.eachCell((cell) => values.push(cell.text)),
               );
               assert(values.some((v) => v.includes(nim)));
+              if (page === "ujian") {
+                let checked = 0;
+                ws.eachRow(row => { let student = false; row.eachCell(cell => { if (cell.text.startsWith(nim)) student = true; }); if (student) { assert.equal(row.getCell(1).alignment.horizontal, 'center'); checked++; } });
+                assert.equal(checked, 35, 'Excel numbering is centered for every student');
+              }
               assert(
                 values.some((v) =>
                   v.includes("MAHASISWA EKSPOR 34 NAMA LENGKAP"),

@@ -137,3 +137,6 @@
 
 /* Border width is independent of text size and zoom. Each shared edge paints once. */
 #paperSheet #tabelAbsen :is(th,td),#paperSheet :is(#examTableBlock,#examScaleBlock) :is(th,td){border-width:.75pt!important}
+
+/* Match attendance numbering without widening the exam identity column. */
+#paperSheet #examTableBlock thead th:first-child,#paperSheet #examTableBlock tbody tr:not(.page-preview-only)>td:first-child:not(.empty-note){text-align:center!important;vertical-align:middle!important;padding-left:2px!important;padding-right:2px!important}
