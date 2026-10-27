@@ -167,7 +167,7 @@ def main():
     if not all(marker in original for marker in (b'id="formRegisterTeacher"', b'name="avatar_file"', b'name="role"')):
         raise RuntimeError("Teacher registration with photo and requested role is missing.")
     print("Original teacher homepage retained; obsolete second-dashboard link removed.", flush=True)
-    for path in (*[str(path.relative_to(ROOT)) for path in (ROOT / "app").glob("*-[0-9]*.js")], "app/icon-settings.js", "app/portal.js", "app/appearance.js", "app/workspace.js", "app/portal.css", "app/portal-background.svg", "app/student-tools.js", "app/locations.js", "app/account-tools.js", "app/inbox.js", "app/monitoring.js", "app/evidence.js", "app/experience.js", "app/experience.css", "app/student.css", "app/face-check.js", "app/vendor/leaflet/leaflet.js", "app/vendor/leaflet/leaflet.css",
+    for path in (*[str(path.relative_to(ROOT)) for path in (ROOT / "app").glob("*-[0-9]*.js")], "app/icon-settings.js", "app/portal.js", "app/appearance.js", "app/workspace.js", "app/portal.css", "app/portal-background.svg", "app/student-tools.js", "app/locations.js", "app/map-explorer.js", "app/teacher-map.css", "app/account-tools.js", "app/inbox.js", "app/monitoring.js", "app/evidence.js", "app/experience.js", "app/experience.css", "app/student.css", "app/face-check.js", "app/vendor/leaflet/leaflet.js", "app/vendor/leaflet/leaflet.css",
                  *["app/vendor/face/" + name for name in ("face-api.js", "tiny_face_detector_model.bin", "tiny_face_detector_model-weights_manifest.json", "face_landmark_68_tiny_model.bin", "face_landmark_68_tiny_model-weights_manifest.json", "face_recognition_model.bin", "face_recognition_model-weights_manifest.json")], "app/grade-assistant.js", "app/app.js", "app/core.js", "app/qr-files.js", "app/guide.js", "app/guide.css", "app/guide-images/sheet.png", "app/guide-images/appearance.png", "assets/sheet-signatures.js", "assets/sheet-signatures.css", "assets/sheet-fit.js", "assets/sheet-fit.css", "assets/sheet-print-grid.js", "teacher-sw.js", "app/teacher-startup.js", "app/teacher-startup.css", "app/teacher-mobile.css", "app/teacher-shell.css", "app/teacher-guide.js", "app/teacher-guide.css", "app/app.css", "app-sw.js", "assets/offline-bridge.js", "assets/teacher-tools.js", "assets/teacher-tools.css"):
         deployed, _ = request(path + "?verify=" + expected)
         if hashlib.sha256(deployed).digest() != hashlib.sha256((ROOT / path).read_bytes()).digest():
@@ -192,6 +192,10 @@ def main():
         if not isinstance(snapshot.get("roster"), list) or not snapshot.get("tag"):
             raise RuntimeError("Deployed teacher data is not available.")
         print("Database schema, persistent teacher access and snapshot verified; no attendance fixtures created.", flush=True)
+        maps = api("maps-config")
+        print("Google Maps connection: Embed configured=" + ("yes" if maps.get("embedKey") else "no")
+              + "; interactive JavaScript configured=" + ("yes" if maps.get("javascriptKey") else "no")
+              + ". No map keys, services or billing were changed.", flush=True)
         if args.preserve_baseline:
             baseline = json.loads(args.preserve_baseline.read_text())
             if baseline["host"] != HOST:
