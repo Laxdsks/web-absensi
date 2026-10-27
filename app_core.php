@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__.'/app_letterhead.php';
 // Shared storage and identity services. This file never returns database secrets.
-const WA_BUILD = '20261027-presen-1210-destination-r18';
+const WA_BUILD = '20261027-presen-1210-student-route-r19';
 const WA_PRODI = ['Pendidikan Teknologi Informasi', 'Pendidikan Guru Sekolah Dasar', 'Pendidikan Jasmani Kesehatan dan Rekreasi', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Sejarah', 'Pendidikan Bahasa Inggris'];
 
 function wa_teacher_startup_head(): void {

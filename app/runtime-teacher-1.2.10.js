@@ -15851,17 +15851,17 @@ async function show(nim,scope,context,slot){
  const state=await WA.get();if(state.profile?.role!=='teacher')return;
  const params=Object.fromEntries(new URLSearchParams(location.search)),ctx=WA.ctx(context||{...state.selection,...params}),student=state.snapshot.roster.find(x=>x.nim===nim&&WA.sameCtx(x,ctx));
  const marks=state.snapshot.marks.filter(x=>x.nim===nim&&x.scope===scope&&valid(x.location)).sort((a,b)=>b.location.at-a.location.at);
- const d=PresenUI.dialog('Lokasi & rute perjalanan',`<p class="p-location-name"></p><p class="p-note">Lokasi mahasiswa dicatat saat mengirim absen. Perjalanan berawal dari GPS perangkat Anda.</p>
+ const d=PresenUI.dialog('Lokasi & rute perjalanan',`<p class="p-location-name"></p><p class="p-note">Petunjuk jalan dari posisi Anda sekarang ke lokasi absensi mahasiswa.</p>
  <div class="p-map-toolbar"><label>Pertemuan<select id="pMapMeeting"></select></label><button type="button" id="pMapFullscreen" aria-pressed="false">${PresenUI.icon('expand')}Layar penuh</button></div>
- <form class="p-map-search"><label for="pMapDestination">Cari tujuan lain</label><div><input id="pMapDestination" type="search" maxlength="200" placeholder="Nama tempat dan kota, atau alamat lengkap" autocomplete="off"><button type="submit" id="pMapSearch">Cari di peta</button></div></form>
- <div class="p-map-route-controls"><button type="button" id="pMapRoute">Rute ke mahasiswa</button><button type="button" id="pMapLocate">Perbarui lokasi saya</button><label>Perjalanan<select id="pMapTravel"><option value="driving">Mobil / kendaraan</option><option value="walking">Jalan kaki</option><option value="bicycling">Sepeda</option><option value="transit">Transportasi umum</option></select></label></div>
- <p class="p-map-destination" role="status"></p><div class="p-map-summary"></div><p class="p-map-place" role="status"></p><p class="p-map-origin" role="status" hidden></p>
+ <div class="p-map-route-controls"><button type="button" id="pMapRoute">Lihat jalan ke mahasiswa</button><button type="button" id="pMapLocate">Perbarui lokasi saya</button><label>Cara pergi<select id="pMapTravel"><option value="driving">Mobil / kendaraan</option><option value="walking">Jalan kaki</option><option value="bicycling">Sepeda</option><option value="transit">Transportasi umum</option></select></label></div>
+ <details class="p-map-search-options"><summary>Tujuan lain (opsional)</summary><form class="p-map-search"><label for="pMapDestination">Cari tujuan lain</label><div><input id="pMapDestination" type="search" maxlength="200" placeholder="Nama tempat dan kota, atau alamat lengkap" autocomplete="off"><button type="submit" id="pMapSearch">Cari di peta</button></div></form></details>
+ <p class="p-map-destination" role="status"></p><div class="p-map-summary"></div><p class="p-map-place" role="status"></p><p class="p-map-origin" role="status" hidden></p><p class="p-map-status" role="status"></p><button type="button" id="pMapConfirm" hidden>GPS saya benar, tampilkan rute</button>
  <div class="p-map-frame"><iframe title="Peta lokasi di Google Maps" referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-forms" allowfullscreen></iframe><div class="p-route-map" aria-label="Peta interaktif untuk memilih tujuan perjalanan" hidden></div></div>
- <p class="p-map-status" role="status"></p><div class="p-map-actions"><button type="button" class="p-map-link">${PresenUI.icon('pin')}Lokasi target (mahasiswa)</button><button type="button" id="pMapExplore">Jelajahi tempat &amp; foto</button><button type="button" id="pMapStreet">360° · Street View</button><button type="button" id="pMapReset">Reset peta</button><button type="button" id="pMapRetry">Muat ulang peta</button><button type="button" id="pMapConfirm" hidden>GPS saya benar, tampilkan rute</button></div>`);
+ <div class="p-map-actions"><button type="button" class="p-map-link">${PresenUI.icon('pin')}Lokasi target (mahasiswa)</button><button type="button" id="pMapExplore">Jelajahi tempat &amp; foto</button><button type="button" id="pMapStreet">360° · Street View</button><button type="button" id="pMapReset">Reset peta</button><button type="button" id="pMapRetry">Muat ulang peta</button></div>`);
  d.classList.add('p-screen-only','p-map-dialog');d.querySelector('.p-location-name').textContent=(student?.nama||nim)+' · '+nim;
  const select=d.querySelector('#pMapMeeting'),iframe=d.querySelector('iframe'),status=d.querySelector('.p-map-status'),mapElement=d.querySelector('.p-route-map'),originLabel=d.querySelector('.p-map-origin'),confirm=d.querySelector('#pMapConfirm'),routeButton=d.querySelector('#pMapRoute'),search=d.querySelector('.p-map-search'),input=d.querySelector('#pMapDestination'),travel=d.querySelector('#pMapTravel');
  d.querySelector('#pMapExplore').disabled=true;
- let explorer=null,origin=null,destination=null,mode='point',key='',javascriptKey='',watchId=null,configReady=false,gpsEpoch=0,viewEpoch=0,addressEpoch=0,lastRoutePoint=null,lastRouteAt=0,confirmedFarPoint=null,gpsPromise=null,intentEpoch=0;
+ let explorer=null,origin=null,destination=null,mode='point',key='',javascriptKey='',watchId=null,configReady=false,gpsEpoch=0,viewEpoch=0,addressEpoch=0,lastRoutePoint=null,lastRouteAt=0,confirmedFarPoint=null,gpsPromise=null,intentEpoch=0,autoStudentRoute=true;
  const current=()=>marks.find(m=>String(m.slot)===select.value)?.location;
  const coordinates=p=>p.lat+','+p.lon;
  const target=()=>destination||{...current(),name:'Lokasi mahasiswa · '+(student?.nama||nim),student:true};
@@ -15869,17 +15869,18 @@ async function show(nim,scope,context,slot){
  const embed=(type,fields)=>{const url=new URL('https://www.google.com/maps/embed/v1/'+type);url.search=new URLSearchParams({key,language:'id',...fields});return url.href;};
  const pointURL=p=>key?embed('place',{q:coordinates(p),zoom:'16'}):'https://www.google.com/maps?q='+encodeURIComponent(coordinates(p))+'&z=16&output=embed';
  function frame(){mapElement.hidden=true;iframe.hidden=!navigator.onLine;}
- function destinationLabel(){const t=target();d.querySelector('.p-map-destination').textContent='Tujuan perjalanan: '+t.name;routeButton.textContent=t.student?'Rute ke mahasiswa':'Rute ke tujuan ini';}
+ function destinationLabel(){const t=target();d.querySelector('.p-map-destination').textContent='Tujuan perjalanan: '+t.name;routeButton.textContent=t.student?'Lihat jalan ke mahasiswa':'Lihat jalan ke tujuan ini';}
  function describeOrigin(){if(!origin){originLabel.hidden=true;return;}originLabel.hidden=false;originLabel.textContent='Dari lokasi saya (akurasi GPS ±'+Math.round(origin.accuracy)+' m) ke '+target().name;}
  function stopWatch(){if(watchId!==null){navigator.geolocation?.clearWatch(watchId);watchId=null;}gpsEpoch++;}
  function disposeExplorer(){viewEpoch++;explorer?.dispose();explorer=null;mapElement.replaceChildren();}
  function needsKey(){status.textContent='Rute Google Embed belum tersambung. Masukkan kunci Maps Embed API melalui Tampilan → Google Maps. Lokasi absensi tetap tersimpan.';}
  async function place(p){const id=++addressEpoch;try{const result=await address(p,!!javascriptKey);if(id===addressEpoch&&d.open)d.querySelector('.p-map-place').textContent=result?addressText(result):'Alamat rinci mengikuti peta Google. Koordinat absensi tetap tersimpan; RT/RW tidak ditebak.';}catch(_){if(id===addressEpoch&&d.open)d.querySelector('.p-map-place').textContent='Alamat belum dapat dimuat. Koordinat absensi tetap tersedia.';}}
- function showPoint(){if(!current())return;mode='point';frame();iframe.title='Lokasi mahasiswa di Google Maps';if(navigator.onLine)iframe.src=pointURL(current());else iframe.removeAttribute('src');status.textContent=navigator.onLine?'Tekan Rute ke mahasiswa untuk melihat jalur, jarak, dan perkiraan waktu dari lokasi Anda.':'Sedang offline. Peta dan rute memerlukan internet.';}
- function showSearch(){if(!destination?.query)return;mode='search';frame();iframe.title='Pencarian tujuan perjalanan di Google Maps';if(!navigator.onLine){iframe.removeAttribute('src');status.textContent='Pencarian tempat memerlukan internet.';return;}if(!key){iframe.src='https://www.google.com/maps?q='+encodeURIComponent(destination.query)+'&output=embed';needsKey();return;}iframe.src=embed('search',{q:destination.query});status.textContent='Hasil pencarian Google untuk '+destination.name+'. Pastikan nama dan kotanya sesuai, lalu tekan Rute ke tujuan ini. Tujuan rute mengikuti nama/alamat pada kotak pencarian.';}
+ function showPoint(){if(!current())return;mode='point';frame();iframe.title='Lokasi mahasiswa di Google Maps';if(navigator.onLine)iframe.src=pointURL(current());else iframe.removeAttribute('src');status.textContent=navigator.onLine?'Mendeteksi posisi Anda untuk menampilkan jalan ke mahasiswa. Izinkan lokasi saat browser meminta.':'Sedang offline. Peta dan rute memerlukan internet.';}
+ function showSearch(){if(!destination?.query)return;mode='search';frame();iframe.title='Pencarian tujuan perjalanan di Google Maps';if(!navigator.onLine){iframe.removeAttribute('src');status.textContent='Pencarian tempat memerlukan internet.';return;}if(!key){iframe.src='https://www.google.com/maps?q='+encodeURIComponent(destination.query)+'&output=embed';needsKey();return;}iframe.src=embed('search',{q:destination.query});status.textContent='Hasil pencarian Google untuk '+destination.name+'. Pastikan nama dan kotanya sesuai, lalu tekan Lihat jalan ke tujuan ini. Tujuan rute mengikuti nama/alamat pada kotak pencarian.';}
  function gpsPoint(position){const c=position.coords,p={lat:c.latitude,lon:c.longitude,accuracy:c.accuracy,at:position.timestamp};if(!valid(p)||Date.now()-p.at>60000||p.at>Date.now()+10000)throw Error('Lokasi perangkat sudah lama atau tidak valid.');if(p.accuracy>200)throw Error('Lokasi perangkat kurang teliti (±'+Math.round(p.accuracy)+' m).');return p;}
  function gpsError(error){if(!d.open)return;if(!origin)originLabel.hidden=true;status.textContent=(error.code===1?'Izin lokasi belum diberikan. Izinkan lokasi situs ini di pengaturan browser.':error.message||'Lokasi perangkat belum tersedia.')+' Aktifkan GPS lalu tekan Perbarui lokasi saya.';if(error.code===1)stopWatch();}
  function drawRoute(){
+  autoStudentRoute=false;
   if(!origin||!current()||!d.open)return;
   const t=target();if(Number.isFinite(t.lat)&&metres(origin,t)>100000&&(!confirmedFarPoint||metres(origin,confirmedFarPoint)>1000)){
    confirm.hidden=false;status.textContent='GPS Anda terdeteksi lebih dari 100 km dari tujuan. Jika lokasinya keliru, tekan Perbarui lokasi saya. Jika benar, tekan GPS saya benar, tampilkan rute.';return;
@@ -15889,15 +15890,16 @@ async function show(nim,scope,context,slot){
   if(Number.isFinite(t.lat)&&metres(origin,t)<=Math.max(30,origin.accuracy+(t.accuracy||0))){iframe.src=pointURL(t);status.textContent='Lokasi Anda dan tujuan sama atau berdekatan ('+Math.round(metres(origin,t))+' m). Selisihnya masih dalam perkiraan akurasi GPS; rute jalan belum diperlukan.';return;}
   if(!key){iframe.src=pointURL(current());needsKey();return;}
   lastRoutePoint={...origin};lastRouteAt=Date.now();iframe.title='Rute dari lokasi saya ke '+t.name;iframe.src=embed('directions',{origin:coordinates(origin),destination:targetQuery(),mode:travel.value});
-  status.textContent='Rute ke '+t.name+'. Garis perjalanan, jarak jalan, dan perkiraan waktu ditampilkan oleh Google di dalam peta. Waktu mengikuti jenis perjalanan dan rute yang tersedia, bukan jarak garis lurus.';
+  status.textContent='Rute ke '+t.name+'. Garis perjalanan, jarak jalan, dan perkiraan waktu ditampilkan oleh Google di dalam peta. Ikuti jalur pada peta sesuai cara pergi yang dipilih.';
  }
- function acceptGPS(position,automatic=false){origin=gpsPoint(position);describeOrigin();if(mode==='route'&&(!automatic||!lastRoutePoint||Date.now()-lastRouteAt>=15000&&metres(origin,lastRoutePoint)>=30))drawRoute();}
+ function acceptGPS(position,automatic=false){origin=gpsPoint(position);describeOrigin();if(autoStudentRoute&&mode==='point'&&!destination){drawRoute();return;}if(mode==='route'&&(!automatic||!lastRoutePoint||Date.now()-lastRouteAt>=15000&&metres(origin,lastRoutePoint)>=30))drawRoute();}
  function startWatch(){
   if(!configReady||!d.open||!current()||document.hidden||watchId!==null||!navigator.onLine)return;
   if(!navigator.geolocation){gpsError(Error('Lokasi perangkat tidak didukung.'));return;}
   const id=gpsEpoch;watchId=navigator.geolocation.watchPosition(position=>{if(id!==gpsEpoch||!d.open||document.hidden)return;try{acceptGPS(position,true);}catch(error){gpsError(error);}},error=>{if(id===gpsEpoch)gpsError(error);},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
  }
  async function refreshGPS(route=false){
+  if(route)autoStudentRoute=false;
   if(!current())return;if(!navigator.onLine){status.textContent='Peta dan rute memerlukan internet.';return;}
   const id=gpsEpoch,intent=++intentEpoch;routeButton.disabled=true;d.querySelector('#pMapLocate').disabled=true;status.textContent='Mendeteksi lokasi perangkat Anda… Izinkan akses lokasi saat browser meminta.';
   try{
@@ -15905,7 +15907,7 @@ async function show(nim,scope,context,slot){
    if(!gpsPromise)gpsPromise=new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:15000,maximumAge:0})).finally(()=>{gpsPromise=null;});
    const position=await gpsPromise;
    if(id!==gpsEpoch||!d.open)return;origin=gpsPoint(position);describeOrigin();
-   if(intent===intentEpoch){if(route||mode==='route')drawRoute();else status.textContent='Lokasi Anda siap. Pilih Rute ke mahasiswa, atau cari nama tempat dan pilih Rute ke tujuan ini.';}
+   if(intent===intentEpoch){if(route||mode==='route')drawRoute();else status.textContent='Lokasi Anda siap. Tekan Lihat jalan ke mahasiswa untuk melihat petunjuk jalan.';}
    startWatch();
   }catch(error){if(id===gpsEpoch&&d.open&&intent===intentEpoch)gpsError(error);}finally{if(d.open&&!gpsPromise){routeButton.disabled=false;d.querySelector('#pMapLocate').disabled=false;}}
  }
@@ -15914,7 +15916,7 @@ async function show(nim,scope,context,slot){
   destination=place.student?null:{lat,lon,accuracy:0,at:Date.now(),name:String(place.name||'Tempat terpilih').slice(0,200),placeId:place.id||''};input.value=destination?.name||'';confirm.hidden=true;lastRoutePoint=null;destinationLabel();describeOrigin();void refreshGPS(true);
  }
  async function explore(){
-  intentEpoch++;
+  autoStudentRoute=false;intentEpoch++;
   if(!current()||!navigator.onLine){status.textContent='Penjelajahan tempat memerlukan internet.';return;}
   if(!javascriptKey){status.textContent='Klik ikon Google untuk melihat detail bawaan Google. Untuk membuat rute di jendela ini, isi nama tempat beserta kota pada Cari tujuan lain. Menghubungkan pilihan ikon langsung ke web memerlukan Maps JavaScript; nama/foto tambahan memakai Places API, dengan kuota dan kemungkinan biaya tersendiri.';return;}
   mode='explore';if(explorer){iframe.hidden=true;mapElement.hidden=false;return;}
@@ -15927,22 +15929,22 @@ async function show(nim,scope,context,slot){
   }catch(error){if(id===viewEpoch&&d.open){showPoint();status.textContent=error.message;}}
  }
  function street(){
-  intentEpoch++;
+  autoStudentRoute=false;intentEpoch++;
   confirm.hidden=true;if(!current()||!navigator.onLine){status.textContent='Panorama 360° memerlukan internet.';return;}
   if(mode==='explore'&&explorer){explorer.street();return;}
   const t=target();if(!Number.isFinite(t.lat)){status.textContent='Untuk panorama tempat hasil pencarian, pilih 360° pada peta Google tempat tersebut. Lokasi mahasiswa tetap tersedia lewat Lokasi target (mahasiswa).';return;}
   mode='street';frame();if(!key){needsKey();return;}iframe.title='Panorama 360° di sekitar '+t.name;iframe.src=embed('streetview',{location:coordinates(t),radius:'500',source:'outdoor'});status.textContent='Panorama jalan terdekat hingga 500 m dari '+t.name+'. Ketersediaan mengikuti cakupan Street View Google.';
  }
  function update(){
-  intentEpoch++;stopWatch();disposeExplorer();origin=null;destination=null;lastRoutePoint=null;confirmedFarPoint=null;confirm.hidden=true;input.value='';originLabel.hidden=true;
+  autoStudentRoute=true;d.querySelector('.p-map-search-options').open=false;intentEpoch++;stopWatch();disposeExplorer();origin=null;destination=null;lastRoutePoint=null;confirmedFarPoint=null;confirm.hidden=true;input.value='';originLabel.hidden=true;
   const p=current();if(!p)return;destinationLabel();
   d.querySelector('.p-map-summary').textContent=new Date(p.at).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB · akurasi ±'+Math.round(p.accuracy)+' m · '+(Number.isFinite(p.battery)?'Baterai '+p.battery+'% · ':'')+p.lat.toFixed(5)+', '+p.lon.toFixed(5);
   d.querySelector('.p-map-place').textContent='Alamat mengikuti lokasi mahasiswa yang tersimpan.';void place(p);showPoint();startWatch();
  }
  for(const mark of marks){const option=document.createElement('option');option.value=String(mark.slot);option.textContent='Pertemuan '+mark.slot;select.append(option);}
  routeButton.onclick=()=>void refreshGPS(true);d.querySelector('#pMapLocate').onclick=()=>void refreshGPS(false);
- search.onsubmit=e=>{e.preventDefault();const query=input.value.trim();if(query.length<3){status.textContent='Isi nama tempat beserta kota, atau alamat lengkap (minimal 3 karakter).';input.focus();return;}intentEpoch++;disposeExplorer();destination={query,name:query};confirm.hidden=true;lastRoutePoint=null;destinationLabel();describeOrigin();showSearch();};
- d.querySelector('.p-map-link').onclick=()=>{intentEpoch++;disposeExplorer();destination=null;input.value='';confirm.hidden=true;lastRoutePoint=null;destinationLabel();describeOrigin();showPoint();};
+ search.onsubmit=e=>{e.preventDefault();const query=input.value.trim();if(query.length<3){status.textContent='Isi nama tempat beserta kota, atau alamat lengkap (minimal 3 karakter).';input.focus();return;}autoStudentRoute=false;intentEpoch++;disposeExplorer();destination={query,name:query};confirm.hidden=true;lastRoutePoint=null;destinationLabel();describeOrigin();showSearch();};
+ d.querySelector('.p-map-link').onclick=()=>{autoStudentRoute=false;d.querySelector('.p-map-search-options').open=false;intentEpoch++;disposeExplorer();destination=null;input.value='';confirm.hidden=true;lastRoutePoint=null;destinationLabel();describeOrigin();showPoint();};
  confirm.onclick=()=>{if(origin){confirmedFarPoint={...origin};drawRoute();}};
  d.querySelector('#pMapExplore').onclick=()=>void explore();d.querySelector('#pMapStreet').onclick=street;
  d.querySelector('#pMapReset').onclick=()=>{travel.value='driving';d.querySelector('.p-map-frame').scrollTop=0;update();};
@@ -16436,7 +16438,7 @@ for(const [,steps] of groups)for(const s of steps){
  if(s.title==='Isi identitas lembar')s.text='Ketuk identitas untuk mengedit. Perubahan disimpan di perangkat dan disinkronkan ke akun saat online. Gunakan kelas dan mata kuliah yang sama di perangkat lain.';
  if(s.title==='Tanggal pertemuan')s.text='Ketuk kotak tanggal untuk memilih atau mengedit tanggal DD/MM/TT. Teks ditampilkan miring tanpa memperbesar kotak tabel. Ukuran berlaku ke semua pertemuan secara bawaan; nonaktifkan pilihan itu jika ingin mengatur satu tanggal saja. Warna, tebal, miring, dan garis bawah ikut tersimpan untuk cetak.';
  if(s.title==='Riwayat kelas')s.text='Pilih prodi, tahun/periode, semester, kelas, mata kuliah, lalu pertemuan. Ringkasan mengikuti pilihan ini. Rekap mahasiswa menampilkan riwayat dalam kelas tersebut; ketuk catatan untuk melihat bukti dan lokasi.';
- if(s.title==='Alamat dan rute')s.text='Izinkan GPS perangkat, lalu tekan Rute ke mahasiswa. Untuk tujuan lain, isi nama tempat beserta kota pada Cari tujuan lain, cari di peta, lalu tekan Rute ke tujuan ini. Google menampilkan jalur, jarak, dan perkiraan waktu di jendela yang sama. Jika layanan peta interaktif tambahan sudah tersambung, ketuk ikon tempat lalu Rute ke sini. Lokasi target (mahasiswa) mengembalikan tujuan ke titik saat absen; tidak ada isian koordinat awal manual.';
+ if(s.title==='Alamat dan rute')s.text='Buka lokasi mahasiswa dan izinkan GPS; petunjuk jalan otomatis tampil dari posisi Anda ke titik absensinya. Pilih Cara pergi untuk mobil atau jalan kaki. Tombol Lihat jalan ke mahasiswa meminta GPS baru dan menampilkan rutenya. Pencarian tempat lain ada di Tujuan lain (opsional). Google menampilkan jalur, jarak, dan perkiraan waktu di jendela yang sama. Jika layanan peta interaktif tambahan sudah tersambung, ketuk ikon tempat lalu Rute ke sini. Lokasi target (mahasiswa) mengembalikan tujuan ke titik saat absen; tidak ada isian koordinat awal manual.';
  if(s.title==='Bantuan menu')s.text='Ketuk menu untuk langsung berpindah halaman. Pada komputer, arahkan kursor untuk membaca keterangan. Kelas dan mata kuliah tetap mengikuti pilihan Anda.';
  if(s.title==='Perubahan tersimpan')s.text='Perubahan tersimpan di perangkat sebelum berpindah halaman. Sinkronisasi berjalan di latar saat online. Tunggu antrean kosong sebelum membuka data pada perangkat lain.';
  if(['Setujui mahasiswa','Hapus akun percobaan','Terima & setujui'].includes(s.title)){s.prepare=undefined;s.target='#presenInboxLauncher';}
