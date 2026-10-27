@@ -703,7 +703,15 @@ html[data-theme] .portal-sheet #topToolbar.p-ribbon { position:fixed; top:8px; }
 #paperSheet .wa-letterhead [data-edit-key="inst-2"]{font-size:calc(var(--wa-sheet-body-font,12px)*1.3);font-weight:700;line-height:1.15;display:block;margin:0}
 #paperSheet .wa-letterhead [data-edit-key="inst-accreditation"],#paperSheet .wa-letterhead [data-edit-key="inst-address"],#paperSheet .wa-letterhead [data-edit-key="inst-contact"]{font-size:calc(var(--wa-sheet-body-font,12px)*.85);font-weight:400;line-height:1.15;display:block;margin:0}
 #paperSheet .wa-letterhead,#paperSheet .wa-letterhead *{font-family:var(--wa-letterhead-font,'Times New Roman',serif)}
-</style><script data-teacher-bundle src="app/runtime-teacher-1.2.10-20261027-presen-1210-exam-no-r17.js?v=20261027-presen-1210-exam-no-r17" defer></script></head>
+
+/* One GPS origin; destination search never changes recorded student coordinates. */
+.p-map-search{margin:12px 0}.p-map-search>label{display:block;font-size:13px;font-weight:650;margin-bottom:5px}.p-map-search>div{display:flex;gap:8px}.p-map-search input{min-width:0;flex:1;width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--p-line);border-radius:8px;background:var(--p-surface);color:var(--p-text);font:inherit}.p-map-search button{flex:none;min-height:44px}.p-map-destination{font-size:14px;font-weight:650;overflow-wrap:anywhere}.p-map-dialog #pMapRoute,.p-place-card [data-place-route]{background:var(--p-accent)!important;color:var(--p-on-accent)!important;border-color:var(--p-accent)!important}.p-map-dialog .p-map-route-controls{flex-wrap:wrap;gap:8px}.p-map-dialog .p-map-route-controls>button{min-height:44px}.p-map-dialog .p-map-actions>.p-map-link{display:inline-flex;gap:7px;align-items:center}.p-place-card [data-place-route]{margin:6px 8px 6px 0;min-height:44px}
+@media(max-width:500px){.p-map-search input{font-size:16px}.p-map-search>div{flex-wrap:wrap}.p-map-search button{width:100%}.p-map-dialog .p-map-route-controls>button{flex:1 1 140px}.p-map-dialog .p-map-route-controls>label{width:100%}.p-map-dialog .p-map-route-controls select{width:100%}}
+
+/* Fullscreen scrolls as a document; metadata must never shrink into overlapping lines. */
+.p-map-dialog.p-map-fullscreen{display:block!important;overflow:auto!important}.p-map-dialog.p-map-fullscreen .p-map-frame{height:clamp(260px,55dvh,760px);min-height:260px;flex:none}.p-map-dialog.p-map-fullscreen .p-map-frame iframe,.p-map-dialog.p-map-fullscreen .p-route-map{height:100%}
+@media print{.p-map-dialog.p-map-fullscreen{display:none!important}}
+</style><script data-teacher-bundle src="app/runtime-teacher-1.2.10-20261027-presen-1210-destination-r18.js?v=20261027-presen-1210-destination-r18" defer></script></head>
 <body>
 <div id="musicApplicationView" hidden><iframe id="musicApplicationFrame" name="absensi_music_standalone_app" title="Halaman aplikasi absensi"></iframe></div>
 <div id="musicView">
