@@ -1,0 +1,46 @@
+name: Diagnose hosting TLS without credentials
+on:
+  push:
+    branches: [diagnostic/hosting-tls]
+permissions:
+  contents: read
+jobs:
+  certificate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Inspect public FTP certificates without logging in
+        run: |
+          python3 - <<'PY'
+          import ftplib, socket, ssl, subprocess, re
+          expected = 'ftpupload.net'
+          addresses = set()
+          for alias in (expected, 'ftp.infinityfree.com'):
+              try:
+                  found = {row[4][0] for row in socket.getaddrinfo(alias, 21, type=socket.SOCK_STREAM)}
+                  print('DNS', alias, sorted(found), flush=True)
+                  addresses.update(found)
+              except OSError as error:
+                  print('DNS error:', type(error).__name__, flush=True)
+          for address in sorted(addresses):
+              client = ftplib.FTP_TLS(context=ssl.create_default_context(), timeout=15)
+              try:
+                  client.connect(address, 21)
+                  client.host = expected
+                  client.auth()
+                  cert = client.sock.getpeercert()
+                  print('VERIFIED TLS:', address, cert.get('notBefore'), cert.get('notAfter'), cert.get('subjectAltName'), flush=True)
+              except (OSError, ftplib.Error, EOFError) as error:
+                  print('TLS rejected:', address, str(error), flush=True)
+              finally:
+                  client.close()
+              endpoint = '['+address+']:21' if ':' in address else address+':21'
+              try:
+                  probe = subprocess.run(['openssl','s_client','-connect',endpoint,'-starttls','ftp','-servername',expected,'-showcerts'], input='', text=True, capture_output=True, timeout=20)
+                  for index, pem in enumerate(re.findall(r'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----',probe.stdout,re.S)):
+                      info = subprocess.run(['openssl','x509','-noout','-subject','-issuer','-dates','-ext','subjectAltName'],input=pem,text=True,capture_output=True,check=True)
+                      print('Public certificate',address,index,info.stdout,flush=True)
+              except (OSError, subprocess.SubprocessError) as error:
+                  print('Public certificate diagnostic:', type(error).__name__, flush=True)
+          print('No username, password, private file or attendance data was sent or read.')
+          PY
